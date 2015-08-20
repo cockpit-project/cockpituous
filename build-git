@@ -1,0 +1,4 @@
+#!/bin/sh -euf
+
+set -euf
+echo "TODO"
