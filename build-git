@@ -1,4 +1,74 @@
 #!/bin/sh -euf
 
 set -euf
-echo "TODO"
+
+GITDIR=/build/git
+TARBALL=/build/tarball
+URL=git://github.com/stefwalter/cockpit
+
+prepare()
+(
+    if [ $# -ne 1 ]; then
+        usage
+    fi
+
+    if [ ! -d $GITDIR ]; then
+        git clone "$URL" $GITDIR
+    else
+        cd $GITDIR
+        git fetch origin
+        git reset --hard HEAD
+    fi
+
+    cd $GITDIR
+    if git show-ref --verify --quiet refs/heads/release-$1; then
+	git checkout master
+    	git branch -D release-$1
+    fi
+    git branch release-$1 $1
+    git checkout release-$1
+
+    mkdir -p $GITDIR/build
+    rm -rf $GITDIR/build/*
+    cd $GITDIR/build
+    ../autogen.sh --prefix=/usr
+    make -j1 distcheck
+
+    cd $GITDIR
+    ln -snf $GITDIR/build/cockpit-$1.tar.bz2 $TARBALL
+)
+
+usage()
+{
+    echo "usage: build-git prepare <tag>" >&2
+    exit 2
+}
+
+while getopts "" opt; do
+    case "$opt" in
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+MODE="$1"
+shift
+
+case "$MODE" in
+    prepare)
+        prepare "$@"
+        ;;
+    *)
+        usage
+        ;;
+esac

@@ -1,0 +1,90 @@
+#!/bin/sh -euf
+
+set -euf
+
+KOJIDIR=/build/koji
+TARBALL=/build/tarball
+GITDIR=/build/git
+URL=git://pkgs.fedoraproject.org/cockpit.git
+
+warning()
+{
+    echo "release-koji: $@" >&2
+}
+
+require()
+{
+    for req in "$@"; do
+        if [ ! -e "$req" ]; then
+            warning "$req not built or present"
+        fi
+    done
+}
+
+prepare()
+(
+    if [ $# -ne 1 ]; then
+        usage
+    fi
+
+    require $GITDIR $TARBALL $GITDIR/tools/cockpit.spec
+
+    if [ ! -d $KOJIDIR ]; then
+        git clone "$URL" $KOJIDIR
+    else
+        cd $KOJIDIR
+        git fetch origin
+        git reset --hard HEAD
+    fi
+
+    cd $KOJIDIR
+    git checkout $1
+    git reset --hard $1
+
+    # Bring over the build requirements
+    ( cd $GITDIR && update-spec $KOJIDIR/cockpit.spec )
+    tarball=$(readlink $TARBALL)
+    cp $tarball .
+
+    # Perform a local build
+    fedpkg local | tee /tmp/log-$$.output
+    srpm=$(sed -n 's/Wrote: \(.\+\.src\.rpm)$/\1.src.rpm/p' /tmp/log-$$.output)
+
+    # Build it in brew
+    fedpkg scratch-build --srpm=$srpm
+)
+
+usage()
+{
+    echo "usage: build-koji prepare <ver>" >&2
+    exit 2
+}
+
+
+while getopts "" opt; do
+    case "$opt" in
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+MODE="${1-}"
+shift
+
+case "$MODE" in
+    prepare)
+        prepare "$@"
+        ;;
+    *)
+        usage
+        ;;
+esac
