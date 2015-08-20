@@ -1,0 +1,14 @@
+#!/bin/sh -euf
+
+set -euf
+
+. $(dirname $0)/build-common
+
+message()
+{
+    printf "Update to version %s\n\n" "$1"
+    git for-each-ref --format='%(contents)' refs/tags/$1 | no_signature
+}
+
+TAG=$(git describe --abbrev=0)
+message $TAG

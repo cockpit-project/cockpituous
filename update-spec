@@ -2,15 +2,7 @@
 
 set -euf
 
-warning()
-{
-        echo "update-spec: $@" >&2
-}
-
-no_signature()
-{
-        sed -n '/-----BEGIN/q;p'
-}
+. $(dirname $0)/build-common
 
 dash_bullets()
 {
@@ -51,6 +43,7 @@ if grep -q "$TAG-$REL" "$SPEC"; then
 fi
 
 tmpfile=$(mktemp .changelog.XXXXXX)
+printf "%%changelog\n" >> $tmpfile
 changelog $TAG $REL >> $tmpfile
 sed '1,/%changelog/d' "$SPEC" >> $tmpfile
 

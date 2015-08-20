@@ -6,6 +6,7 @@ RUN yum -y install git yum-utils npm tar bzip2 fedpkg copr-cli
 
 # Install cockpit build dependencies
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
+ADD ~/.fedora-server-ca.cert /root/
 RUN yum-builddep -y /tmp/cockpit.spec
 
 RUN mkdir -p /build /usr/local/bin

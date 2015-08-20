@@ -2,18 +2,15 @@
 
 set -euf
 
-GITDIR=/build/git
-TARBALL=/build/tarball
-URL=git://github.com/stefwalter/cockpit
+. $(dirname $0)/build-common
 
 prepare()
 (
-    if [ $# -ne 1 ]; then
-        usage
-    fi
+    # No prepare stage input
+    require
 
     if [ ! -d $GITDIR ]; then
-        git clone "$URL" $GITDIR
+        git clone "$GITURL" $GITDIR
     else
         cd $GITDIR
         git fetch origin
@@ -21,12 +18,19 @@ prepare()
     fi
 
     cd $GITDIR
-    if git show-ref --verify --quiet refs/heads/release-$1; then
-	git checkout master
-    	git branch -D release-$1
+
+    if [ $# -eq 0 ]; then
+        tag=$(git describe --abbrev=0)
+    else
+        tag="$1"
     fi
-    git branch release-$1 $1
-    git checkout release-$1
+
+    if git show-ref --verify --quiet refs/heads/release-$tag; then
+	git checkout master
+    	git branch -D release-$tag
+    fi
+    git branch release-$tag $tag
+    git checkout release-$tag
 
     mkdir -p $GITDIR/build
     rm -rf $GITDIR/build/*
@@ -35,7 +39,10 @@ prepare()
     make -j1 distcheck
 
     cd $GITDIR
-    ln -snf $GITDIR/build/cockpit-$1.tar.bz2 $TARBALL
+    ln -snf $GITDIR/build/cockpit-$tag.tar.bz2 $TARBALL
+
+    # This prepare stage output:
+    require $GITDIR $TARBALL
 )
 
 usage()
@@ -56,19 +63,4 @@ while getopts "" opt; do
 done
 
 shift $(expr $OPTIND - 1)
-
-if [ $# -lt 1 ]; then
-    usage
-fi
-
-MODE="$1"
-shift
-
-case "$MODE" in
-    prepare)
-        prepare "$@"
-        ;;
-    *)
-        usage
-        ;;
-esac
+build "$@"

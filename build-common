@@ -1,0 +1,55 @@
+SCRIPT=$(basename $0)
+
+TARBALL=/build/tarball
+
+GITDIR=/build/git
+GITURL=git://github.com/stefwalter/cockpit
+
+KOJIDIR=/build/koji
+KOJIURL=git://pkgs.fedoraproject.org/cockpit.git
+
+warning()
+{
+    echo "$SCRIPT: $@" >&2
+}
+
+require()
+{
+    for req in "$@"; do
+        if [ ! -e "$req" ]; then
+            warning "$req not built or present"
+        fi
+    done
+}
+
+no_signature()
+{
+    sed -n '/-----BEGIN/q;p'
+}
+
+current_tag()
+(
+    require $GITDIR
+    cd $GITDIR
+    git describe --abbrev=0
+)
+
+build()
+{
+    # Run the build command
+    if [ $# -lt 1 ]; then
+        usage
+    fi
+
+    MODE="$1"
+    shift
+
+    case "$MODE" in
+        prepare)
+            prepare "$@"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+}

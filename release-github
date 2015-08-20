@@ -1,0 +1,89 @@
+#!/bin/sh -euf
+
+set -euf
+
+usage()
+{
+    echo "usage: release-github prepare [-t TAG] [-o ORIGIN] [-f FILE]" >&2
+    echo "       release-github commit [-t TAG] [-o ORIGIN]" >&2
+    exit ${1-2}
+}
+
+warning()
+{
+    echo "release-github: $@" >&2
+}
+
+no_signature()
+{
+    sed -n '/-----BEGIN/q;p'
+}
+
+prepare()
+{
+    set -x
+
+    # The body of the email ready as a JSON string
+    tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | no_signature |
+                python -c 'import json,sys; print json.dumps(sys.stdin.read())')"
+
+    printf '{"tag_name": "%s", "name": "%s", "draft": true, "body": %s }' "$TAG" "$TAG" "$tagbody" |
+        curl --data @- --output /tmp/curl-release-$TAG.json \
+            https://api.github.com$REPO/releases?access_token=$TOKEN
+
+    if [ -f "$FILE" ]; then
+        curl --data @$FILE --output /tmp/curl-upload-$TAG.json\
+            "https://uploads.github.com$REPO/releases/$TAG/assets?name=$base&Content-Type=application/x-bz2"
+    fi
+}
+
+REPO=
+ORIGIN=origin
+TOKEN=
+FILE=
+TAG=
+
+while getopts "f:o:t:" opt; do
+    case "$opt" in
+    f)
+        FILE="$OPTARG"
+        ;;
+    o)
+        ORIGIN="$OPTARG"
+        ;;
+    t)
+        TAG="$OPTARG"
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage 0
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+# A github.com repos path like /repos/:ownser/:repo
+REPO=$(LC_ALL=C git remote show -n $ORIGIN |
+        sed -n 's/.*Push.*github.com\/\(.\+\)\/\(.\+\)$/\/repos\/\1\/\2/p')
+
+if [ -z "$REPO" ]; then
+    warning "could not find github remote: $ORIGIN"
+    exit 1
+fi
+
+# The tag to use to access the API
+if [ -z "$TAG" ]; then
+    TAG=$(git describe --abbrev=0)
+fi
+
+# And finally the token for access
+TOKEN=$(cat ~/.config/github-token)
+
+prepare

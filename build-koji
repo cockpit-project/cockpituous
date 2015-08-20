@@ -2,35 +2,20 @@
 
 set -euf
 
-KOJIDIR=/build/koji
-TARBALL=/build/tarball
-GITDIR=/build/git
-URL=git://pkgs.fedoraproject.org/cockpit.git
-
-warning()
-{
-    echo "release-koji: $@" >&2
-}
-
-require()
-{
-    for req in "$@"; do
-        if [ ! -e "$req" ]; then
-            warning "$req not built or present"
-        fi
-    done
-}
+. $(dirname $0)/build-common
 
 prepare()
 (
+    # Prepare stage input required
+    require $GITDIR $TARBALL $GITDIR/tools/cockpit.spec
+
     if [ $# -ne 1 ]; then
         usage
     fi
 
-    require $GITDIR $TARBALL $GITDIR/tools/cockpit.spec
 
     if [ ! -d $KOJIDIR ]; then
-        git clone "$URL" $KOJIDIR
+        git clone "$KOJIURL" $KOJIDIR
     else
         cd $KOJIDIR
         git fetch origin
@@ -41,17 +26,46 @@ prepare()
     git checkout $1
     git reset --hard $1
 
-    # Bring over the build requirements
+    # Update the spec file
     ( cd $GITDIR && update-spec $KOJIDIR/cockpit.spec )
-    tarball=$(readlink $TARBALL)
-    cp $tarball .
 
-    # Perform a local build
-    fedpkg local | tee /tmp/log-$$.output
-    srpm=$(sed -n 's/Wrote: \(.\+\.src\.rpm)$/\1.src.rpm/p' /tmp/log-$$.output)
+    # Bring over the sources
+    tarball=$(readlink $TARBALL)
+    tarname=$(basename $tarball)
+    cp $tarball .
+    md5sum $tarname > sources
+    echo "/$tarname" >> .gitignore
+
+    # Commit all of that
+    git add cockpit.spec sources .gitignore
+    ( cd $GITDIR && tag-message ) | git commit -F -
+
+    # Make an SRPM out of that
+    tmpfile=$(mktemp .fedpkg-srpm.XXXXXX)
+    fedpkg srpm | tee $tmpfile
+    srpm=$(sed -n 's/Wrote: \(.\+\.src\.rpm\)$/\1/p' $tmpfile)
+    rm $tmpfile
 
     # Build it in brew
     fedpkg scratch-build --srpm=$srpm
+)
+
+commit()
+(
+    exit 2
+    # Prepare stage input required
+    require $TARBALL $GITDIR/tools/cockpit.spec
+
+    cd $KOJIDIR
+
+    # Upload the sources
+    tarball=$(readlink $TARBALL)
+    fedpkg new-sources $(basename $tarball)
+    git reset --hard HEAD  # Undo any silliness above
+
+    # Push the changes
+    git push origin $1
+    fedpkg build
 )
 
 usage()
@@ -59,7 +73,6 @@ usage()
     echo "usage: build-koji prepare <ver>" >&2
     exit 2
 }
-
 
 while getopts "" opt; do
     case "$opt" in
@@ -73,18 +86,4 @@ while getopts "" opt; do
 done
 
 shift $(expr $OPTIND - 1)
-if [ $# -lt 1 ]; then
-    usage
-fi
-
-MODE="${1-}"
-shift
-
-case "$MODE" in
-    prepare)
-        prepare "$@"
-        ;;
-    *)
-        usage
-        ;;
-esac
+build "$@"
