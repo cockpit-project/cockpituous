@@ -50,9 +50,9 @@ run_curl()
 {
     local arg
 
-    if [ -n "$VERBOSE" ]; then
+    if [ $VERBOSE -eq 1 ]; then
         arg="--verbose"
-    elif [ -n "$QUIET" ]; then
+    elif [ $QUIET -eq 1 ]; then
         arg="-s"
     else
         arg=""
