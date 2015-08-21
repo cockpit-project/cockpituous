@@ -223,6 +223,11 @@ if [ -z "$TOKEN" ]; then
     TOKEN=$(cat ~/.config/github-token)
 fi
 
+if [ -n "$TARBALL" -a ! -f "$TARBALL" ]; then
+    message "tarball source not found: $TARBALL"
+    exit 1
+fi
+
 prepare
 
 if [ $TRANSACTION -eq 1 ]; then

@@ -45,6 +45,7 @@ VERBOSE=${RELEASE_VERBOSE:-0}
 TARBALL=${RELEASE_TARBALL:-}
 CONTINUE=${RELEASE_CONTINUE:-0}
 SPEC=${RELEASE_SPEC:-$PACKAGE.spec}
+SRPM=${RELEASE_SRPM:-$PWD/srpm}
 
 # Other globals
 CLEANUP=""
@@ -178,6 +179,12 @@ prepare()
             exit $ret
         fi
     fi
+
+    # Link it into place
+    cd ..
+    if [ -n "$SRPM" ]; then
+        ln -snf $srpm $SRPM
+    fi
 }
 
 commit()
@@ -256,11 +263,17 @@ fi
 if [ -z "$SPEC" ]; then
     message "no spec source file specified"
     exit 2
+elif [ ! -f "$SPEC" ]; then
+    message "spec source file not found: $SPEC"
+    exit 1
 fi
 
 if [ -z "$TARBALL" ]; then
     message "no tarball input specified"
     exit 2
+elif [ ! -f "$TARBALL" ]; then
+    message "tarball source not found: $TARBALL"
+    exit 1
 fi
 
 prepare

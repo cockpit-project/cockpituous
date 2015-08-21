@@ -1,0 +1,118 @@
+#!/bin/sh -euf
+#
+# release-copr
+#
+# A script that takes an SRPM and builds it in COPR
+#
+# If the SRPM is a symlink it will be resolved to its actual file name.
+# A properly configured ~/.config/copr is required.
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -m srpm    RELEASE_SRPM=srpm      Path to SRPM
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
+
+set -euf
+
+# Various arguments
+TRANSACTION=${RELEASE_TRANSACTION:-0}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+SRPM=${RELEASE_SRPM:-$PWD/srpm}
+
+# Other globals
+URL=""
+
+usage()
+{
+    echo "usage: release-copr [-qvx] [-m SRPM]" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        echo "> $@" >&2
+    fi
+}
+
+message()
+{
+    echo "release-copr: $@" >&2
+}
+
+readlink_or()
+{
+    if ! readlink "$1"; then
+        echo "$1"
+    fi
+}
+
+prepare()
+{
+    local spec tmpfile tarball ret
+
+    trace "Uploading SRPM"
+
+    # HACK: Until copr-cli supports SRPM
+    srpm="$(readlink_or $SRPM)"
+    scp $srpm fedorapeople.org:public_html/
+
+    base="$(basename "$srpm")"
+    URL="https://fedorapeople.org/~stefw/$base"
+}
+
+commit()
+(
+    copr-cli build --nowait sgallagh/cockpit-preview "$URL"
+)
+
+while getopts "m:qvx" opt; do
+    case "$opt" in
+    m)
+        SRPM="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    x)
+        TRANSACTION=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+if [ -z "$SRPM" ]; then
+    message "no srpm specified"
+    exit 2
+elif [ ! -f "$SRPM" ]; then
+    message "srpm source not found: $SRPM"
+    exit 1
+fi
+
+prepare
+
+if [ $TRANSACTION -eq 1 ]; then
+    kill -STOP $$
+fi
+
+commit

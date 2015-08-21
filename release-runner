@@ -51,6 +51,7 @@ job()
     local ret
 
     RELEASE_TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
+    RELEASE_SRPM=${RELEASE_SRPM:-$PWD/srpm}
     RELEASE_TRANSACTION=1
 
     # Export all RELEASE_XXXX variables
