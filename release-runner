@@ -104,6 +104,8 @@ while getopts "nqvx" opt; do
     esac
 done
 
+PATH=$PATH:$(dirname $0)
+
 shift $(expr $OPTIND - 1)
 
 if [ $# -ne 1 ]; then
@@ -111,7 +113,6 @@ if [ $# -ne 1 ]; then
 fi
 
 # Run the basic script
-PATH=$PATH:$PWD
 . $1
 
 if [ $DRYRUN -eq 1 ]; then
