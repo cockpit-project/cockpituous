@@ -4,46 +4,122 @@ set -euf
 
 usage()
 {
-    echo "usage: release-github prepare [-t TAG] [-o ORIGIN] [-f FILE]" >&2
-    echo "       release-github commit [-t TAG] [-o ORIGIN]" >&2
+    echo "usage: release-github [-qvx] [-t TAG] [-o ORIGIN] [-f FILE]" >&2
     exit ${1-2}
 }
 
-warning()
+trace()
+{
+    if [ -z "$QUIET" ]; then
+        message "$@"
+    fi
+}
+
+message()
 {
     echo "release-github: $@" >&2
 }
 
-no_signature()
+json_escape()
 {
-    sed -n '/-----BEGIN/q;p'
+    # Escape quotes, backslashes and new lines
+    sed -e 's/[\\"]/\\\0/g' -e 's/$/\\n/g'
+}
+
+trim_contents()
+{
+    # Remove line with just tag name. Remove signature
+    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+}
+
+run_curl()
+{
+    local arg
+
+    if [ -n "$VERBOSE" ]; then
+        arg="--verbose"
+    elif [ -n "$QUIET" ]; then
+        arg="-s"
+    else
+        arg=""
+    fi
+
+    if ! curl $arg -S --fail -H "Authorization: token $TOKEN" "$@"; then
+        message "github api call failed"
+        exit 1
+    fi
 }
 
 prepare()
 {
-    set -x
+    local tmpfile body upload uplog base progress
+
+    tmpfile=$(mktemp .github-draft.XXXXXX.json)
 
     # The body of the email ready as a JSON string
-    tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | no_signature |
-                python -c 'import json,sys; print json.dumps(sys.stdin.read())')"
+    body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | json_escape)"
 
-    printf '{"tag_name": "%s", "name": "%s", "draft": true, "body": %s }' "$TAG" "$TAG" "$tagbody" |
-        curl --data @- --output /tmp/curl-release-$TAG.json \
-            https://api.github.com$REPO/releases?access_token=$TOKEN
+    trace "creating release draft: $TAG"
 
-    if [ -f "$FILE" ]; then
-        curl --data @$FILE --output /tmp/curl-upload-$TAG.json\
-            "https://uploads.github.com$REPO/releases/$TAG/assets?name=$base&Content-Type=application/x-bz2"
+    # Create the release via the Github API
+    printf '{"tag_name": "%s", "name": "%s", "draft": true, "body": "%s" }\n' "$TAG" "$TAG" "$body" |
+        run_curl -s --data @- --output $tmpfile https://api.github.com$REPO/releases
+
+    # Remove this file later
+    CLEANUP="$CLEANUP $tmpfile"
+
+    # The release URL for later commit
+    RELEASE=$(sed -n 's/.*"url"\s*:\s*"\([^"]*\).*/\1/p' $tmpfile | head -n 1)
+
+    if [ -n "$FILE" ]; then
+        trace "uploading file: $FILE"
+
+        # Figure out the URL to upload to
+        upload=$(sed -n 's/.*"upload_url"\s*:\s*"\([^{"]*\).*/\1/p' $tmpfile)
+
+        # And do the actual upload via the Github API
+        uplog=$(mktemp .github-upload.XXXXXX.json)
+
+        if [ -n "$QUIET" ]; then
+            progress="--progress-bar"
+        fi
+
+        base="$(basename $FILE)"
+        run_curl --data-binary @$FILE --progress-bar --output $uplog \
+             -H "Accept: application/vnd.github.manifold-preview" \
+             -H "Content-Type: application/x-bz2" \
+            "$upload?name=$base"
+
+        # Remove this file later
+        CLEANUP="$CLEANUP $uplog"
     fi
+}
+
+commit()
+{
+    tmpfile=$(mktemp .github-publish.XXXXXX.json)
+
+    trace "publishing draft: $TAG"
+
+    printf '{"draft": false}\n' |
+        run_curl -s --data @- --output $tmpfile --request PATCH $RELEASE
+
+    # Remove all the temporary files on success
+    rm $CLEANUP $tmpfile
 }
 
 REPO=
 ORIGIN=origin
+TRANSACTION=
+VERBOSE=
+QUIET=
+RELEASE=
+CLEANUP=
 TOKEN=
 FILE=
 TAG=
 
-while getopts "f:o:t:" opt; do
+while getopts "f:o:t:qvx" opt; do
     case "$opt" in
     f)
         FILE="$OPTARG"
@@ -53,6 +129,17 @@ while getopts "f:o:t:" opt; do
         ;;
     t)
         TAG="$OPTARG"
+        ;;
+    q)
+        QUIET="yup"
+        VERBOSE=
+        ;;
+    v)
+        VERBOSE="yup"
+        QUIET=
+        ;;
+    x)
+        TRANSACTION="yup"
         ;;
     -)
         break
@@ -71,10 +158,10 @@ fi
 
 # A github.com repos path like /repos/:ownser/:repo
 REPO=$(LC_ALL=C git remote show -n $ORIGIN |
-        sed -n 's/.*Push.*github.com\/\(.\+\)\/\(.\+\)$/\/repos\/\1\/\2/p')
+sed -n 's/.*Push.*github.com[:\/]\(.*\+\)\/\([^\.]\+\).*/\/repos\/\1\/\2/p')
 
 if [ -z "$REPO" ]; then
-    warning "could not find github remote: $ORIGIN"
+    message "could not find github remote: $ORIGIN"
     exit 1
 fi
 
@@ -87,3 +174,9 @@ fi
 TOKEN=$(cat ~/.config/github-token)
 
 prepare
+
+if [ -n "$TRANSACTION" ]; then
+    kill -STOP $$
+fi
+
+commit
