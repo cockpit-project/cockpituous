@@ -1,0 +1,12 @@
+
+RELEASE_PACKAGE=cockpit
+RELEASE_SPEC=tools/cockpit.spec
+
+# Build the tarball for the tag
+# job release-tarball
+
+# Do fedora builds for the tag, using tarball
+job release-koji f22
+
+# Upload release to github, using tarball
+job release-github

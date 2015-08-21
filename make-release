@@ -1,6 +1,0 @@
-#!/bin/sh
-
-set -euf
-
-build-git prepare
-build-koji prepare f22

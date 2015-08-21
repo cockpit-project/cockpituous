@@ -1,0 +1,100 @@
+#!/bin/sh -euf
+
+set -euf
+
+# We want job control
+set -m
+
+DRYRUN=0
+
+usage()
+{
+    echo "usage: release-runner [-nqv] SCRIPT" >&2
+    exit ${1:-2}
+}
+
+trace()
+{
+    if [ ${RELEASE_QUIET:-0} -eq 0 ]; then
+        message "$@"
+    fi
+}
+
+message()
+{
+    echo "release-runner: $@" >&2
+}
+
+job()
+{
+    local ret
+
+    # Export all RELEASE_XXXX variables
+    eval $(set | sed -n 's/^\(RELEASE_[^=]\+\)=.*/export \1/p')
+
+    trace "job: $@"
+
+    # Run the task
+    set +e
+    "$@"
+    ret=$?
+    set -e
+
+    if [ $ret -eq 0 ]; then
+        return 0 # completed successfully
+
+    elif [ $ret -gt 128 -a $ret -lt 193 ]; then
+        sig=$(kill -l $ret)
+        if [ "$sig" = "STOP" ]; then
+            return 0 # job not yet finished
+        else
+            message "terminated with $sig: $@"
+        fi
+
+    else
+        message "failed code $ret: $@"
+    fi
+
+    exit $ret
+}
+
+while getopts "nqvx" opt; do
+    case "$opt" in
+    n)
+        DRYRUN=1
+        ;;
+    q)
+        RELEASE_QUIET=1
+        RELEASE_VERBOSE=0
+        ;;
+    v)
+        RELEASE_QUIET=0
+        RELEASE_VERBOSE=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+# Run the basic script
+PATH=$PATH:$PWD
+. $1
+
+if [ $DRYRUN -eq 1 ]; then
+    exit 0
+fi
+
+# Run all the remaining background jobs
+while fg > /dev/null 2> /dev/null; do
+    trace "completed job"
+done

@@ -1,0 +1,100 @@
+#!/bin/sh -euf
+
+set -euf
+
+TAG=${RELEASE_TAG:-}
+TRANSACTION=${RELEASE_TRANSACTION:-0}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
+
+usage()
+{
+    echo "usage: release-tarball [-qvx] [-t TAG] TARBALL" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        message "$@"
+    fi
+}
+
+message()
+{
+    echo "release-tarball: $@" >&2
+}
+
+prepare()
+{
+    local archive
+
+    trace "checking out $TAG"
+
+    git fetch origin
+    git checkout --detach $TAG
+
+    mkdir -p build
+    rm -rf build/*
+
+    trace "building the repo"
+
+    cd build
+    ../autogen.sh --prefix=/usr
+
+    trace "building the tarball"
+
+    make -j1 distcheck
+
+    # Print out the tarball
+    printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' > GNUmakefile
+    archive=$(make print-DIST_ARCHIVES)
+
+    trace "linking tarball"
+
+    cd ..
+    ln -snf build/$archive "$TARBALL"
+}
+
+while getopts "f:qvx" opt; do
+    case "$opt" in
+    f)
+        TARBALL="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    x)
+        TRANSACTION=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+# The tag for the release
+if [ -z "$TAG" ]; then
+    TAG=$(git describe --abbrev=0)
+    if [ -z "$TAG" ]; then
+        message "could not find a tag to build"
+        exit 2
+    fi
+fi
+
+prepare

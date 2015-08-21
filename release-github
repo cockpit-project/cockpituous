@@ -2,15 +2,29 @@
 
 set -euf
 
+# Arguments
+VERBOSE="${RELEASE_VERBOSE:-0}"
+QUIET="${RELEASE_QUIET:-0}"
+TRANSACTION="${RELEASE_TRANSACTION:-1}"
+ORIGIN="${RELEASE_ORIGIN:-origin}"
+TARBALL="${RELEASE_TARBALL:-$PWD/.tarball}"
+TAG="${RELEASE_TAG:-}"
+
+# Other globals
+TOKEN="${GITHUB_TOKEN:-}"
+REPO=
+RELEASE=
+CLEANUP=
+
 usage()
 {
-    echo "usage: release-github [-qvx] [-t TAG] [-o ORIGIN] [-f FILE]" >&2
+    echo "usage: release-github [-qvx] [-t TAG] [-o ORIGIN] [-f TARBALL]" >&2
     exit ${1-2}
 }
 
 trace()
 {
-    if [ -z "$QUIET" ]; then
+    if [ $QUIET -eq 0 ]; then
         message "$@"
     fi
 }
@@ -71,8 +85,8 @@ prepare()
     # The release URL for later commit
     RELEASE=$(sed -n 's/.*"url"\s*:\s*"\([^"]*\).*/\1/p' $tmpfile | head -n 1)
 
-    if [ -n "$FILE" ]; then
-        trace "uploading file: $FILE"
+    if [ -n "$TARBALL" ]; then
+        trace "uploading file: $TARBALL"
 
         # Figure out the URL to upload to
         upload=$(sed -n 's/.*"upload_url"\s*:\s*"\([^{"]*\).*/\1/p' $tmpfile)
@@ -84,8 +98,9 @@ prepare()
             progress="--progress-bar"
         fi
 
-        base="$(basename $FILE)"
-        run_curl --data-binary @$FILE --progress-bar --output $uplog \
+        ball="$(readlink $TARBALL)"
+        base="$(basename $ball)"
+        run_curl --data-binary @$TARBALL --progress-bar --output $uplog \
              -H "Accept: application/vnd.github.manifold-preview" \
              -H "Content-Type: application/x-bz2" \
             "$upload?name=$base"
@@ -108,21 +123,10 @@ commit()
     rm $CLEANUP $tmpfile
 }
 
-REPO=
-ORIGIN=origin
-TRANSACTION=
-VERBOSE=
-QUIET=
-RELEASE=
-CLEANUP=
-TOKEN=
-FILE=
-TAG=
-
 while getopts "f:o:t:qvx" opt; do
     case "$opt" in
     f)
-        FILE="$OPTARG"
+        TARBALL="$OPTARG"
         ;;
     o)
         ORIGIN="$OPTARG"
@@ -131,15 +135,15 @@ while getopts "f:o:t:qvx" opt; do
         TAG="$OPTARG"
         ;;
     q)
-        QUIET="yup"
-        VERBOSE=
+        QUIET=1
+        VERBOSE=0
         ;;
     v)
-        VERBOSE="yup"
-        QUIET=
+        VERBOSE=1
+        QUIET=0
         ;;
     x)
-        TRANSACTION="yup"
+        TRANSACTION=1
         ;;
     -)
         break
@@ -158,24 +162,30 @@ fi
 
 # A github.com repos path like /repos/:ownser/:repo
 REPO=$(LC_ALL=C git remote show -n $ORIGIN |
-sed -n 's/.*Push.*github.com[:\/]\(.*\+\)\/\([^\.]\+\).*/\/repos\/\1\/\2/p')
+    sed -n 's/.*Push.*github.com[:\/]\(.*\+\)\/\([^\.]\+\).*/\/repos\/\1\/\2/p')
 
 if [ -z "$REPO" ]; then
     message "could not find github remote: $ORIGIN"
     exit 1
 fi
 
-# The tag to use to access the API
+# The tag for the release
 if [ -z "$TAG" ]; then
     TAG=$(git describe --abbrev=0)
+    if [ -z "$TAG" ]; then
+        message "could not find a tag to release"
+        exit 1
+    fi
 fi
 
 # And finally the token for access
-TOKEN=$(cat ~/.config/github-token)
+if [ -z "$TOKEN" ]; then
+    TOKEN=$(cat ~/.config/github-token)
+fi
 
 prepare
 
-if [ -n "$TRANSACTION" ]; then
+if [ $TRANSACTION -eq 1 ]; then
     kill -STOP $$
 fi
 

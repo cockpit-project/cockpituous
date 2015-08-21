@@ -1,0 +1,219 @@
+#!/bin/sh -euf
+
+set -euf
+
+# Various arguments
+TAG=${RELEASE_TAG:-}
+PACKAGE=${RELEASE_PACKAGE:-}
+TRANSACTION=${RELEASE_TRANSACTION:-0}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+TARBALL=${RELEASE_TARBALL:-$PWD/.tarball}
+SPEC=${RELEASE_SPEC:-$PACKAGE.spec}
+
+# Other globals
+CLEANUP=""
+SOURCES=""
+WORKDIR=""
+BRANCH=""
+
+usage()
+{
+    echo "usage: release-koji [-qvx] [-t TAG] [-s SPEC] [-f TARBALL] [-p PACKAGE] BRANCH" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        message "$@"
+    fi
+}
+
+message()
+{
+    echo "release-koji: $@" >&2
+}
+
+dash_bullets()
+{
+        sed -e 's/^* /- /' \
+            -e 's/^ * /- /' \
+            -e 's/^[^ *-]/- \0/'
+}
+
+trim_contents()
+{
+    # Remove line with just tag name. Remove signature
+    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+}
+
+format_date()
+{
+    LC_ALL=C date --date="$1" '+%a %b %d %Y'
+}
+
+changelog_lines()
+{
+    local tagdate tagauthor tagemail tagbody
+    eval $(git for-each-ref --shell --format='
+tagdate=%(taggerdate:short)
+tagauthor=%(taggername)
+tagemail=%(taggeremail)' "refs/tags/$TAG")
+    tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | dash_bullets)"
+    tagdate="$(format_date $tagdate)"
+
+    printf "* %s %s %s - %s-1\n%s\n\n" "$tagdate" "$tagauthor" "$tagemail" "$TAG" "$tagbody"
+}
+
+commit_lines()
+{
+    local body
+    body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents)"
+    printf "Update to version %s\n\n%s" "$TAG" "$body"
+}
+
+prepare()
+{
+    local spec tmpfile srpm tarball
+
+    WORKDIR=".koji-$BRANCH"
+
+    trace "Checking out koji package $PACKAGE"
+
+    rm -rf $WORKDIR
+    git clone ssh://pkgs.fedoraproject.org/$PACKAGE.git $WORKDIR
+
+    git -C $WORKDIR checkout "$BRANCH"
+
+    # Update the spec file
+    spec="$WORKDIR/$PACKAGE.spec"
+
+    if grep -q "$TAG-1" "$spec"; then
+        message "$PACKAGE.spec: already has NVR $PACKAGE-$TAG-1 present"
+        exit 1
+    fi
+
+    trace "Updating spec file"
+
+    tmpfile=$(mktemp .koji-changelog.XXXXXX)
+    printf "%%changelog\n" >> $tmpfile
+    changelog_lines >> $tmpfile
+    sed '1,/%changelog/d' "$spec" >> $tmpfile
+
+    sed -e "1s/^/%define tag $TAG\n%define rel 1\n/" \
+        -e "/%changelog/r $tmpfile" \
+        -e "/%changelog/,\$d" \
+        $SPEC > "$spec"
+
+    CLEANUP="$CLEANUP $tmpfile"
+    trace "Updating sources"
+
+    tarball=$(readlink $TARBALL)
+    SOURCES=$(basename $tarball)
+    cp $tarball $WORKDIR/
+    (cd $WORKDIR && md5sum $SOURCES) > $WORKDIR/sources
+    echo "/$SOURCES" >> $WORKDIR/.gitignore
+
+    trace "Committing changes"
+
+    # Commit all of that
+    git -C $WORKDIR add cockpit.spec sources .gitignore
+    commit_lines | git -C $WORKDIR commit -F -
+
+    trace "Building SRPM"
+
+    # Make an SRPM out of that
+    tmpfile=$(mktemp .fedpkg-srpm.XXXXXX)
+    srpm=$(cd $WORKDIR && fedpkg srpm | sed -n 's/Wrote: \(.\+\.src\.rpm\)$/\1/p')
+
+    trace "Making a scratch build"
+
+    # Build it in brew
+    (cd $WORKDIR && fedpkg scratch-build --srpm=$srpm)
+
+    CLEANUP="$CLEANUP $tmpfile"
+}
+
+commit()
+(
+    cd $WORKDIR
+
+    git checkout $BRANCH
+
+    fedpkg new-sources $SOURCES
+    git reset --hard HEAD  # Undo any silliness above
+
+    # Push the changes
+    git push origin $BRANCH
+    fedpkg build
+)
+
+while getopts "f:p:s:t:qvx" opt; do
+    case "$opt" in
+    f)
+        TARBALL="$OPTARG"
+        ;;
+    p)
+        PACKAGE="$OPTARG"
+        ;;
+    s)
+        SPEC="$OPTARG"
+        ;;
+    t)
+        TAG="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    x)
+        TRANSACTION=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+BRANCH="$1"
+
+# The tag for the release
+if [ -z "$TAG" ]; then
+    TAG=$(git describe --abbrev=0)
+    if [ -z "$TAG" ]; then
+        message "could not find a tag to release"
+        exit 2
+    fi
+fi
+
+if [ -z "$PACKAGE" ]; then
+    message "no package specified"
+    exit 2
+fi
+
+if [ -z "$SPEC" ]; then
+    message "no spec source file specified"
+    exit 2
+fi
+
+prepare
+
+if [ $TRANSACTION -eq 1 ]; then
+    kill -STOP $$
+fi
+
+commit
