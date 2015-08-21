@@ -1,4 +1,23 @@
 #!/bin/sh -euf
+#
+# release-tarball
+#
+# A script that creates tarball from an automake style git repository for
+# the latest tag. Run it from within a git checkout.
+#
+# $ git tag -as 0.55
+# $ release-tarball -f /path/to/linkname
+#
+# Will link the tarball to the path you specify, so it's easily retrieved
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tgz     RELEASE_TARBALL=tbz    Path to link tarball to
+# -t 0.X     RELEASE_TAG=0.X        The tag to create release from
+#                                   default: latest tag
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
 
 set -euf
 
@@ -6,18 +25,18 @@ TAG=${RELEASE_TAG:-}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
+TARBALL=${RELEASE_TARBALL:-}
 
 usage()
 {
-    echo "usage: release-tarball [-qvx] [-t TAG] TARBALL" >&2
+    echo "usage: release-tarball [-qvx] [-t TAG] -f TARBALL" >&2
     exit ${1-2}
 }
 
 trace()
 {
     if [ $QUIET -eq 0 ]; then
-        message "$@"
+        echo "> $@" >&2
     fi
 }
 
@@ -30,7 +49,7 @@ prepare()
 {
     local archive
 
-    trace "checking out $TAG"
+    trace "Checking out $TAG"
 
     git fetch origin
     git checkout --detach $TAG
@@ -38,12 +57,12 @@ prepare()
     mkdir -p build
     rm -rf build/*
 
-    trace "building the repo"
+    trace "Building the repo"
 
     cd build
     ../autogen.sh --prefix=/usr
 
-    trace "building the tarball"
+    trace "Building the tarball"
 
     make -j1 distcheck
 
@@ -51,7 +70,7 @@ prepare()
     printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' > GNUmakefile
     archive=$(make print-DIST_ARCHIVES)
 
-    trace "linking tarball"
+    trace "Linking tarball"
 
     cd ..
     ln -snf build/$archive "$TARBALL"
@@ -95,6 +114,11 @@ if [ -z "$TAG" ]; then
         message "could not find a tag to build"
         exit 2
     fi
+fi
+
+if [ -z "$TARBALL" ]; then
+    message "no tarball output specified"
+    exit 2
 fi
 
 prepare

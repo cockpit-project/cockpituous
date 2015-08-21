@@ -1,4 +1,25 @@
 #!/bin/sh -euf
+#
+# release-runner
+#
+# Runs a delivery script.
+#
+# The script is a shell script. Items in the script can be preceeded
+# with the word 'job'. If so, they will get $RELEASE_XXX envars exported
+# and asked to run transactionally.
+#
+# If a given script item can run transactionally, it will pause before
+# making published, permanent changes ... and wait for all the other
+# jobs to proceed. If all succeed, then they are all unpaused and
+# allowed to continue to completion, one at a time.
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -n                                Dry run, stop before publishing changes
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
+
 
 set -euf
 
@@ -28,6 +49,9 @@ message()
 job()
 {
     local ret
+
+    RELEASE_TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
+    RELEASE_TRANSACTION=1
 
     # Export all RELEASE_XXXX variables
     eval $(set | sed -n 's/^\(RELEASE_[^=]\+\)=.*/export \1/p')

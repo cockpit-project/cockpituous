@@ -1,4 +1,36 @@
 #!/bin/sh -euf
+#
+# release-koji
+#
+# A script that does a Koji dist-git commit and build based on a git
+# repository. The git repository must have a spec file ready for use.
+# The $changelog will be added to the spec file.
+#
+# $ git tag -as 0.55
+# $ make distcheck
+# $ release-koji -p package -s package.spec -f package-0.55.tbz f22
+#
+# The spec file will be updated and committed, along with the new source
+# tarball. An SRPM and scratch build will be done to test things, after
+# which the commit will be pushed to dist-git and the real build happens.
+#
+# If the tarball is a symlink it will be resolved to its actual file name.
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tgz     RELEASE_TARBALL=tbz    The tarball to upload
+#                                   default: no file attachment
+# -p package RELEASE_PACKAGE=name   The distgit name of the package
+# -t 0.X     RELEASE_TAG=0.X        The tag to create release from
+#                                   default: latest tag
+# -s spec    RELEASE_SPEC=spec      Path to spec file in source git repo.
+#                                   default: origin
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
+# Specify a distgit branch to build as a command line argument.
+#
 
 set -euf
 
@@ -8,7 +40,7 @@ PACKAGE=${RELEASE_PACKAGE:-}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-$PWD/.tarball}
+TARBALL=${RELEASE_TARBALL:-}
 SPEC=${RELEASE_SPEC:-$PACKAGE.spec}
 
 # Other globals
@@ -26,7 +58,7 @@ usage()
 trace()
 {
     if [ $QUIET -eq 0 ]; then
-        message "$@"
+        echo "> $@" >&2
     fi
 }
 
@@ -73,11 +105,18 @@ commit_lines()
     printf "Update to version %s\n\n%s" "$TAG" "$body"
 }
 
+readlink_or()
+{
+    if ! readlink "$1"; then
+        echo "$1"
+    fi
+}
+
 prepare()
 {
     local spec tmpfile srpm tarball
 
-    WORKDIR=".koji-$BRANCH"
+    WORKDIR="koji-$BRANCH"
 
     trace "Checking out koji package $PACKAGE"
 
@@ -109,7 +148,7 @@ prepare()
     CLEANUP="$CLEANUP $tmpfile"
     trace "Updating sources"
 
-    tarball=$(readlink $TARBALL)
+    tarball=$(readlink_or $TARBALL)
     SOURCES=$(basename $tarball)
     cp $tarball $WORKDIR/
     (cd $WORKDIR && md5sum $SOURCES) > $WORKDIR/sources
@@ -207,6 +246,11 @@ fi
 
 if [ -z "$SPEC" ]; then
     message "no spec source file specified"
+    exit 2
+fi
+
+if [ -z "$TARBALL" ]; then
+    message "no tarball input specified"
     exit 2
 fi
 

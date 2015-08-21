@@ -1,13 +1,42 @@
 #!/bin/sh -euf
+#
+# release-github
+#
+# A script that creates a GitHub release with a tarball from a git tag.
+# Run it from within a GitHub checkout.
+#
+# $ git tag -as 0.55
+# $ make distcheck
+# $ release-github -f package-0.55.tbz
+#
+# The tag will be pushed if it does not exist online. If specified, the
+# tarball will be attached to the release. If the tarball is a symlink
+# it will be resolved to its actual file name.
+#
+# The current account's SSH keys will be used for the tag push, and the
+# file ~/.config/github-token will be read as a GitHub API token.
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tgz     RELEASE_TARBALL=tbz    The tarball to upload
+#                                   default: no file attachment
+# -t 0.X     RELEASE_TAG=0.X        The tag to create release from
+#                                   default: latest tag
+# -o origin  RELEASE_ORIGIN=origin  Git remote origin to lookup as github repo
+#                                   default: origin
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -x         RELEASE_TRANSACTION=1  SIGSTOP before publishing the Github draft
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
 
 set -euf
 
 # Arguments
 VERBOSE="${RELEASE_VERBOSE:-0}"
 QUIET="${RELEASE_QUIET:-0}"
-TRANSACTION="${RELEASE_TRANSACTION:-1}"
+TRANSACTION="${RELEASE_TRANSACTION:-0}"
 ORIGIN="${RELEASE_ORIGIN:-origin}"
-TARBALL="${RELEASE_TARBALL:-$PWD/.tarball}"
+TARBALL="${RELEASE_TARBALL:-}"
 TAG="${RELEASE_TAG:-}"
 
 # Other globals
@@ -25,7 +54,7 @@ usage()
 trace()
 {
     if [ $QUIET -eq 0 ]; then
-        message "$@"
+        echo "> $@" >&2
     fi
 }
 
@@ -64,6 +93,13 @@ run_curl()
     fi
 }
 
+readlink_or()
+{
+    if ! readlink "$1"; then
+        echo "$1"
+    fi
+}
+
 prepare()
 {
     local tmpfile body upload uplog base progress
@@ -73,10 +109,11 @@ prepare()
     # The body of the email ready as a JSON string
     body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | json_escape)"
 
-    trace "creating release draft: $TAG"
+    trace "Creating release draft: $TAG"
 
     # Create the release via the Github API
-    printf '{"tag_name": "%s", "name": "%s", "draft": true, "body": "%s" }\n' "$TAG" "$TAG" "$body" |
+    printf '{"tag_name": "%s", "name": "%s", "draft": true, "body": "%s" }\n' \
+        "$TAG" "$TAG" "$body" |
         run_curl -s --data @- --output $tmpfile https://api.github.com$REPO/releases
 
     # Remove this file later
@@ -86,7 +123,7 @@ prepare()
     RELEASE=$(sed -n 's/.*"url"\s*:\s*"\([^"]*\).*/\1/p' $tmpfile | head -n 1)
 
     if [ -n "$TARBALL" ]; then
-        trace "uploading file: $TARBALL"
+        trace "Uploading file: $TARBALL"
 
         # Figure out the URL to upload to
         upload=$(sed -n 's/.*"upload_url"\s*:\s*"\([^{"]*\).*/\1/p' $tmpfile)
@@ -98,7 +135,7 @@ prepare()
             progress="--progress-bar"
         fi
 
-        ball="$(readlink $TARBALL)"
+        ball="$(readlink_or $TARBALL)"
         base="$(basename $ball)"
         run_curl --data-binary @$TARBALL --progress-bar --output $uplog \
              -H "Accept: application/vnd.github.manifold-preview" \
@@ -114,7 +151,10 @@ commit()
 {
     tmpfile=$(mktemp .github-publish.XXXXXX.json)
 
-    trace "publishing draft: $TAG"
+    trace "Pushing tag: $TAG"
+    git push "$ORIGIN" "$TAG"
+
+    trace "Publishing draft: $TAG"
 
     printf '{"draft": false}\n' |
         run_curl -s --data @- --output $tmpfile --request PATCH $RELEASE
