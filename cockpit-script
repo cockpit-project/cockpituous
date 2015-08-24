@@ -1,6 +1,7 @@
 
 RELEASE_PACKAGE=cockpit
 RELEASE_SPEC=tools/cockpit.spec
+RELEASE_COPR=sgallagh/cockpit-preview
 
 # Build the tarball for the tag
 job release-tarball
@@ -9,7 +10,10 @@ job release-tarball
 # job release-koji f22
 job release-koji -k f23
 job release-koji -k master
-job release-copr
 
 # Upload release to github, using tarball
 job release-github
+
+# Push to COPR builds
+job release-copr sgallagh/cockpit-preview
+

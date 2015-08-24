@@ -22,13 +22,14 @@ TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
+COPR=${RELEASE_COPR:-}
 
 # Other globals
 URL=""
 
 usage()
 {
-    echo "usage: release-copr [-qvx] [-m SRPM]" >&2
+    echo "usage: release-copr [-qvx] [-m SRPM] COPR" >&2
     exit ${1-2}
 }
 
@@ -59,15 +60,15 @@ prepare()
 
     # HACK: Until copr-cli supports SRPM
     srpm="$(readlink_or $SRPM)"
-    scp $srpm fedorapeople.org:public_html/
-
     base="$(basename "$srpm")"
-    URL="https://fedorapeople.org/~stefw/$base"
+
+    user=$(ssh fedorapeople.org /bin/sh -c "cat > public_html/$base && whoami")
+    URL="https://fedorapeople.org/~$user/$base"
 }
 
 commit()
 (
-    copr-cli build --nowait sgallagh/cockpit-preview "$URL"
+    copr-cli build --nowait $COPR "$URL"
 )
 
 while getopts "m:qvx" opt; do
@@ -97,9 +98,11 @@ done
 
 shift $(expr $OPTIND - 1)
 
-if [ $# -ne 0 ]; then
+if [ $# -ne 1 ]; then
     usage
 fi
+
+COPR="$1"
 
 if [ -z "$SRPM" ]; then
     message "no srpm specified"

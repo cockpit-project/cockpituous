@@ -27,6 +27,7 @@ set -euf
 set -m
 
 DRYRUN=0
+JOBS=""
 
 usage()
 {
@@ -121,6 +122,8 @@ if [ $DRYRUN -eq 1 ]; then
 fi
 
 # Run all the remaining background jobs
-while fg > /dev/null 2> /dev/null; do
+JOBS=$(jobs -l | sed 's/[^0-9]*\([0-9]\+\).*/\1/')
+for job in $JOBS; do
+    echo fg %$job
     trace "completed job"
 done
