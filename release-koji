@@ -177,6 +177,8 @@ prepare()
         ret=$?
         if [ $CONTINUE -eq 0 ]; then
             exit $ret
+        else
+            exit 0
         fi
     fi
 
