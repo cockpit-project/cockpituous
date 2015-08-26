@@ -1,13 +1,12 @@
 
 RELEASE_PACKAGE=cockpit
 RELEASE_SPEC=tools/cockpit.spec
-RELEASE_COPR=sgallagh/cockpit-preview
 
 # Build the tarball for the tag
 job release-tarball
 
 # Do fedora builds for the tag, using tarball
-# job release-koji f22
+job release-koji f22
 job release-koji -k f23
 job release-koji -k master
 
@@ -16,4 +15,3 @@ job release-github
 
 # Push to COPR builds
 job release-copr sgallagh/cockpit-preview
-
