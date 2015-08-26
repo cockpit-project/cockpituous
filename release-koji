@@ -178,6 +178,7 @@ prepare()
         if [ $CONTINUE -eq 0 ]; then
             exit $ret
         else
+            rm $CLEANUP
             exit 0
         fi
     fi
@@ -201,6 +202,8 @@ commit()
     # Push the changes
     git push origin $BRANCH
     fedpkg build
+
+    rm $CLEANUP
 )
 
 while getopts "f:kp:s:t:qvx" opt; do
