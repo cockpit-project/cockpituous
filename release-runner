@@ -38,7 +38,7 @@ usage()
 trace()
 {
     if [ ${RELEASE_QUIET:-0} -eq 0 ]; then
-        message "$@"
+        echo "> $@" >&2
     fi
 }
 
@@ -58,7 +58,7 @@ job()
     # Export all RELEASE_XXXX variables
     eval $(set | sed -n 's/^\(RELEASE_[^=]\+\)=.*/export \1/p')
 
-    trace "job: $@"
+    trace "Job: $@"
 
     # Run the task
     set +e
@@ -124,6 +124,6 @@ fi
 # Run all the remaining background jobs
 JOBS=$(jobs -l | sed 's/[^0-9]*\([0-9]\+\).*/\1/')
 for job in $JOBS; do
-    echo fg %$job
-    trace "completed job"
+    fg %$job
+    trace "Completed job"
 done
