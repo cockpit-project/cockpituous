@@ -58,7 +58,7 @@ job()
     # Export all RELEASE_XXXX variables
     eval $(set | sed -n 's/^\(RELEASE_[^=]\+\)=.*/export \1/p')
 
-    trace "Job: $@"
+    trace "Starting: $@"
 
     # Run the task
     set +e
@@ -67,11 +67,13 @@ job()
     set -e
 
     if [ $ret -eq 0 ]; then
+        trace "Done: $@"
         return 0 # completed successfully
 
     elif [ $ret -gt 128 -a $ret -lt 193 ]; then
         sig=$(kill -l $ret)
         if [ "$sig" = "STOP" ]; then
+            trace "Ready: $@"
             return 0 # job not yet finished
         else
             message "terminated with $sig: $@"
