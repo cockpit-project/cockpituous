@@ -192,6 +192,7 @@ prepare()
 
 commit()
 (
+    rm $CLEANUP
     cd $WORKDIR
 
     git checkout $BRANCH
@@ -202,8 +203,6 @@ commit()
     # Push the changes
     git push origin $BRANCH
     fedpkg build
-
-    rm $CLEANUP
 )
 
 while getopts "f:kp:s:t:qvx" opt; do

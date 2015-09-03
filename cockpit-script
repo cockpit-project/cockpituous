@@ -6,8 +6,8 @@ RELEASE_SPEC=tools/cockpit.spec
 job release-tarball
 
 # Do fedora builds for the tag, using tarball
-job release-koji f22
-job release-koji -k f23
+# job release-koji f22
+job release-koji f23
 job release-koji -k master
 
 # Upload release to github, using tarball
