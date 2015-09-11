@@ -11,12 +11,6 @@ if [ -n "${RELEASE_HOME:-}" ]; then
     set -e
 fi
 
-# Check that have the needed credentials
-release-koji -p cockpit -z f22
-release-github -z
-release-copr -z sgallagh/cockpit-preview
-release-dockerhub -z cockpit-project/cockpit-container
-
 # Build the tarball for the tag
 job release-tarball
 
