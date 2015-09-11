@@ -1,0 +1,12 @@
+#!/bin/sh -ex
+
+cd $(dirname $0)
+chown bip data
+
+if [ ! -e data/bip.pem ]; then
+	openssl req -new -newkey rsa:4096 -subj /CN=localhost -nodes -x509 -keyout data/bip.pem -out data/bip.pem
+	chown bip data/bip.pem
+	chmod 600 data/bip.pem
+fi
+
+runuser -u bip -- /usr/bin/bip -n -f bip.conf -s data
