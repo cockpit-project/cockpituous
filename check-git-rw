@@ -1,0 +1,32 @@
+#!/bin/sh -euf
+#
+# check-git-rw
+#
+# A script that checks the use has read/write permissions on
+# a remote ssh git repo
+
+set -euf
+usage()
+{
+    echo "usage: check-git-rw REPO HOST" >&2
+    exit 1
+}
+
+if [ "$#" -ne 2 ]; then
+    usage
+fi
+
+HOST=$1
+REPO=$2
+
+tmpfile=$(mktemp .git-rw-check.XXXXXX)
+sh -c 'while true; do line=$(tail -n 1 '"$tmpfile"'); if [ "0000" == "$line" ]; then echo 0000; break; elif [ "check-git-rw-failed" == "$line" ]; then exit 1; fi; sleep 1; done' | (ssh -x "$HOST" "git-receive-pack '$REPO'"  > "$tmpfile" || echo "check-git-rw-failed" > "$tmpfile")
+
+ret=1;
+if [ $(tail -n 1 "$tmpfile") == "0000" ]; then
+    ret=0;
+fi
+
+rm "$tmpfile"
+
+exit $ret;

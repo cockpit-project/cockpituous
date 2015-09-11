@@ -13,12 +13,14 @@
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
+# -z         RELEASE_CREDCHECK=1    Check credentials only
 #
 
 set -euf
 
 # Various arguments
 TRANSACTION=${RELEASE_TRANSACTION:-0}
+CREDCHECK=${RELEASE_CREDCHECK:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
@@ -29,7 +31,7 @@ URL=""
 
 usage()
 {
-    echo "usage: release-copr [-qvx] [-m SRPM] COPR" >&2
+    echo "usage: release-copr [-qvxz] [-m SRPM] COPR" >&2
     exit ${1-2}
 }
 
@@ -52,6 +54,12 @@ readlink_or()
     fi
 }
 
+cred_check ()
+{
+    copr-cli list
+    ssh fedorapeople.org -- mkdir -p public_html
+}
+
 prepare()
 {
     local spec tmpfile tarball ret
@@ -63,6 +71,7 @@ prepare()
     base="$(basename "$srpm")"
 
     user=$(ssh fedorapeople.org whoami)
+    ssh fedorapeople.org -- mkdir -p public_html
     scp $srpm fedorapeople.org:public_html/
     URL="https://fedorapeople.org/~$user/$base"
 }
@@ -72,7 +81,7 @@ commit()
     copr-cli build --nowait $COPR "$URL"
 )
 
-while getopts "m:qvx" opt; do
+while getopts "m:qvxz" opt; do
     case "$opt" in
     m)
         SRPM="$OPTARG"
@@ -87,6 +96,9 @@ while getopts "m:qvx" opt; do
         ;;
     x)
         TRANSACTION=1
+        ;;
+    z)
+        CREDCHECK=1
         ;;
     -)
         break
@@ -104,6 +116,11 @@ if [ $# -ne 1 ]; then
 fi
 
 COPR="$1"
+
+if [ $CREDCHECK -eq 1 ]; then
+    cred_check
+    exit 0
+fi
 
 if [ -z "$SRPM" ]; then
     message "no srpm specified"
