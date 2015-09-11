@@ -17,10 +17,12 @@
 #                                   default: latest tag
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -v         RELEASE_VERBOSE=1      Make output more verbose
+# -z         RELEASE_CHECK=1        Check access and configuration
 #
 
 set -euf
 
+CHECK=${RELEASE_CHECK:-0}
 TAG=${RELEASE_TAG:-}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
@@ -29,7 +31,7 @@ TARBALL=${RELEASE_TARBALL:-}
 
 usage()
 {
-    echo "usage: release-tarball [-qvx] [-t TAG] -f TARBALL" >&2
+    echo "usage: release-tarball [-qvxz] [-t TAG] -f TARBALL" >&2
     exit ${1-2}
 }
 
@@ -38,6 +40,11 @@ trace()
     if [ $QUIET -eq 0 ]; then
         echo "> $@" >&2
     fi
+}
+
+check()
+{
+    git status > /dev/null
 }
 
 message()
@@ -76,7 +83,7 @@ prepare()
     ln -snf build/$archive "$TARBALL"
 }
 
-while getopts "f:qvx" opt; do
+while getopts "f:qvxz" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
@@ -91,6 +98,9 @@ while getopts "f:qvx" opt; do
         ;;
     x)
         TRANSACTION=1
+        ;;
+    z)
+        CHECK=1
         ;;
     -)
         break
@@ -109,7 +119,7 @@ fi
 
 # The tag for the release
 if [ -z "$TAG" ]; then
-    TAG=$(git describe --abbrev=0)
+    TAG=$(git describe --abbrev=0 || true)
     if [ -z "$TAG" ]; then
         message "could not find a tag to build"
         exit 2
@@ -121,4 +131,8 @@ if [ -z "$TARBALL" ]; then
     exit 2
 fi
 
-prepare
+if [ $CHECK -eq 1 ]; then
+    check
+else
+    prepare
+fi

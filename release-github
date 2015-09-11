@@ -27,7 +27,7 @@
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before publishing the Github draft
 # -v         RELEASE_VERBOSE=1      Make output more verbose
-# -z         RELEASE_CREDCHECK=1    Check credentials only
+# -z         RELEASE_CHECK=1        Check configuration and credentials
 #
 
 set -euf
@@ -39,7 +39,7 @@ TRANSACTION="${RELEASE_TRANSACTION:-0}"
 ORIGIN="${RELEASE_ORIGIN:-origin}"
 TARBALL="${RELEASE_TARBALL:-}"
 TAG="${RELEASE_TAG:-}"
-CREDCHECK=${RELEASE_CREDCHECK:-0}
+CHECK=${RELEASE_CHECK:-0}
 
 # Other globals
 TOKEN="${GITHUB_TOKEN:-}"
@@ -103,7 +103,7 @@ readlink_or()
     fi
 }
 
-cred_check ()
+check()
 {
     "$(dirname $0)/check-git-rw" git@github.com "$REPO_PATH"
     run_curl --output /dev/null -s https://api.github.com$REPO/collaborators
@@ -195,7 +195,7 @@ while getopts "f:o:t:qvxz" opt; do
         TRANSACTION=1
         ;;
     z)
-        CREDCHECK=1
+        CHECK=1
         ;;
     -)
         break
@@ -228,8 +228,8 @@ if [ -z "$TOKEN" ]; then
     TOKEN=$(cat ~/.config/github-token)
 fi
 
-if [ $CREDCHECK -eq 1 ]; then
-    cred_check
+if [ $CHECK -eq 1 ]; then
+    check
     exit 0
 fi
 

@@ -13,6 +13,7 @@
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
 # -f tgz     RELEASE_TARBALL=tbz    The tarball to extract documentation from
+# -z         RELEASE_CHECK=1        Check access and configuration
 #
 # Specify a source directory (in the tarball) and the destination directory
 # for the uploaded documentation.
@@ -21,6 +22,7 @@
 set -euf
 
 # Various arguments
+CHECK=${RELEASE_CHECK:-0}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
@@ -61,9 +63,20 @@ parse_version()
     echo "$@" | sed -n 's/.\+-\([0-9].*\)/\1/p'
 }
 
+check()
+{
+    rsync -l $DEST > /dev/null 2> /dev/null
+    exit 0
+}
+
 prepare()
 (
     local subdir version
+
+    if [ ! -f "$TARBALL" ]; then
+        message "tarball source not found: $TARBALL"
+        exit 1
+    fi
 
     trace "Extracting the tarball $TARBALL"
 
@@ -99,7 +112,7 @@ commit()
     rsync -l latest $DEST/./
 )
 
-while getopts "f:qvx" opt; do
+while getopts "f:qvxz" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
@@ -114,6 +127,9 @@ while getopts "f:qvx" opt; do
         ;;
     x)
         TRANSACTION=1
+        ;;
+    z)
+        CHECK=1
         ;;
     -)
         break
@@ -136,12 +152,13 @@ DEST="$2"
 if [ -z "$TARBALL" ]; then
     message "no tarball input specified"
     exit 2
-elif [ ! -f "$TARBALL" ]; then
-    message "tarball source not found: $TARBALL"
-    exit 1
 fi
 
-prepare
+if [ $CHECK -eq 1 ]; then
+    check
+else
+    prepare
+fi
 
 if [ $TRANSACTION -eq 1 ]; then
     kill -STOP $$

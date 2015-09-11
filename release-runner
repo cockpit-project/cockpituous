@@ -18,6 +18,7 @@
 # -n                                Dry run, stop before publishing changes
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -v         RELEASE_VERBOSE=1      Make output more verbose
+# -z         RELEASE_CHECK=1        Check access and configuration
 #
 
 
