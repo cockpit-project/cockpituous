@@ -30,6 +30,7 @@
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
+# -z         RELEASE_CREDCHECK=1    Check credentials only
 #
 # Specify a distgit branch to build as a command line argument.
 #
@@ -46,6 +47,7 @@ TARBALL=${RELEASE_TARBALL:-}
 CONTINUE=${RELEASE_CONTINUE:-0}
 SPEC=${RELEASE_SPEC:-$PACKAGE.spec}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
+CREDCHECK=${RELEASE_CREDCHECK:-0}
 
 # Other globals
 CLEANUP=""
@@ -55,7 +57,7 @@ BRANCH=""
 
 usage()
 {
-    echo "usage: release-koji [-kqvx] [-t TAG] [-s SPEC] [-f TARBALL] [-p PACKAGE] BRANCH" >&2
+    echo "usage: release-koji [-kqvxz] [-t TAG] [-s SPEC] [-f TARBALL] [-p PACKAGE] BRANCH" >&2
     exit ${1-2}
 }
 
@@ -114,6 +116,12 @@ readlink_or()
     if ! readlink "$1"; then
         echo "$1"
     fi
+}
+
+cred_check ()
+{
+   "$(dirname $0)/check-git-rw" pkgs.fedoraproject.org "$PACKAGE.git"
+    fedora-cert -v -u prevent-prompt
 }
 
 prepare()
@@ -203,10 +211,11 @@ commit()
     git push origin $BRANCH
     fedpkg build
 
+    cd ..
     rm $CLEANUP
 )
 
-while getopts "f:kp:s:t:qvx" opt; do
+while getopts "f:kp:s:t:qvxz" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
@@ -234,6 +243,9 @@ while getopts "f:kp:s:t:qvx" opt; do
     x)
         TRANSACTION=1
         ;;
+    z)
+        CREDCHECK=1
+        ;;
     -)
         break
         ;;
@@ -247,6 +259,11 @@ shift $(expr $OPTIND - 1)
 
 if [ $# -ne 1 ]; then
     usage
+fi
+
+if [ $CREDCHECK -eq 1 ]; then
+    cred_check
+    exit 0
 fi
 
 BRANCH="$1"

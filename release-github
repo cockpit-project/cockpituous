@@ -27,6 +27,7 @@
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before publishing the Github draft
 # -v         RELEASE_VERBOSE=1      Make output more verbose
+# -z         RELEASE_CREDCHECK=1    Check credentials only
 #
 
 set -euf
@@ -38,16 +39,18 @@ TRANSACTION="${RELEASE_TRANSACTION:-0}"
 ORIGIN="${RELEASE_ORIGIN:-origin}"
 TARBALL="${RELEASE_TARBALL:-}"
 TAG="${RELEASE_TAG:-}"
+CREDCHECK=${RELEASE_CREDCHECK:-0}
 
 # Other globals
 TOKEN="${GITHUB_TOKEN:-}"
 REPO=
+REPO_PATH=
 RELEASE=
 CLEANUP=
 
 usage()
 {
-    echo "usage: release-github [-qvx] [-t TAG] [-o ORIGIN] [-f TARBALL]" >&2
+    echo "usage: release-github [-qvxz] [-t TAG] [-o ORIGIN] [-f TARBALL]" >&2
     exit ${1-2}
 }
 
@@ -98,6 +101,12 @@ readlink_or()
     if ! readlink "$1"; then
         echo "$1"
     fi
+}
+
+cred_check ()
+{
+    "$(dirname $0)/check-git-rw" git@github.com "$REPO_PATH"
+    run_curl --output /dev/null -s https://api.github.com$REPO/collaborators
 }
 
 prepare()
@@ -163,7 +172,7 @@ commit()
     rm $CLEANUP $tmpfile
 }
 
-while getopts "f:o:t:qvx" opt; do
+while getopts "f:o:t:qvxz" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
@@ -185,6 +194,9 @@ while getopts "f:o:t:qvx" opt; do
     x)
         TRANSACTION=1
         ;;
+    z)
+        CREDCHECK=1
+        ;;
     -)
         break
         ;;
@@ -203,10 +215,22 @@ fi
 # A github.com repos path like /repos/:ownser/:repo
 REPO=$(LC_ALL=C git remote show -n $ORIGIN |
     sed -n 's/.*Push.*github.com[:\/]\(.*\+\)\/\([^\.]\+\).*/\/repos\/\1\/\2/p')
+REPO_PATH=$(LC_ALL=C git remote show -n $ORIGIN |
+    sed -n 's/.*Push.*github.com[:\/]\(.*\+\)\/\([^\.]\+\).*/\1\/\2/p')
 
 if [ -z "$REPO" ]; then
     message "could not find github remote: $ORIGIN"
     exit 1
+fi
+
+# The token for github access
+if [ -z "$TOKEN" ]; then
+    TOKEN=$(cat ~/.config/github-token)
+fi
+
+if [ $CREDCHECK -eq 1 ]; then
+    cred_check
+    exit 0
 fi
 
 # The tag for the release
@@ -216,11 +240,6 @@ if [ -z "$TAG" ]; then
         message "could not find a tag to release"
         exit 1
     fi
-fi
-
-# And finally the token for access
-if [ -z "$TOKEN" ]; then
-    TOKEN=$(cat ~/.config/github-token)
 fi
 
 if [ -n "$TARBALL" -a ! -f "$TARBALL" ]; then
