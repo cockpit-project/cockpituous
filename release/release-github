@@ -160,9 +160,6 @@ commit()
 {
     tmpfile=$(mktemp .github-publish.XXXXXX.json)
 
-    trace "Pushing tag: $TAG"
-    git push "$ORIGIN" "$TAG"
-
     trace "Publishing draft: $TAG"
 
     printf '{"draft": false}\n' |
