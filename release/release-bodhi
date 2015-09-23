@@ -21,11 +21,13 @@ VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
 
 # Other globals
+FEDORA=""
 CLEANUP=""
+USER=""
 
 usage()
 {
-    echo "usage: release-bodhi [-qvx] [-s SRPM]" >&2
+    echo "usage: release-bodhi [-qvx] [-s SRPM] FEDORA" >&2
     exit ${1-2}
 }
 
@@ -50,29 +52,27 @@ readlink_or()
 
 prepare()
 {
+    srpm=$(readlink_or "$SRPM")
+    BUILD=$(echo "$srpm" | sed -n 's!^\(.*/\)\?\(.\+\)\(\.src\.rpm\|\.srpm\)$!\2!p')
+    if [ -z "$BUILD" ]; then
+        message "$SRPM: is not a valid koji source rpm name"
+        exit 1
+    fi
 }
 
 commit()
 (
+    bodhi --new --type=enhancement --close-bugs \
+        --stablekarma=3 --unstablekarma=-1 --request=stable --release="$FEDORA" \
+        --username=stefw $BUILD
+
     bodhi --new --type=enhancement --notes="$notes" --close-bugs --stablekarma=3 --unstablekarma=1 --request=stable
 )
 
 while getopts "f:kp:s:t:qvx" opt; do
     case "$opt" in
-    f)
-        TARBALL="$OPTARG"
-        ;;
-    k)
-        CONTINUE=1
-        ;;
-    p)
-        PACKAGE="$OPTARG"
-        ;;
-    s)
-        SPEC="$OPTARG"
-        ;;
-    t)
-        TAG="$OPTARG"
+    m)
+        SRPM="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -100,39 +100,15 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
-BRANCH="$1"
+FEDORA="$1"
 
-# The tag for the release
-if [ -z "$TAG" ]; then
-    TAG=$(git describe --abbrev=0)
-    if [ -z "$TAG" ]; then
-        message "could not find a tag to release"
-        exit 2
-    fi
-fi
-
-if [ -z "$PACKAGE" ]; then
+if [ -z "$SRPM" ]; then
     message "no package specified"
     exit 2
 fi
 
-if [ -z "$SPEC" ]; then
-    message "no spec source file specified"
-    exit 2
-elif [ ! -f "$SPEC" ]; then
-    message "spec source file not found: $SPEC"
-    exit 1
-fi
-
-if [ -z "$TARBALL" ]; then
-    message "no tarball input specified"
-    exit 2
-elif [ ! -f "$TARBALL" ]; then
-    message "tarball source not found: $TARBALL"
-    exit 1
-fi
-
 prepare
+exit
 
 if [ $TRANSACTION -eq 1 ]; then
     kill -STOP $$
