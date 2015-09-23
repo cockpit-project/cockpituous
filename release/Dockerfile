@@ -1,7 +1,7 @@
 FROM fedora:22
 MAINTAINER "Stef Walter" <stefw@redhat.com>
 
-RUN groupadd -r build && useradd -r -g build -u 1000 build
+RUN groupadd -r build && useradd -r -g build -u 1111 build
 RUN dnf -y update
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
