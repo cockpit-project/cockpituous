@@ -12,7 +12,7 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -m srpm    RELEASE_SRPM=srpm      Path to SRPM
+# -p srpm    RELEASE_SRPM=srpm      Path to SRPM
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
@@ -35,7 +35,7 @@ CLEANUP=""
 
 usage()
 {
-    echo "usage: release-dockerhub [-qvxz] [-s SRPM] REPO" >&2
+    echo "usage: release-dockerhub [-qvxz] [-p SRPM] REPO" >&2
     exit ${1-2}
 }
 
@@ -101,9 +101,9 @@ commit()
     rm $CLEANUP
 )
 
-while getopts "m:qvxz" opt; do
+while getopts "p:qvxz" opt; do
     case "$opt" in
-    m)
+    p)
         SRPM="$OPTARG"
         ;;
     q)

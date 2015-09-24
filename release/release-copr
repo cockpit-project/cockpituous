@@ -9,7 +9,7 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -m srpm    RELEASE_SRPM=srpm      Path to SRPM
+# -p srpm    RELEASE_SRPM=srpm      Path to SRPM
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
@@ -31,7 +31,7 @@ URL=""
 
 usage()
 {
-    echo "usage: release-copr [-qvxz] [-m SRPM] COPR" >&2
+    echo "usage: release-copr [-qvxz] [-p SRPM] COPR" >&2
     exit ${1-2}
 }
 
@@ -81,9 +81,9 @@ commit()
     copr-cli build --nowait $COPR "$URL"
 )
 
-while getopts "m:qvxz" opt; do
+while getopts "p:qvxz" opt; do
     case "$opt" in
-    m)
+    p)
         SRPM="$OPTARG"
         ;;
     q)
