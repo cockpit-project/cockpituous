@@ -21,5 +21,8 @@ job release-copr sgallagh/cockpit-preview
 # Update the Github repo that Docker Hub is tracking
 job release-dockerhub cockpit-project/cockpit-container
 
+# Push out a Bodhi update
+job release-bodhi F23
+
 # Upload documentation
-job release-docs doc/guide/html files.cockpit-project.org:/srv/guide
+# job release-docs doc/guide/html files.cockpit-project.org:/srv/guide

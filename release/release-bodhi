@@ -6,7 +6,7 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -m srpm    RELEASE_SRPM=srpm      Path to SRPM
+# -p srpm    RELEASE_SRPM=srpm      Path to SRPM
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
@@ -19,15 +19,19 @@ TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
+CHECK=${RELEASE_CHECK:-0}
 
 # Other globals
+USER=""
+PASSWORD=""
 FEDORA=""
 CLEANUP=""
 USER=""
+NVR=""
 
 usage()
 {
-    echo "usage: release-bodhi [-qvx] [-s SRPM] FEDORA" >&2
+    echo "usage: release-bodhi [-qvxz] [-p SRPM] FEDORA" >&2
     exit ${1-2}
 }
 
@@ -50,28 +54,45 @@ readlink_or()
     fi
 }
 
+check()
+{
+    USER="$(cat ~/.config/bodhi-user)"
+    if [ -z "$USER" ]; then
+        message "no valid ~/.config/bodhi-user found"
+        exit 2
+    fi
+
+    PASSWORD="$(cat ~/.config/bodhi-password)"
+    if [ -z "$PASSWORD" ]; then
+        message "no valid ~/.config/bodhi-password found"
+        exit 2
+    fi
+}
+
 prepare()
 {
-    srpm=$(readlink_or "$SRPM")
-    BUILD=$(echo "$srpm" | sed -n 's!^\(.*/\)\?\(.\+\)\(\.src\.rpm\|\.srpm\)$!\2!p')
-    if [ -z "$BUILD" ]; then
-        message "$SRPM: is not a valid koji source rpm name"
+    NVR="$(rpm --qf '%{Name}-%{Version}-%{Release}\n' -qp $SRPM)"
+    if [ -z "$NVR" ]; then
+        message "$SRPM: is not a valid source rpm"
+        exit 1
+    fi
+    NOTES="$(rpm --changelog -qp $SRPM | sed -n '2,/^$/p')"
+    if [ -z "NOTES" ]; then
+        message "$SRPM: doesn't have a valid changelog"
         exit 1
     fi
 }
 
 commit()
 (
-    bodhi --new --type=enhancement --close-bugs \
+echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
         --stablekarma=3 --unstablekarma=-1 --request=stable --release="$FEDORA" \
-        --username=stefw $BUILD
-
-    bodhi --new --type=enhancement --notes="$notes" --close-bugs --stablekarma=3 --unstablekarma=1 --request=stable
+        --username=$USER "$NVR"
 )
 
-while getopts "f:kp:s:t:qvx" opt; do
+while getopts "p:qvxz" opt; do
     case "$opt" in
-    m)
+    p)
         SRPM="$OPTARG"
         ;;
     q)
@@ -85,6 +106,9 @@ while getopts "f:kp:s:t:qvx" opt; do
     x)
         TRANSACTION=1
         ;;
+    z)
+        CHECK=1
+        ;;
     -)
         break
         ;;
@@ -95,6 +119,12 @@ while getopts "f:kp:s:t:qvx" opt; do
 done
 
 shift $(expr $OPTIND - 1)
+
+check
+
+if [ $CHECK -eq 1 ]; then
+    exit 0
+fi
 
 if [ $# -ne 1 ]; then
     usage
@@ -108,7 +138,6 @@ if [ -z "$SRPM" ]; then
 fi
 
 prepare
-exit
 
 if [ $TRANSACTION -eq 1 ]; then
     kill -STOP $$
