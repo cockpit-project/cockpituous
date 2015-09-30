@@ -77,7 +77,7 @@ dash_bullets()
 {
         sed -e 's/^* /- /' \
             -e 's/^ * /- /' \
-            -e 's/^[^ *-]/- \0/'
+            -e 's/^[^ *-]/- /'
 }
 
 trim_contents()
@@ -152,7 +152,7 @@ prepare()
     changelog_lines >> $tmpfile
     sed '1,/%changelog/d' "$spec" >> $tmpfile
 
-    sed -e "1s/^/%define tag $TAG\n%define rel 1\n/" \
+    sed -e "1s/^/%define tag $TAG\n%define rev 1\n/" \
         -e "/%changelog/r $tmpfile" \
         -e "/%changelog/,\$d" \
         $SPEC > "$spec"

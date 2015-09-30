@@ -47,13 +47,6 @@ message()
     echo "release-bodhi: $@" >&2
 }
 
-readlink_or()
-{
-    if ! readlink "$1"; then
-        echo "$1"
-    fi
-}
-
 check()
 {
     USER="$(cat ~/.config/bodhi-user)"
