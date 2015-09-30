@@ -1,0 +1,152 @@
+#!/bin/sh -euf
+#
+# release-splice
+#
+# A script that splices a branch into a tarball and produces a patch
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tgz     RELEASE_TARBALL=tbz    Path to tarball
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
+
+set -euf
+
+# Various arguments
+TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+CHECK=${RELEASE_CHECK:-0}
+
+REF=""
+WORKDIR=""
+
+usage()
+{
+    echo "usage: release-splice [-qv] [-f TARBALL] REF" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        echo "> $@" >&2
+    fi
+}
+
+message()
+{
+    echo "release-splice: $@" >&2
+}
+
+gitignore()
+{
+cat << EOF
+/.tarball
+Makefile
+Makefile.in
+*.m4
+configure
+/doc/guide/html/
+/po/
+EOF
+}
+
+readlink_or()
+{
+    if ! readlink "$1"; then
+        echo "$1"
+    fi
+}
+
+perform()
+{
+    local archive tarball target
+
+    WORKDIR="splice-$REF"
+    tarball="$(readlink_or $TARBALL)"
+    tarball="$(basename $tarball)"
+    target="$(git describe $REF)"
+
+    rm -rf $WORKDIR
+    mkdir -p $WORKDIR
+
+    trace "Building $REF"
+
+    git checkout $REF
+    ( cd $WORKDIR && ../autogen.sh --prefix=/usr )
+
+    trace "Making a tarball for $REF"
+
+    (cd $WORKDIR && make -j1 dist)
+    printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' > $WORKDIR/GNUmakefile
+    archive=$(cd $WORKDIR && make print-DIST_ARCHIVES)
+
+    trace "Extracting the tarballs"
+
+    set -x
+
+    mkdir $WORKDIR/compare
+    git -C $WORKDIR/compare init
+    gitignore > $WORKDIR/compare/.gitignore
+    tar -xvf $TARBALL --strip 1 -C $WORKDIR/compare
+    find $WORKDIR/compare/pkg -name '*.gz' | xargs -n1 gunzip -f
+    git -C $WORKDIR/compare add .
+    git -C $WORKDIR/compare commit --message "A"
+    tar -xvf $WORKDIR/$archive --strip 1 -C $WORKDIR/compare
+    find $WORKDIR/compare/pkg -name '*.gz' | xargs -n1 gunzip -f
+    git -C $WORKDIR/compare add .
+    git -C $WORKDIR/compare commit --message "$tarball to $target"
+
+    trace "Comparing"
+
+    git -C $WORKDIR/compare format-patch --stdout -1 > cockpit-$target.patch
+}
+
+while getopts "f:qvz" opt; do
+    case "$opt" in
+    f)
+        TARBALL="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    z)
+        CHECK=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+REF="$1"
+
+if [ $CHECK -eq 1 ]; then
+    exit 0
+fi
+
+if [ -z "$TARBALL" ]; then
+    message "no tarball specified"
+    exit 2
+elif [ ! -f "$TARBALL" ]; then
+    message "tarball not found: $TARBALL"
+    exit 1
+fi
+
+perform
