@@ -166,7 +166,7 @@ fi
 if [ -z "$RELEASE_TAG" ]; then
     if [ -d .git ]; then
         git fetch origin
-        RELEASE_TAG=$(git describe --abbrev=0 || true)
+        RELEASE_TAG=$(git describe --abbrev=0 origin/master || true)
     fi
 fi
 
