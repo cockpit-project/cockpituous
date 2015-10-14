@@ -1,8 +1,5 @@
-FROM fedora:22
+FROM cockpit/infra-base
 MAINTAINER "Stef Walter" <stefw@redhat.com>
-
-RUN groupadd -r build && useradd -r -g build -u 1111 build
-RUN dnf -y update
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 
@@ -10,14 +7,16 @@ RUN dnf -y install git yum-utils npm tar bzip2 fedpkg copr-cli python python-irc
 RUN yum-builddep -y /tmp/cockpit.spec
 RUN npm -g install phantomjs
 
-RUN mkdir -p /opt/scripts /usr/local/bin /home/build /opt/build/rpmbuild
-COPY * /opt/scripts/
-RUN ln -sf /opt/scripts/release-* /usr/local/bin && ln -sf /opt/scripts/check-git-rw /usr/local/bin
+RUN mkdir -p /scripts /usr/local/bin /home/user /build/rpmbuild
+COPY * /scripts/
+RUN ln -sf /scripts/release-* /usr/local/bin && ln -sf /scripts/check-git-rw /usr/local/bin
 
-RUN chown -R build /opt /home/build
-RUN runuser -u build -- /bin/sh -c "git -C /opt/build clone https://github.com/cockpit-project/cockpit && cd /opt/build/cockpit/tools && npm install"
+RUN chown -R user /build /home/user
+RUN runuser -u user -- /bin/sh -c "git -C /build clone https://github.com/cockpit-project/cockpit && cd /build/cockpit/tools && npm install"
 
-VOLUME /home/build
-USER build
+VOLUME /home/user
+USER user
+
+LABEL RUN /usr/bin/docker run --daemon --restart=on-failure --volume /home/cockpit:/home/user IMAGE /scripts/release-daemon
 
 CMD ["/bin/bash"]

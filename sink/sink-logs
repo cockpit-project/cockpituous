@@ -1,0 +1,8 @@
+#!/bin/sh -euf
+
+cd /opt/sink
+
+DIR=$(mktemp -d $1.XXXX)
+echo $DIR
+
+

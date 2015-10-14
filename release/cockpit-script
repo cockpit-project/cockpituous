@@ -28,4 +28,4 @@ job release-dockerhub cockpit-project/cockpit-container
 job release-bodhi F23
 
 # Upload documentation
-# job release-docs doc/guide/html files.cockpit-project.org:/srv/guide
+# job release-docs doc/guide/html guide.cockpit-project.org:/opt/guide
