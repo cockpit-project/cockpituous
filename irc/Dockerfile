@@ -6,7 +6,7 @@ RUN dnf -y install bip openssl util-linux
 VOLUME /home/user/data
 
 ADD bip.conf bip-start /home/user/
-RUN mkdir -p /home/user/data && chmod 755 /home/user/bip-start
+RUN mkdir -p /home/user/data && chown -R user /home/user && chmod 755 /home/user/bip-start
 
 EXPOSE 6667
 CMD ["/home/user/bip-start"]

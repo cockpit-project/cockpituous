@@ -8,6 +8,7 @@ RUN mv /usr/local/bin/authorized_keys /home/user/.ssh/
 RUN chown user -R /files /home/user/.ssh && chmod -R go-rwx /home/user/.ssh
 
 VOLUME /files
+VOLUME /etc/ssh
 EXPOSE 22
 CMD ["/usr/local/bin/sshd", "-D"]
 

@@ -7,7 +7,7 @@
 #
 # Joel Rosdahl <joel@rosdahl.net>
 
-server = "localhost"
+server = "irc"
 port = 6667
 target = "#cockpit"
 nickname = "cockpituous"
@@ -15,7 +15,9 @@ password = "cockpituous:foobar:freenode"
 ssl=True
 
 import irclib
+import os
 import sys
+import urlparse
 
 def on_connect(connection, event):
     if irclib.is_channel(target):

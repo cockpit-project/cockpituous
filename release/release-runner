@@ -173,5 +173,5 @@ fi
 if [ -z "$SINK" ]; then
     runner "$@"
 else
-    runner "$@" 2>&1 | ssh "$SINK" -- "sink --message=\'Release $RELEASE_TAG\' release-$RELEASE_TAG"
+    runner "$@" 2>&1 | ssh "$SINK" -- sink release-$RELEASE_TAG
 fi
