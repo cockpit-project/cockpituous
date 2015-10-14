@@ -7,16 +7,20 @@ RUN dnf -y install git yum-utils npm tar bzip2 fedpkg copr-cli python python-irc
 RUN yum-builddep -y /tmp/cockpit.spec
 RUN npm -g install phantomjs
 
-RUN mkdir -p /scripts /usr/local/bin /home/user /build/rpmbuild
-COPY * /scripts/
-RUN ln -sf /scripts/release-* /usr/local/bin && ln -sf /scripts/check-git-rw /usr/local/bin
+RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
+ADD * /usr/local/bin/
 
 RUN chown -R user /build /home/user
 RUN runuser -u user -- /bin/sh -c "git -C /build clone https://github.com/cockpit-project/cockpit && cd /build/cockpit/tools && npm install"
 
+RUN printf "\nHost sink.cockpit-project.org\n\tUser user\n\tPort 2002\n\tHostName files.cockpit-project.org\n" >> /etc/ssh/ssh_config
+RUN printf "\nHost files.cockpit-project.org\n\tUser user\n\tPort 2001\n" >> /etc/ssh/ssh_config
+
+
+ENV RELEASE_BASE /build/cockpit
+ENV RELEASE_SINK sink.cockpit-project.org
 VOLUME /home/user
 USER user
-
-LABEL RUN /usr/bin/docker run --daemon --restart=on-failure --volume /home/cockpit:/home/user IMAGE /scripts/release-daemon
-
 CMD ["/bin/bash"]
+
+LABEL RUN /usr/bin/docker run -ti --restart=on-failure --volume=/home/cockpit:/home/user:rw IMAGE /bin/bash

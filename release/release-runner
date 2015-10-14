@@ -19,6 +19,8 @@
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -v         RELEASE_VERBOSE=1      Make output more verbose
 # -z         RELEASE_CHECK=1        Check access and configuration
+# -l         RELEASE_SINK=1         Host to sink logs to
+# -t         RELEASE_TAG=0.X        Tag to release
 #
 
 
@@ -27,13 +29,16 @@ set -euf
 # We want job control
 set -m
 
+BASE=${RELEASE_BASE:-}
+SINK=${RELEASE_SINK:-}
+RELEASE_TAG=${RELEASE_TAG:-}
 FAIL=0
 DRYRUN=0
 JOBS=""
 
 usage()
 {
-    echo "usage: release-runner [-nqvz] SCRIPT" >&2
+    echo "usage: release-runner [-nqvz] [-t TAG] SCRIPT" >&2
     exit ${1:-2}
 }
 
@@ -97,14 +102,37 @@ job()
     exit $ret
 }
 
-while getopts "nqvxz" opt; do
+runner()
+{
+    # Run the basic script
+    . $1
+
+    if [ $DRYRUN -eq 1 ]; then
+        exit $FAIL
+    fi
+
+    # Run all the remaining background jobs
+    JOBS=$(jobs -l | sed 's/[^0-9]*\([0-9]\+\).*/\1/')
+    for job in $JOBS; do
+        fg %$job
+        trace "Completed job"
+    done
+}
+
+while getopts "l:nqvxz" opt; do
     case "$opt" in
+    l)
+        SINK="$OPTARG"
+        ;;
     n)
         DRYRUN=1
         ;;
     q)
         RELEASE_QUIET=1
         RELEASE_VERBOSE=0
+        ;;
+    t)
+        RELEASE_TAG="$OPTARG"
         ;;
     v)
         RELEASE_QUIET=0
@@ -131,16 +159,19 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
-# Run the basic script
-. $1
-
-if [ $DRYRUN -eq 1 ]; then
-    exit $FAIL
+if [ -n "$BASE" ]; then
+    cd "$BASE"
 fi
 
-# Run all the remaining background jobs
-JOBS=$(jobs -l | sed 's/[^0-9]*\([0-9]\+\).*/\1/')
-for job in $JOBS; do
-    fg %$job
-    trace "Completed job"
-done
+if [ -z "$RELEASE_TAG" ]; then
+    if [ -d .git ]; then
+        git fetch origin
+        RELEASE_TAG=$(git describe --abbrev=0 || true)
+    fi
+fi
+
+if [ -z "$SINK" ]; then
+    runner "$@"
+else
+    runner "$@" 2>&1 | ssh "$SINK" -- "sink --message=\'Release $RELEASE_TAG\' release-$RELEASE_TAG"
+fi

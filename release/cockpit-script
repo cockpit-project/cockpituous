@@ -2,8 +2,6 @@
 RELEASE_PACKAGE=cockpit
 RELEASE_SPEC=tools/cockpit.spec
 
-git fetch origin
-
 # Build the tarball for the tag
 job release-tarball
 
@@ -28,4 +26,4 @@ job release-dockerhub cockpit-project/cockpit-container
 job release-bodhi F23
 
 # Upload documentation
-# job release-docs doc/guide/html guide.cockpit-project.org:/opt/guide
+job release-docs doc/guide/html files.cockpit-project.org:/files/guide

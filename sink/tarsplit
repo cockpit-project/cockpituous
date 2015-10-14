@@ -1,0 +1,4 @@
+#!/bin/sh -euf
+
+tar -xvf -
+find . -type f -exec mv -i {} . \;

@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+import argparse
+import errno
+import os
+import string
+import subprocess
+import sys
+
+base = os.path.abspath(os.path.dirname(__file__))
+logs = os.getenv("LOGS", os.path.join(base, "logs"))
+
+parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
+parser.add_argument("-f", "--format", dest="format", help="Format of input")
+parser.add_argument("-m", "--message", dest="message", help="Message to display")
+parser.add_argument("-a", "--append", dest="append", action="store_true", help="Add to logs")
+parser.add_argument("identifier", nargs=1)
+
+parser.set_defaults(verbosity=1)
+args = parser.parse_args()
+
+# Now process the remaining
+if args.format == "gz":
+    cmd = os.path.join(base, "/gzplit")
+elif args.format == "tar":
+    cmd = os.path.join(base, "/tarsplit")
+elif args.format:
+    parser.error("unsupported format: " + args.format)
+else:
+    cmd = "/usr/bin/cat"
+
+valid_chars = "-_%s%s" % (string.ascii_letters, string.digits)
+identifier = "".join([c if c in valid_chars else ' ' for c in args.identifier[0]])
+
+if args.append:
+    directory = os.path.join(logs, identifier)
+    try:
+        os.chdir(directory)
+    except OSError as exc:
+        if exc.errno == errno.ENOENT or exc.errno == errno.ENOTDIR:
+            parser.error("not a valid log identifier: " + identifier)
+        raise
+else:
+    seed = 0
+    name = identifier
+    while True:
+        directory = os.path.join(logs, name)
+        try:
+            os.makedirs(directory)
+            os.chdir(directory)
+            identifier = name
+            break
+        except OSError as exc:
+            if exc.errno == errno.EEXIST:
+                seed += 1
+                name = identifier + "-" + str(seed)
+                continue
+            raise
+
+# Open output file in the directory
+fd = os.open("log", os.O_CREAT | os.O_APPEND | os.O_WRONLY)
+
+# Send the output name
+sys.stdout.write(identifier + "\n")
+sys.stdout.flush()
+
+# Send all output into the log directory now and close stdout
+os.dup2(fd, 2)
+os.dup2(fd, 1)
+
+# TODO: Add a URL here
+message = args.message or "Running " + identifier + " ..."
+sys.stdout.write(message + "\n\n")
+sys.stdout.flush()
+
+# Tell IRC that we're working on this
+# subprocess.call([ os.path.join(base, "irccat") ], stdin=message)
+
+subprocess.check_call([ cmd ])
