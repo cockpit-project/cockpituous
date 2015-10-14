@@ -32,6 +32,8 @@
 
 set -euf
 
+# XXX Idempotent
+
 # Arguments
 VERBOSE="${RELEASE_VERBOSE:-0}"
 QUIET="${RELEASE_QUIET:-0}"

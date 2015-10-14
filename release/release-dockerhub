@@ -21,6 +21,8 @@
 
 set -euf
 
+# XXX Idempotent
+
 # Various arguments
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}

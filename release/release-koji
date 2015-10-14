@@ -126,9 +126,10 @@ check()
 
 prepare()
 {
-    local spec tmpfile srpm tarball ret
+    local spec tmpfile srpm tarball ret already
 
     WORKDIR="koji-$BRANCH"
+    already=0
 
     trace "Checking out koji package $PACKAGE"
 
@@ -141,36 +142,37 @@ prepare()
     spec="$WORKDIR/$PACKAGE.spec"
 
     if grep -q "$TAG-1" "$spec"; then
-        message "$PACKAGE.spec: already has NVR $PACKAGE-$TAG-1 present"
-        exit 1
+        message "Already have NVR $PACKAGE-$TAG-1 present"
+        already=1
+
+    else
+        trace "Updating spec file"
+
+        tmpfile=$(mktemp .koji-changelog.XXXXXX)
+        printf "%%changelog\n" >> $tmpfile
+        changelog_lines >> $tmpfile
+        sed '1,/%changelog/d' "$spec" >> $tmpfile
+
+        sed -e "1s/^/%define tag $TAG\n%define rev 1\n/" \
+            -e "/%changelog/r $tmpfile" \
+            -e "/%changelog/,\$d" \
+            $SPEC > "$spec"
+
+        CLEANUP="$CLEANUP $tmpfile"
+        trace "Updating sources"
+
+        tarball=$(readlink_or $TARBALL)
+        SOURCES=$(basename $tarball)
+        cp $tarball $WORKDIR/
+        (cd $WORKDIR && md5sum $SOURCES) > $WORKDIR/sources
+        echo "/$SOURCES" >> $WORKDIR/.gitignore
+
+        trace "Committing changes"
+
+        # Commit all of that
+        git -C $WORKDIR add cockpit.spec sources .gitignore
+        commit_lines | git -C $WORKDIR commit -F -
     fi
-
-    trace "Updating spec file"
-
-    tmpfile=$(mktemp .koji-changelog.XXXXXX)
-    printf "%%changelog\n" >> $tmpfile
-    changelog_lines >> $tmpfile
-    sed '1,/%changelog/d' "$spec" >> $tmpfile
-
-    sed -e "1s/^/%define tag $TAG\n%define rev 1\n/" \
-        -e "/%changelog/r $tmpfile" \
-        -e "/%changelog/,\$d" \
-        $SPEC > "$spec"
-
-    CLEANUP="$CLEANUP $tmpfile"
-    trace "Updating sources"
-
-    tarball=$(readlink_or $TARBALL)
-    SOURCES=$(basename $tarball)
-    cp $tarball $WORKDIR/
-    (cd $WORKDIR && md5sum $SOURCES) > $WORKDIR/sources
-    echo "/$SOURCES" >> $WORKDIR/.gitignore
-
-    trace "Committing changes"
-
-    # Commit all of that
-    git -C $WORKDIR add cockpit.spec sources .gitignore
-    commit_lines | git -C $WORKDIR commit -F -
 
     trace "Building SRPM"
 
@@ -178,16 +180,18 @@ prepare()
     cd $WORKDIR
     srpm=$(fedpkg srpm | sed -n 's/Wrote: \(.\+\.src\.rpm\)$/\1/p')
 
-    trace "Making a scratch build"
+    if [ $already -eq 0 ]; then
+        trace "Making a scratch build"
 
-    # Build it in brew
-    if ! fedpkg scratch-build --srpm=$srpm; then
-        ret=$?
-        if [ $CONTINUE -eq 0 ]; then
-            exit $ret
-        else
-            rm $CLEANUP
-            exit 0
+        # Build it in brew
+        if ! fedpkg scratch-build --srpm=$srpm; then
+            ret=$?
+            if [ $CONTINUE -eq 0 ]; then
+                exit $ret
+            else
+                rm $CLEANUP
+                exit 0
+            fi
         fi
     fi
 
@@ -195,6 +199,10 @@ prepare()
     cd ..
     if [ -n "$SRPM" ]; then
         ln -snf $srpm $SRPM
+    fi
+
+    if [ $already -eq 1 ]; then
+        exit 0
     fi
 }
 

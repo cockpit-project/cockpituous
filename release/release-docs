@@ -21,6 +21,8 @@
 
 set -euf
 
+# XXX idempotent
+
 # Various arguments
 CHECK=${RELEASE_CHECK:-0}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
