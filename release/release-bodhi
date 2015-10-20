@@ -14,8 +14,6 @@
 
 set -euf
 
-# XXX needs to be idempotent
-
 # Various arguments
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
@@ -80,9 +78,12 @@ prepare()
 
 commit()
 (
+    # Ignore bodhi failures until Fedora bodhi infrastructure stops being so broken
+    set +e
 echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
         --stablekarma=3 --unstablekarma=-1 --request=stable --release="$FEDORA" \
         --username=$USER "$NVR"
+    set -e
 )
 
 while getopts "p:qvxz" opt; do
