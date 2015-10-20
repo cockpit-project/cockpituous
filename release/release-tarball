@@ -54,7 +54,7 @@ message()
 
 prepare()
 {
-    local archive
+    local archive autogen
 
     trace "Checking out $TAG"
 
@@ -64,18 +64,28 @@ prepare()
     mkdir -p build
     rm -rf build/*
 
-    trace "Building the repo"
-
     cd build
-    ../autogen.sh --prefix=/usr
+    autogen=0
 
-    trace "Building the tarball"
-
-    make -j1 distcheck
+    if [ ! -f ./Makefile ]; then
+        trace "Setting up the build"
+        ../autogen.sh --prefix=/usr
+        autogen=1
+    fi
 
     # Print out the tarball
     printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' > GNUmakefile
     archive=$(make print-DIST_ARCHIVES)
+
+    if [ ! -f "$archive" ]; then
+        trace "Building the tarball"
+        if [ $autogen -eq 0 ]; then
+            ../autogen.sh --prefix=/usr
+        fi
+        make -j1 distcheck
+    else
+        trace "Skipping tarball build"
+    fi
 
     trace "Linking tarball"
 
