@@ -21,8 +21,6 @@
 
 set -euf
 
-# XXX idempotent
-
 # Various arguments
 CHECK=${RELEASE_CHECK:-0}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
@@ -72,7 +70,7 @@ check()
 }
 
 prepare()
-(
+{
     local subdir version
 
     if [ ! -f "$TARBALL" ]; then
@@ -84,7 +82,6 @@ prepare()
 
     rm -rf $WORKDIR
     mkdir -p $WORKDIR
-    set -x
     tar -f $TARBALL -C $WORKDIR -x
 
     cd $WORKDIR/
@@ -99,20 +96,26 @@ prepare()
         exit 1
     fi
 
+    if rsync -l $DEST/latest .; then
+        if [ "$(readlink latest)" = "$version" ]; then
+            trace "Already uploaded documentation for $version"
+            exit 0
+        fi
+        rm -f latest
+    fi
+
     trace "Uploading documentation for version $version"
     mv $subdir/$SOURCE/ $version
     rsync -Hvax $version $DEST/./
 
     ln -snf $version latest
-)
+}
 
 commit()
-(
-    cd $WORKDIR
-
+{
     trace "Linking documentation"
     rsync -l latest $DEST/./
-)
+}
 
 while getopts "f:qvxz" opt; do
     case "$opt" in
