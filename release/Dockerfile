@@ -21,6 +21,6 @@ ENV RELEASE_BASE /build/cockpit
 ENV RELEASE_SINK sink.cockpit-project.org
 VOLUME /home/user
 USER user
-CMD ["/bin/bash"]
+CMD ["/usr/local/bin/release-runner", "/usr/local/bin/cockpit-script"]
 
-LABEL RUN /usr/bin/docker run -ti --restart=on-failure --volume=/home/cockpit:/home/user:rw IMAGE /bin/bash
+LABEL RUN /usr/bin/docker run -ti --volume=/home/cockpit:/home/user:rw IMAGE /bin/bash
