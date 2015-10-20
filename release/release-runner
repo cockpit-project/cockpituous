@@ -119,6 +119,12 @@ runner()
         fg %$job
         trace "Completed job"
     done
+
+    # Mark the build as released
+    if [ -n "$RELEASE_TAG" -a -d .git ]; then
+        git tag -d released-$RELEASE_TAG 2> /dev/null || true
+        git tag released-$RELEASE_TAG
+    fi
 }
 
 while getopts "l:nqvxz" opt; do
@@ -161,10 +167,19 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
+if [ -z "$RELEASE_TAG" -a -d "$BASE/.git" ]; then
+    git -C "$BASE" fetch origin
+    RELEASE_TAG=$(git -C "$BASE" describe --abbrev=0 origin/master || true)
+fi
+
 if [ -z "$RELEASE_TAG" ]; then
-    if [ -d $BASE/.git ]; then
-        git -C $BASE fetch origin
-        RELEASE_TAG=$(git -C $BASE describe --abbrev=0 origin/master || true)
+    message "Could not find a release tag"
+    exit 1
+fi
+
+if [ -d "$BASE/.git" ]; then
+    if git -C "$BASE" show "released-$RELEASE_TAG" -- 2> /dev/null > /dev/null; then
+        exit 0
     fi
 fi
 
