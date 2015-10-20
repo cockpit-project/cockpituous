@@ -62,7 +62,8 @@ else:
 fd = os.open("log", os.O_CREAT | os.O_APPEND | os.O_WRONLY)
 
 # Send the output name
-sys.stdout.write(identifier + "\n")
+link = "http://logs.cockpit-project.org/" + identifier + "/"
+sys.stdout.write(identifier + "\n" + link + "\n")
 sys.stdout.flush()
 
 # Send all output into the log directory now and close stdout
@@ -75,7 +76,7 @@ sys.stdout.write(message + "\n\n")
 sys.stdout.flush()
 
 # Tell IRC that we're working on this
-line = message + " - http://logs.cockpit-project.org/" + identifier + "/\n"
+line = message + " - " + link + "\n"
 proc = subprocess.Popen([ os.path.join(base, "irccat") ], stdin=subprocess.PIPE)
 proc.communicate(line)
 
