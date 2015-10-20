@@ -142,7 +142,7 @@ prepare()
     spec="$WORKDIR/$PACKAGE.spec"
 
     if grep -q "$TAG-1" "$spec"; then
-        message "Already have NVR $PACKAGE-$TAG-1 present"
+        trace "Already have NVR $PACKAGE-$TAG-1 present"
         already=1
 
     else
