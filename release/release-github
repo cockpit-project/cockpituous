@@ -32,8 +32,6 @@
 
 set -euf
 
-# XXX Idempotent
-
 # Arguments
 VERBOSE="${RELEASE_VERBOSE:-0}"
 QUIET="${RELEASE_QUIET:-0}"
@@ -87,7 +85,7 @@ run_curl()
     if [ $VERBOSE -eq 1 ]; then
         arg="--verbose"
     elif [ $QUIET -eq 1 ]; then
-        arg="-s"
+        arg="-S"
     else
         arg=""
     fi
@@ -116,6 +114,13 @@ prepare()
     local tmpfile body upload uplog base progress
 
     tmpfile=$(mktemp .github-draft.XXXXXX.json)
+
+    # Check if the release exists
+    if curl -s --fail --output $tmpfile -H "Authorization: token $TOKEN" \
+            https://api.github.com$REPO/releases/tags/$TAG; then
+        trace "Already have GitHub release $TAG"
+        exit 0
+    fi
 
     # The body of the email ready as a JSON string
     body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | json_escape)"
