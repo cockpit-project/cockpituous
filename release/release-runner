@@ -29,7 +29,7 @@ set -euf
 # We want job control
 set -m
 
-BASE=${RELEASE_BASE:-}
+BASE=${RELEASE_BASE:-./}
 SINK=${RELEASE_SINK:-}
 RELEASE_TAG=${RELEASE_TAG:-}
 FAIL=0
@@ -104,6 +104,8 @@ job()
 
 runner()
 {
+    cd $BASE
+
     # Run the basic script
     . $1
 
@@ -159,19 +161,21 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
-if [ -n "$BASE" ]; then
-    cd "$BASE"
-fi
-
 if [ -z "$RELEASE_TAG" ]; then
-    if [ -d .git ]; then
-        git fetch origin
-        RELEASE_TAG=$(git describe --abbrev=0 origin/master || true)
+    if [ -d $BASE/.git ]; then
+        git -C $BASE fetch origin
+        RELEASE_TAG=$(git -C $BASE describe --abbrev=0 origin/master || true)
     fi
 fi
 
 if [ -z "$SINK" ]; then
     runner "$@"
 else
-    runner "$@" 2>&1 | ssh "$SINK" -- sink release-$RELEASE_TAG
+    (
+        # Respawn the current script but redirect to ssh
+        export RELEASE_SINK=
+        export RELEASE_TAG
+        exec 2>&1
+        "$0" "$@"
+    ) | ssh "$SINK" -- sink release-$RELEASE_TAG
 fi
