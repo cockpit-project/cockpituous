@@ -2,6 +2,8 @@
 
 import argparse
 import errno
+import httplib
+import json
 import os
 import shutil
 import string
@@ -10,64 +12,179 @@ import subprocess
 import sys
 import tempfile
 
-base = os.path.abspath(os.path.dirname(__file__))
-logs = os.getenv("LOGS", os.path.join(base, "logs"))
+URL = "http://logs.cockpit-project.org/logs/"
+BASE = os.path.abspath(os.path.dirname(__file__))
+LOGS = os.getenv("LOGS", os.path.join(BASE, "logs"))
+TOKEN = "~/.config/github-token"
 
-parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
-parser.add_argument("-f", "--format", dest="format", help="Format of input")
-parser.add_argument("-m", "--message", dest="message", help="Message to display")
-parser.add_argument("identifier", nargs=1)
+class GitHub(object):
+    def __init__(self):
+        self.token = None
+        try:
+            gt = open(os.path.expanduser(TOKEN), "r")
+            self.token = gt.read().strip()
+            gt.close()
+        except IOError as exc:
+            if exc.errno == errno.ENOENT:
+                msg = "Github access is not available\nPlace a valid token in {0}\n".format(TOKEN)
+                sys.stderr.write(msg)
+            else:
+                raise
 
-parser.set_defaults(verbosity=1)
-args = parser.parse_args()
+    def push(self, status):
+        github = status.get("github", { })
+        resource = github.get("resource", None)
+        data = github.get("status", None)
+        if not self.token or not data or not resource:
+            return
+        if "target_url" not in data:
+            data["target_url"] = status["link"]
+        headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
+        if self.token:
+            headers["Authorization"] = "token " + self.token
+        conn = httplib.HTTPSConnection("api.github.com", strict=True)
+        # conn.set_debuglevel(1)
+        conn.request("POST", resource, json.dumps(data), headers)
+        response = conn.getresponse()
+        output = response.read()
+        conn.close()
+        if response.status < 200 or response.status >= 300:
+            sys.stderr.write(output)
+            raise Exception("GitHub API problem: {0}".format(response.reason or response.status))
 
-# Now process the remaining
-if args.format == "gz":
-    cmd = os.path.join(base, "gzplit")
-elif args.format == "tar":
-    cmd = os.path.join(base, "tarsplit")
-elif args.format:
-    parser.error("unsupported format: " + args.format)
-else:
-    cmd = "/usr/bin/cat"
+class Irc(object):
+    def push(self, status):
+        notify = status.get("notify")
+        if not notify:
+            return
+        line = notify + " - " + status["link"] + "\n"
+        proc = subprocess.Popen([ os.path.join(BASE, "irccat") ], stdin=subprocess.PIPE)
+        proc.communicate(line)
 
-valid_chars = "-_.%s%s" % (string.ascii_letters, string.digits, )
-identifier = "".join([c if c in valid_chars else '-' for c in args.identifier[0]])
-if not identifier or identifier != args.identifier[0]:
-    parser.error("not a valid log identifier: " + identifier)
+class Status(object):
+    def __init__(self, identifier):
+        self.reporters = [ GitHub(), Irc() ]
+        self.link = "http://logs.cockpit-project.org/logs/" + identifier + "/"
+        self.data = None
+        sys.stdout.write(self.link + "\n")
+        sys.stdout.flush()
 
-backup = False
-directory = os.path.join(logs, identifier)
+    def push(self, data):
+        if "link" not in data:
+            data["link"] = self.link
+        for reporter in self.reporters:
+            reporter.push(data)
+        self.data = data
 
-if os.path.exists(directory):
-    backup = True
-else:
-    os.makedirs(directory)
-os.chdir(directory)
+    def begin(self, line):
+        try:
+            data = json.loads(line)
+        except:
+            return False
+        self.push(data)
+        return True
 
-# Backup all the older files if necessary
-if backup:
-    files = os.listdir(directory)
-    dest = tempfile.mkdtemp(prefix='backup.', dir=".")
-    os.chmod(dest, 0755)
-    for filename in files:
-        if not os.path.isdir(filename):
-            shutil.move(filename, dest)
+    def finish(self, line):
+        if not self.data:
+            return False
+        used = False
+        try:
+            data = json.loads(line)
+            used = True
+        except:
+            data = self.data
+            data["notify"] = "Aborted"
+            if "github" in data and "status" in data["github"]:
+                data["github"]["status"]["state"] = "error"
+                data["github"]["status"]["description"] = "Aborted without status"
+        self.push(data)
+        with open("status", "w") as fp:
+            fp.write(json.dumps(data))
+        return used
 
-# Open output file in the directory
+class Buffer(object):
+    def __init__(self, f):
+        self.f = f
+        self.buf = ''
+    def push(self, piece):
+        self.buf = piece + self.buf
+    def readall(self):
+        result = self.buf + self.f.read()
+        self.buf = ''
+        return result
+    def read(self, n=None):
+        if n is None:
+            return self.readall()
+        avail = len(self.buf)
+        if n > avail:
+            result = self.buf + self.f.read(n - avail)
+            self.buf = ''
+        else:
+            result = self.buf[:n]
+            self.buf = self.buf[n:]
+        return result
 
-# Send the output name
-link = "http://logs.cockpit-project.org/logs/" + identifier + "/"
-sys.stdout.write(link + "\n")
-sys.stdout.flush()
+def main():
+    parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
+    parser.add_argument("identifier", nargs=1)
 
-# Tell IRC that we're working on this
-line = args.message or "Running" + " - " + link + "\n"
-proc = subprocess.Popen([ os.path.join(base, "irccat") ], stdin=subprocess.PIPE)
-proc.communicate(line)
+    parser.set_defaults(verbosity=1)
+    args = parser.parse_args()
 
-# Now open up the parser and tee its output into the log
-parser = subprocess.Popen([ cmd ], stdout=subprocess.PIPE)
-tee = subprocess.Popen([ "tee", "-a", "log" ], stdin=parser.stdout)
-parser.stdout.close()
-sys.exit(parser.wait())
+    valid_chars = "-_.%s%s" % (string.ascii_letters, string.digits, )
+    identifier = "".join([c if c in valid_chars else '-' for c in args.identifier[0]])
+    if not identifier or identifier != args.identifier[0]:
+        parser.error("not a valid log identifier: " + identifier)
+
+    directory = os.path.join(LOGS, identifier)
+    if os.path.exists(directory):
+        files = os.listdir(directory)
+        dest = tempfile.mkdtemp(prefix='backup.', dir=directory)
+        os.chmod(dest, 0755)
+        for filename in files:
+            if not filename.startswith("backup."):
+                shutil.move(os.path.join(directory, filename), dest)
+    else:
+        os.makedirs(directory)
+    os.chdir(directory)
+
+    status = Status(identifier)
+
+    # Now relay any data until zero byte
+    buffer = Buffer(sys.stdin)
+    attached = False
+    with open("log", "w") as log:
+        count = 0          # Number of lines processed
+        last = ""          # Last full output valid line
+        done = False       # Set when done
+        while not done:
+            data = buffer.read(1024)
+            if not data:
+                done = True
+            (text, unused, trailing) = (last + data).partition('\x00')
+            if trailing:
+                buffer.push(trailing)
+                attached = True
+                done = True
+            if done and text and text[-1] == '\n':
+                text = text[:-1]
+            lines = text.split("\n")
+            last = lines.pop()
+            for line in lines:
+                line += "\n"
+                count += 1
+                if count == 1:
+                    if status.begin(line):
+                        continue
+                log.write(line)
+                sys.stdout.write(line)
+        if not status.finish(last):
+            log.write(last)
+            sys.stdout.write(line)
+
+    if attached:
+        with tarfile.open(fileobj=buffer, mode="r") as tar:
+            tar.extractall()
+
+if __name__ == "__main__":
+    main()

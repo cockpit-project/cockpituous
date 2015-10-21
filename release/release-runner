@@ -191,6 +191,11 @@ else
         export RELEASE_SINK=
         export RELEASE_TAG
         exec 2>&1
-        "$0" "$@"
+        printf '{ "notify": "Release running: %s" }\n' "$RELEASE_TAG"
+        if "$0" "$@"; then
+            printf '\n{ "notify": "Release complete: %s" }' "$RELEASE_TAG"
+        else
+            printf '\n{ "notify": "Release failed: %s" }' "$RELEASE_TAG"
+        fi
     ) | ssh "$SINK" -- sink release-$RELEASE_TAG
 fi
