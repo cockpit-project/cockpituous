@@ -54,7 +54,7 @@ class Buffer:
             self.buf = self.buf[n:]
         return result
 
-def decompress(input, number):
+def decompress(input):
     magic = input.read(2)
     if magic == "":
         return False
@@ -67,7 +67,7 @@ def decompress(input, number):
                                         # extra flags, and OS byte.
 
     # The default filename
-    filename = "output" + str(number)
+    filename = None
 
     # Read & discard the extra field, if present
     if flag & FEXTRA:
@@ -83,7 +83,7 @@ def decompress(input, number):
             if s == '\0':
                 break
             name += s
-        if name:
+        if name and name != "-":
             filename = os.path.basename(name)
 
     # Read and discard a null-terminated string containing a comment
@@ -97,7 +97,10 @@ def decompress(input, number):
     if flag & FHCRC:
         input.read(2)
 
-    output = open(filename, "wb")
+    if filename:
+        output = open(filename, "wb")
+    else:
+        output = sys.stdout
 
     decomp = zlib.decompressobj(-zlib.MAX_WBITS)
     crcval = zlib.crc32("") & 0xffffffffL
@@ -126,7 +129,9 @@ def decompress(input, number):
     if crc32 != crcval:
         fatal("the CRC check failed" + str(crc32) + " " + str(crcval))
 
-    output.close()
+    output.flush()
+    if filename:
+        output.close()
     return True
 
 def main():
@@ -138,9 +143,8 @@ def main():
         print 'usage: gzplit file.gz'
         sys.exit(2)
 
-    number = 1
-    while decompress(input, number):
-        number += 1
+    while decompress(input):
+        pass
     sys.exit(0)
 
 if __name__ == '__main__':
