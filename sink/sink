@@ -290,8 +290,12 @@ def main():
             sys.stdout.write(line)
 
     if attached:
-        with tarfile.open(fileobj=buffer, mode="r") as tar:
-            tar.extractall()
+        tar = subprocess.Popen(["tar", "-xzf", "-", "--transform=s#^[^/]+#.#x"], stdin=subprocess.PIPE)
+        shutil.copyfileobj(buffer, tar.stdin)
+        tar.stdin.close()
+        ret = tar.wait()
+        if ret:
+            raise subprocess.CalledProcessError(ret, "tar")
 
 if __name__ == "__main__":
     main()

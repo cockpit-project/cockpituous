@@ -1,0 +1,4 @@
+#!/bin/sh
+
+tar -zcf /tmp/attachments.tgz fixture/*.*
+cat fixture/log fixture/null /tmp/attachments.tgz | python sink test-sink
