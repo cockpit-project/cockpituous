@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+# Rough configuration file follows, place it in ~/.config/sink
+
+DEFAULTS = """
+[Sink]
+Url: http://fedorapeople.org/~%(user)s/logs
+Logs: ~/public_html/logs
+
+[GitHub]
+Token:
+
+[Irc]
+Server: chat.freenode.net:6667
+User: %(user)sbot
+Password: %(user)sbot
+Channel: #cockpit
+"""
+
 import argparse
 import errno
 import httplib
@@ -7,29 +24,17 @@ import json
 import os
 import shutil
 import string
-import StringIO
 import subprocess
 import sys
 import tempfile
+import urlparse
 
-URL = "http://logs.cockpit-project.org/logs/"
-BASE = os.path.abspath(os.path.dirname(__file__))
-LOGS = os.getenv("LOGS", os.path.join(BASE, "logs"))
-TOKEN = "~/.config/github-token"
+import ConfigParser
+import StringIO
 
 class GitHub(object):
-    def __init__(self):
-        self.token = None
-        try:
-            gt = open(os.path.expanduser(TOKEN), "r")
-            self.token = gt.read().strip()
-            gt.close()
-        except IOError as exc:
-            if exc.errno == errno.ENOENT:
-                msg = "Github access is not available\nPlace a valid token in {0}\n".format(TOKEN)
-                sys.stderr.write(msg)
-            else:
-                raise
+    def __init__(self, config):
+        self.token = config.get("GitHub", "Token")
 
     def push(self, status):
         github = status.get("github", { })
@@ -53,18 +58,23 @@ class GitHub(object):
             raise Exception("GitHub API problem: {0}".format(response.reason or response.status))
 
 class Irc(object):
+    def __init__(self, config):
+        pass
+
     def push(self, status):
+        if True:
+            return # TODO
         notify = status.get("notify")
         if not notify:
             return
         line = notify + " - " + status["link"] + "\n"
-        proc = subprocess.Popen([ os.path.join(BASE, "irccat") ], stdin=subprocess.PIPE)
+        proc = subprocess.Popen([ os.path.join(xxx, "irccat") ], stdin=subprocess.PIPE)
         proc.communicate(line)
 
 class Status(object):
-    def __init__(self, identifier):
-        self.reporters = [ GitHub(), Irc() ]
-        self.link = "http://logs.cockpit-project.org/logs/" + identifier + "/"
+    def __init__(self, config, identifier):
+        self.reporters = [ GitHub(config), Irc(config) ]
+        self.link = urlparse.urljoin(config.get("Sink", "Url"), identifier + "/")
         self.data = None
         sys.stdout.write(self.link + "\n")
         sys.stdout.flush()
@@ -103,31 +113,32 @@ class Status(object):
         return used
 
 class Buffer(object):
-    def __init__(self, f):
-        self.f = f
+    def __init__(self, fd):
+        self.fd = fd
         self.buf = ''
     def push(self, piece):
         self.buf = piece + self.buf
     def readall(self):
-        result = self.buf + self.f.read()
+        self.read(sys.maxint)
+    def read(self, n=sys.maxint):
+        result = self.buf
         self.buf = ''
+        while len(result) < n:
+            want = n - len(result)
+            data = os.read(self.fd, want > 1024 and 1024 or want)
+            if not data:
+                break
+            result += data
         return result
-    def read(self, n=None):
-        if n is None:
-            return self.readall()
-        avail = len(self.buf)
-        if n > avail:
-            result = self.buf + self.f.read(n - avail)
-            self.buf = ''
-        else:
-            result = self.buf[:n]
-            self.buf = self.buf[n:]
+    def readone(self):
+        result = self.buf
+        self.buf = ''
+        result += os.read(self.fd, 1024)
         return result
 
 def main():
     parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
     parser.add_argument("identifier", nargs=1)
-
     parser.set_defaults(verbosity=1)
     args = parser.parse_args()
 
@@ -136,7 +147,14 @@ def main():
     if not identifier or identifier != args.identifier[0]:
         parser.error("not a valid log identifier: " + identifier)
 
-    directory = os.path.join(LOGS, identifier)
+    # Load up configuration if available
+    config = ConfigParser.SafeConfigParser({ "user": os.environ.get("LOGNAME", os.getlogin()) })
+    config.readfp(StringIO.StringIO(DEFAULTS))
+    config.read([ os.path.expanduser("~/.config/sink") ])
+
+    # Create the right directory
+    logs = os.path.expanduser(config.get("Sink", "Logs"))
+    directory = os.path.join(logs, identifier)
     if os.path.exists(directory):
         files = os.listdir(directory)
         dest = tempfile.mkdtemp(prefix='backup.', dir=directory)
@@ -148,17 +166,18 @@ def main():
         os.makedirs(directory)
     os.chdir(directory)
 
-    status = Status(identifier)
+    # Initialize status reporters
+    status = Status(config, identifier)
 
     # Now relay any data until zero byte
-    buffer = Buffer(sys.stdin)
+    buffer = Buffer(0)
     attached = False
     with open("log", "w") as log:
         count = 0          # Number of lines processed
         last = ""          # Last full output valid line
         done = False       # Set when done
         while not done:
-            data = buffer.read(1024)
+            data = buffer.readone()
             if not data:
                 done = True
             (text, unused, trailing) = (last + data).partition('\x00')
