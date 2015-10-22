@@ -270,8 +270,8 @@ def main():
             data = buffer.readone()
             if not data:
                 done = True
-            (text, unused, trailing) = (last + data).partition('\x00')
-            if trailing:
+            (text, zero, trailing) = (last + data).partition('\x00')
+            if len(zero):
                 buffer.push(trailing)
                 attached = True
                 done = True
@@ -287,10 +287,10 @@ def main():
                 sys.stdout.write(line)
         if not status.finish(last):
             log.write(last)
-            sys.stdout.write(line)
+            sys.stdout.write(last)
 
     if attached:
-        tar = subprocess.Popen(["tar", "-xzf", "-", "--transform=s#^[^/]+#.#x"], stdin=subprocess.PIPE)
+        tar = subprocess.Popen(["tar", "-xzf", "-"], stdin=subprocess.PIPE)
         shutil.copyfileobj(buffer, tar.stdin)
         tar.stdin.close()
         ret = tar.wait()
