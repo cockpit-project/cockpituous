@@ -46,13 +46,13 @@ check()
 prepare()
 {
     trace "Example $@"
-    sleep 3
+    sleep 5
 }
 
 commit()
 (
     trace "Commit $@"
-    sleep 3
+    sleep 5
 )
 
 while getopts "qvxz" opt; do

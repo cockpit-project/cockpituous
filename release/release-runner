@@ -192,10 +192,10 @@ else
         export RELEASE_TAG
         exec 2>&1
         printf '{ "message": "Release running: %s", "irc": { "channel": "#cockpit" } }\n' "$RELEASE_TAG"
-        if "$0" "$@"; then
+        if stdbuf -oL -eL "$0" "$@"; then
             printf '\n{ "message": "Release complete: %s", "irc": { "channel": "#cockpit" } }' "$RELEASE_TAG"
         else
             printf '\n{ "message": "Release failed: %s", "irc": { "channel": "#cockpit" } }' "$RELEASE_TAG"
         fi
-    ) | ssh "$SINK" -- python sink release-$RELEASE_TAG
+    ) | stdbuf -oL -eL ssh "$SINK" -- python sink release-$RELEASE_TAG
 fi

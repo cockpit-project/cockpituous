@@ -2,6 +2,25 @@
 
 This is a logging and status sink for Cockpit continous integration and delivery.
 
+It is a standalone python script. No other dependencies are required. Copy it
+to the home directory (or default login directory) of the public location where
+you wish to store the logs.
+
+The script will be invoked over SSH by tools such as the cockpit tests. It will
+be run something like this:
+
+$ log-data | ssh fedorapeople.org -- python sink log-identifier
+
+The source of data is piped in, see the format below. The log-identifier is
+a unique logging identifier, such as a release name or git sha. The script
+is pre-configured to be uploaded to your personal fedorapeople.org account.
+
+You may need to configure your fedorapeople.org user name in ~/.ssh/config
+on the source machine.
+
+In order for the script to talk to github, you need to place a token on
+the target sink system in a ~/.config/github-token file.
+
 # Input format
 
 The basic input format of the sink is text. This text will be placed in a

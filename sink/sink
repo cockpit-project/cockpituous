@@ -7,14 +7,13 @@ DEFAULTS = """
 Url: http://fedorapeople.org/~%(user)s/logs/
 Logs: ~/public_html/logs
 
-[GitHub]
-Token:
-
 [Irc]
 Server: chat.freenode.net:6667
 Login: %(user)sbot %(user)sbot %(user)sbot
 Nick: %(user)sbot
 """
+
+TOKEN = "~/.config/github-token"
 
 import argparse
 import errno
@@ -36,7 +35,16 @@ import StringIO
 
 class GitHub(object):
     def __init__(self, config):
-        self.token = config.get("GitHub", "Token")
+        self.token = None
+        try:
+            gt = open(os.path.expanduser(TOKEN), "r")
+            self.token = gt.read().strip()
+            gt.close()
+        except IOError as exc:
+            if exc.errno == errno.ENOENT:
+                 pass
+            else:
+                raise
 
     def push(self, status):
         github = status.get("github", { })
@@ -115,7 +123,8 @@ class Irc(object):
             if ready:
                 (lines, unused, buf) = buf.rpartition("\n")
                 for message in lines.split("\n"):
-                    ircf.sendall("PRIVMSG " + message + "\n")
+                    if message:
+                        ircf.sendall("PRIVMSG " + message + "\n")
                 if quit:
                     ircf.sendall("QUIT\n")
 
@@ -148,6 +157,7 @@ class Irc(object):
             message += " - " + status["link"]
             for line in message.strip().split("\n"):
                 self.pipe.write(channel + " :" + line + "\n")
+            self.pipe.flush()
 
 class Status(object):
     def __init__(self, config, identifier):
@@ -255,6 +265,7 @@ def main():
         last = ""          # Last full output valid line
         done = False       # Set when done
         while not done:
+            log.flush()
             sys.stdout.flush()
             data = buffer.readone()
             if not data:
