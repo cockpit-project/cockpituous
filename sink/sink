@@ -4,7 +4,7 @@
 
 DEFAULTS = """
 [Sink]
-Url: http://fedorapeople.org/~%(user)s/logs/
+Url: http://%(user)s.fedorapeople.org/logs/%(identifier)s/log
 Logs: ~/public_html/logs
 
 [Irc]
@@ -162,7 +162,7 @@ class Irc(object):
 class Status(object):
     def __init__(self, config, identifier):
         self.reporters = [ GitHub(config), Irc(config) ]
-        self.link = urlparse.urljoin(config.get("Sink", "Url"), identifier + "/")
+        self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
         sys.stdout.write(self.link + "\n")
         sys.stdout.flush()
@@ -236,7 +236,8 @@ def main():
         parser.error("not a valid log identifier: " + identifier)
 
     # Load up configuration if available
-    config = ConfigParser.SafeConfigParser({ "user": os.environ.get("LOGNAME", os.getlogin()) })
+    user = os.environ.get("LOGNAME", os.getlogin())
+    config = ConfigParser.SafeConfigParser({ "user": user, "identifier": "@@" })
     config.readfp(StringIO.StringIO(DEFAULTS))
     config.read([ os.path.expanduser("~/.config/sink") ])
 
