@@ -255,6 +255,7 @@ def main():
         last = ""          # Last full output valid line
         done = False       # Set when done
         while not done:
+            sys.stdout.flush()
             data = buffer.readone()
             if not data:
                 done = True
@@ -263,8 +264,6 @@ def main():
                 buffer.push(trailing)
                 attached = True
                 done = True
-            if done and text and text[-1] == '\n':
-                text = text[:-1]
             lines = text.split("\n")
             last = lines.pop()
             for line in lines:
