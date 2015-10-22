@@ -18,7 +18,7 @@ RUN printf "\nHost files.cockpit-project.org\n\tUser user\n\tPort 2001\n" >> /et
 
 
 ENV RELEASE_BASE /build/cockpit
-ENV RELEASE_SINK sink.cockpit-project.org
+ENV RELEASE_SINK fedorapeople.org
 VOLUME /home/user
 USER user
 CMD ["/usr/local/bin/release-runner", "/usr/local/bin/cockpit-script"]
