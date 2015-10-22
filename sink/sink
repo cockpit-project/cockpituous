@@ -4,7 +4,7 @@
 
 DEFAULTS = """
 [Sink]
-Url: http://fedorapeople.org/~%(user)s/logs
+Url: http://fedorapeople.org/~%(user)s/logs/
 Logs: ~/public_html/logs
 
 [GitHub]
@@ -12,9 +12,8 @@ Token:
 
 [Irc]
 Server: chat.freenode.net:6667
-User: %(user)sbot
-Password: %(user)sbot
-Channel: #cockpit
+Login: %(user)sbot %(user)sbot %(user)sbot
+Nick: %(user)sbot
 """
 
 import argparse
@@ -22,11 +21,14 @@ import errno
 import httplib
 import json
 import os
+import select
 import shutil
+import socket
 import string
 import subprocess
 import sys
 import tempfile
+import traceback
 import urlparse
 
 import ConfigParser
@@ -42,6 +44,8 @@ class GitHub(object):
         data = github.get("status", None)
         if not self.token or not data or not resource:
             return
+        if "description" not in data and "message" in status:
+            data["description"] = status["message"]
         if "target_url" not in data:
             data["target_url"] = status["link"]
         headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
@@ -59,17 +63,91 @@ class GitHub(object):
 
 class Irc(object):
     def __init__(self, config):
-        pass
+        (self.server, unused, port) = config.get("Irc", "Server").rpartition(":")
+        try:
+            self.port = int(port)
+        except:
+            self.port = 6667
+        self.login = config.get("Irc", "Login")
+        self.nick = config.get("Irc", "Nick")
+        self.pid = 0
+        self.pipe = None
+
+    def __del__(self):
+        if self.pipe is not None:
+            self.pipe.close()
+        if self.pid:
+            os.waitpid(self.pid, 0)
+
+    def process(self, msgf):
+        ircf = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # Connect to the IRC server
+        ircf.connect((self.server, self.port))
+        ircf.sendall("USER " + self.login + " :Cockpit tests\n")
+        ircf.sendall("NICK " + self.nick + "\n")
+
+        # Our relay buffer and sending logic
+        buf = ""
+        ready = False
+        quit = False
+
+        # Now wait for appropriate events
+        inputs = [ msgf, ircf ]
+        while inputs:
+            (rfds, wfds, efds) = select.select(inputs, [], [])
+            for fd in rfds:
+                if fd == msgf:
+                    data = os.read(msgf, 2048)
+                    if not data:
+                        inputs.remove(msgf)
+                        quit = True
+                    buf += data
+                elif fd == ircf:
+                    data = ircf.recv(2048)
+                    # print >> sys.stderr, data
+                    if "PING :" in data:
+                        ircf.sendall("PONG :pingis\n")
+                    if "ERROR :" in data:
+                        inputs.remove(ircf)
+                    elif self.nick in data:
+                        ready = True
+            if ready:
+                (lines, unused, buf) = buf.rpartition("\n")
+                for message in lines.split("\n"):
+                    ircf.sendall("PRIVMSG " + message + "\n")
+                if quit:
+                    ircf.sendall("QUIT\n")
+
+    def start(self):
+        if self.pipe is not None:
+            return
+
+        [rfd, wfd] = os.pipe()
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.pid = os.fork()
+        if self.pid == 0:
+            os.close(wfd)
+            try:
+                self.process(rfd)
+            except:
+                traceback.print_exc()
+                sys.exit(1)
+            else:
+                sys.exit(0)
+        os.close(rfd)
+        self.pipe = os.fdopen(wfd, "w")
 
     def push(self, status):
-        if True:
-            return # TODO
-        notify = status.get("notify")
-        if not notify:
-            return
-        line = notify + " - " + status["link"] + "\n"
-        proc = subprocess.Popen([ os.path.join(xxx, "irccat") ], stdin=subprocess.PIPE)
-        proc.communicate(line)
+        irc = status.get("irc", { })
+        message = status.get("message")
+        channel = irc.get("channel")
+        if message and channel:
+            self.start()
+            message += " - " + status["link"]
+            for line in message.strip().split("\n"):
+                self.pipe.write(channel + " :" + line + "\n")
 
 class Status(object):
     def __init__(self, config, identifier):
@@ -103,7 +181,7 @@ class Status(object):
             used = True
         except:
             data = self.data
-            data["notify"] = "Aborted"
+            data["message"] = "Aborted"
             if "github" in data and "status" in data["github"]:
                 data["github"]["status"]["state"] = "error"
                 data["github"]["status"]["description"] = "Aborted without status"
