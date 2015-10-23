@@ -164,8 +164,7 @@ class Status(object):
         self.reporters = [ GitHub(config), Irc(config) ]
         self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
-        sys.stdout.write(self.link + "\n")
-        sys.stdout.flush()
+        sys.stderr.write(self.link + "\n")
 
     def push(self, data, log):
         if "link" not in data:
