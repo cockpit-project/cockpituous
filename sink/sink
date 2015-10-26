@@ -11,9 +11,34 @@ Logs: ~/public_html/logs
 Server: chat.freenode.net:6667
 Login: %(user)sbot %(user)sbot %(user)sbot
 Nick: %(user)sbot
+
+[Badges]
+Location: ~/public_html/status/
 """
 
 TOKEN = "~/.config/github-token"
+
+BADGE_TEMPLATE = """\
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="20">
+  <linearGradient id="b" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <mask id="a">
+    <rect width="220" height="20" rx="3" fill="#fff"/>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#555" d="M0 0h150v20H0z"/>
+    <path fill="{color}" d="M150 0h70v20h-70z"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+    <text x="75" y="15" fill="#010101" fill-opacity=".3">{description}</text>
+    <text x="75" y="14">{description}</text>
+    <text x="185" y="15" fill="#010101" fill-opacity=".3">{status}</text>
+    <text x="185" y="14">{status}</text>
+  </g>
+</svg>
+"""
 
 import argparse
 import errno
@@ -159,9 +184,35 @@ class Irc(object):
                 self.pipe.write(channel + " :" + line + "\n")
             self.pipe.flush()
 
+class Badger(object):
+    def __init__(self, config):
+        self.location = os.path.expanduser(config.get("Badges", "Location"))
+        self.template = BADGE_TEMPLATE
+        self.colors = { 'passed': '#44cc11',
+                        'failed': '#e05d44' }
+        if not os.path.exists(self.location):
+            os.makedirs(self.location)
+
+    def push(self, data):
+        if 'badge' in data and 'name' in data['badge']:
+            badge = data['badge']
+            name = badge['name']
+            description = badge.get('description', "unknown")
+            status = badge.get('status', 'unknown')
+            status_text = badge.get('status-text', status)
+            if status in self.colors:
+                color = self.colors[status]
+            else:
+                color = '#9f9f9f'
+            content = self.template.format(description=description, status=status_text, color=color)
+            with open(os.path.join(self.location, name + ".svg"), 'wb') as f:
+                f.write(content)
+            with open(os.path.join(self.location, name + ".html"), 'wb') as f:
+                f.write('<html><head><meta http-equiv="refresh" content="0; {url}"></head></html>'.format(url=data['link']))
+
 class Status(object):
     def __init__(self, config, identifier):
-        self.reporters = [ GitHub(config), Irc(config) ]
+        self.reporters = [ GitHub(config), Irc(config), Badger(config) ]
         self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
         sys.stderr.write(self.link + "\n")
@@ -198,6 +249,8 @@ class Status(object):
             if "github" in data and "status" in data["github"]:
                 data["github"]["status"]["state"] = "error"
                 data["github"]["status"]["description"] = "Aborted without status"
+            if "badge" in data:
+                data["badge"]["status"] = "error"
         self.push(data, log)
         with open("status", "w") as fp:
             fp.write(json.dumps(data))
