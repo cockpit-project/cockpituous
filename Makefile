@@ -29,7 +29,6 @@ verify-shell:
 		--volume /home/cockpit:/home/user \
 		--volume $(CURDIR)/verify:/usr/local/bin \
 		--volume=/opt/verify:/build:rw \
-		--volume=/var/run/libvirt:/var/run/libvirt \
 		--net=host --privileged --entrypoint=/bin/bash \
         cockpit/infra-verify -i
 

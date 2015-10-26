@@ -23,5 +23,3 @@ USER user
 WORKDIR /build
 ENTRYPOINT ["/usr/local/bin/cockpit-verify"]
 CMD ["--github=next", "--publish=fedorapeople.org", "--verbose", "--jobs=4"]
-
-LABEL RUN /usr/bin/docker run -ti --volume=/var/run/libvirt:/var/run/libvirt --volume=/home/cockpit:/home/user:rw --net=host --privileged IMAGE /bin/bash
