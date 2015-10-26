@@ -23,3 +23,12 @@ release-install: release-container
 	cp release/release-runner.service /etc/systemd/system/
 	systemctl daemon-reload
 	systemctl enable release-runner
+
+verify-install:
+	test -d /opt/cockpit || git close https://github.com/cockpit-project/cockpit
+	( cd /opt/cockpit/tools && npm install )
+	chown -R cockpit /opt/cockpit
+	cp verify/cockpit-verify /opt/
+	cp verify/cockpit-verify.service /etc/systemd/system/
+	systemctl daemon-reload
+	systemctl enable cockpit-verify
