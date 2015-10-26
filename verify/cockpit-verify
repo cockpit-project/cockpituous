@@ -1,7 +1,20 @@
 #!/bin/sh
 
 set -ex
+
+
+if [ ! -d cockpit ]; then
+    sudo chown -R user /build
+    git clone https://github.com/cockpit-project/cockpit
+fi
+
+if [ ! -d cockpit/tools/node_modules ]; then
+    ( cd cockpit/tools && npm install )
+fi
+
+mkdir -p mock
+
 while true; do
-	git reset --hard master
-	./check-verify --github=next --verbose --jobs=6
+	git -C cockpit reset --hard master
+	cockpit/test/check-verify --install --rebase "$@"
 done

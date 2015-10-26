@@ -24,6 +24,18 @@ release-install: release-container
 	systemctl daemon-reload
 	systemctl enable release-runner
 
+verify-shell:
+	docker run -ti --rm \
+		--volume /home/cockpit:/home/user \
+		--volume $(CURDIR)/verify:/usr/local/bin \
+		--volume=/opt/verify:/build:rw \
+		--volume=/var/run/libvirt:/var/run/libvirt \
+		--net=host --privileged --entrypoint=/bin/bash \
+        cockpit/infra-verify -i
+
+verify-container:
+	docker build -t cockpit/infra-verify verify
+
 verify-install:
 	test -d /opt/cockpit || git close https://github.com/cockpit-project/cockpit
 	( cd /opt/cockpit/tools && npm install )

@@ -1,15 +1,14 @@
 [Unit]
 Description=Cockpit Verify
+Requires=docker.service libvirtd.service
+After=docker.service libvirtd.service
 
 [Service]
-User=cockpit
-Group=cockpit
-Environment=TEST_OS=fedora-23
+Restart=always
 RestartSec=60
-WorkingDirectory=/opt/cockpit/test
-ExecStart=/opt/cockpit-verify
-SendSIGKILL=no
-SendSIGHUP=yes
+Environment=TEST_OS=fedora-23
+ExecStart=/bin/sh -c "/usr/bin/docker start -a verify-$TEST_OS || /usr/bin/docker run --name=verify-$TEST_OS --volume=/home/cockpit:/home/user:rw --volume=/opt/verify-$TEST_OS:/build:rw --volume=/var/run/libvirt:/var/run/libvirt --net=host --privileged --env=TEST_OS=$TEST_OS cockpit/infra-verify"
+ExecStop=/usr/bin/docker stop verify-$TEST_OS
 
 [Install]
 WantedBy=multi-user.target
