@@ -1,12 +1,12 @@
 [Unit]
-Description=Check Verify
+Description=Cockpit Verify
 
 [Service]
 User=cockpit
 Group=cockpit
 Environment=TEST_OS=fedora-23
 RestartSec=60
-RootDirectory=/opt/cockpit/test
+WorkingDirectory=/opt/cockpit/test
 ExecStart=/opt/cockpit-verify
 SendSIGKILL=no
 SendSIGHUP=yes

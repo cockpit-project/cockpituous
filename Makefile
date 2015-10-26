@@ -28,6 +28,7 @@ verify-install:
 	test -d /opt/cockpit || git close https://github.com/cockpit-project/cockpit
 	( cd /opt/cockpit/tools && npm install )
 	chown -R cockpit /opt/cockpit
+	usermod -a -G mock cockpit
 	cp verify/cockpit-verify /opt/
 	cp verify/cockpit-verify.service /etc/systemd/system/
 	systemctl daemon-reload

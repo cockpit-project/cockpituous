@@ -3,5 +3,5 @@
 set -ex
 while true; do
 	git reset --hard master
-	TEST_OS=fedora-23 test/check-verify --github=next --verbose --publish=fedorapeople.org --jobs=6
+	./check-verify --github=next --verbose --jobs=6
 done
