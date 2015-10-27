@@ -29,7 +29,7 @@ verify-shell:
 		--volume /home/cockpit:/home/user \
 		--volume $(CURDIR)/verify:/usr/local/bin \
 		--volume=/opt/verify:/build:rw \
-		--net=host --privileged --entrypoint=/bin/bash \
+		--net=host --pid=host --privileged --entrypoint=/bin/bash \
         cockpit/infra-verify -i
 
 verify-container:
