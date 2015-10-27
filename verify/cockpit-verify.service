@@ -7,8 +7,8 @@ After=docker.service libvirtd.service
 Restart=always
 RestartSec=60
 Environment=TEST_OS=fedora-23
-ExecStart=/bin/sh -c "/usr/bin/docker start -a verify-$TEST_OS || /usr/bin/docker run --name=verify-$TEST_OS --volume=/home/cockpit:/home/user:rw --volume=/opt/verify-$TEST_OS:/build:rw --volume=/var/run/libvirt:/var/run/libvirt --net=host --privileged --env=TEST_OS=$TEST_OS cockpit/infra-verify"
-ExecStop=/bin/sh -c "/usr/bin/docker stop verify-$TEST_OS"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=verify-$TEST_OS --volume=/home/cockpit:/home/user:rw --volume=/opt/verify-$TEST_OS:/build:rw --net=host --pid=host --privileged --env=TEST_OS=$TEST_OS cockpit/infra-verify"
+ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f verify-$TEST_OS"
 
 [Install]
 WantedBy=multi-user.target

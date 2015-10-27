@@ -16,6 +16,7 @@ RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
+ENV XDG_CACHE_HOME /tmp
 VOLUME /home/user
 VOLUME /build
 
