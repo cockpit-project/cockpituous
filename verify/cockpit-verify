@@ -15,6 +15,6 @@ fi
 mkdir -p mock
 
 while true; do
-	git -C cockpit reset --hard master
+	git -C cockpit reset --hard origin/master
 	cockpit/test/check-verify --install --rebase "$@"
 done
