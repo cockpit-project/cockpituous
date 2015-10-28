@@ -9,6 +9,7 @@ RUN npm -g install phantomjs
 
 RUN mkdir -p /usr/local/bin /home/user /build
 ADD cockpit-verify /usr/local/bin/
+ADD cockpit-verify.service /
 
 RUN chown -R user /build /home/user
 RUN usermod -a -G mock user
