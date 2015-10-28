@@ -4,13 +4,11 @@ all:
 	@echo "       make release-container" >&2
 	@echo "       make release-install" >&2
 
-base:
+base-container:
 	docker build -t cockpit/infra-base base
 
-containers: release-container
-	docker build -t cockpit/infra-sink sink
-	docker build -t cockpit/infra-files files
-	docker build -t cockpit/infra-irc irc
+containers: release-container verify-container
+	@true
 
 release-shell:
 	docker run -ti --rm -v /home/cockpit:/home/user \
