@@ -1,0 +1,58 @@
+# Cockpit Integration Test
+
+This is the deployment container and configuration for the Cockpit
+integration tests. This documentation is for deployment on Fedora 22+
+or RHEL 7+
+
+This is for a single operating system. Choose the operating system to
+test ahead of time.
+
+## How to deploy
+
+First get the container:
+
+    # docker pull cockpit/infra-verify
+
+Some bits need to be configured outside the container:
+
+    # yum install libvirt libvirt-client
+    # wget https://raw.githubusercontent.com/cockpit-project/cockpit/master/test/vm-prep
+    # sh vm-prep
+
+Setup a 'cockpit' user:
+
+    # groupadd -g 1111 -r cockpit && useradd -r -g cockpit -u 1111 cockpit
+    # mkdir -p /home/cockpit/.ssh /home/cockpit/.config
+    # chown cockpit:cockpit /home/cockpit
+
+Fill in the following files with valid credentials able to post logs to sink and
+update github status:
+
+    /home/cockpit/.ssh/id_rsa
+    /home/cockpit/.ssh/id_rsa.pub
+    /home/cockpit/.config/github-token
+    /home/cockpit/.config/github-whitelist
+
+Get the service file. Edit it before installing it. Set the TEST_OS.
+Then install it and run it:
+
+    # wget https://raw.githubusercontent.com/cockpit-project/cockpituous/master/verify/cockpit-verify.service
+    # cp cockpit-verify.service /etc/systemd/system/
+    # systemctl daemon-reload
+    # systemctl enable cockpit-verify
+    # systemctl start cockpit-verify
+
+# Troubleshooting
+
+Some helpful commands:
+
+    # journalctl -fu cockpit-verify
+    # systemctl stop cockpit-verify
+
+# Updates
+
+To update, just pull the new container and restart the cockpit-verify service.
+It will restart automatically when it finds a pause in the verification work.
+
+    # docker pull cockpit/infra-verify
+

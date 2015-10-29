@@ -16,5 +16,7 @@ mkdir -p mock
 
 while true; do
 	git -C cockpit reset --hard origin/master
-	cockpit/test/check-verify --install --rebase "$@"
+	if ! cockpit/test/check-verify --install --rebase "$@"; then
+        sleep 60
+    fi
 done
