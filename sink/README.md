@@ -46,6 +46,7 @@ services like IRC or GitHub. The following fields are present:
  * `"github"`: object containing GitHub status info
  * `"badge"`: for updating badges
  * `"link"`: the link to the status message
+ * `"extras"`: for putting extra files into the log directory
 
 ### Github Status format
 
@@ -79,3 +80,10 @@ The `"link"` field will be automitically filled in by the sink. If it
 is specified in the status JSON object, that the specified link will
 take precedence. If a relative link is specified, it will be relative
 to the URL that the sink would have used.
+
+### Extras format
+
+The `"extra"` part of a status object should be an array of strings.
+Each string is a URL and is downloaded into the log directory.  The
+last component of the URL will be the name of the file in the log
+directory.

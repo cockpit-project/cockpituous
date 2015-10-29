@@ -54,6 +54,7 @@ import sys
 import tempfile
 import traceback
 import urlparse
+import urllib
 
 import ConfigParser
 import StringIO
@@ -210,9 +211,19 @@ class Badger(object):
             with open(os.path.join(self.location, name + ".html"), 'wb') as f:
                 f.write('<html><head><meta http-equiv="refresh" content="0; {url}"></head></html>'.format(url=data['link']))
 
+class Extras(object):
+    def __init__(self, config):
+        pass
+
+    def push(self, data):
+        if 'extras' in data:
+            for url in data['extras']:
+                urllib.urlretrieve(url, os.path.basename(url))
+            del data['extras']
+
 class Status(object):
     def __init__(self, config, identifier):
-        self.reporters = [ GitHub(config), Irc(config), Badger(config) ]
+        self.reporters = [ GitHub(config), Irc(config), Badger(config), Extras(config) ]
         self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
         sys.stderr.write(self.link + "\n")
