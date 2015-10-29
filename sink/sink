@@ -218,7 +218,9 @@ class Status(object):
         sys.stderr.write(self.link + "\n")
 
     def push(self, data, log):
-        if "link" not in data:
+        if "link" in data:
+            data["link"] = urlparse.urljoin(self.link, data["link"], True)
+        else:
             data["link"] = self.link
         for reporter in self.reporters:
             try:
