@@ -45,6 +45,7 @@ services like IRC or GitHub. The following fields are present:
  * `"notify"`: message to send to IRC
  * `"github"`: object containing GitHub status info
  * `"badge"`: for updating badges
+ * `"link"`: the link to the status message
 
 ### Github Status format
 
@@ -71,3 +72,10 @@ The badge itself is a small image that includes `description` and
 `status-text`, with a color determined by `status`.  `status` can be
 one of "passed", "failed", or "error".  If `status-text` is omitted,
 `status` is used instead.
+
+### Link field
+
+The `"link"` field will be automitically filled in by the sink. If it
+is specified in the status JSON object, that the specified link will
+take precedence. If a relative link is specified, it will be relative
+to the URL that the sink would have used.
