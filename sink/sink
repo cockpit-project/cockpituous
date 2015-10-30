@@ -163,14 +163,15 @@ class Irc(object):
         sys.stderr.flush()
         self.pid = os.fork()
         if self.pid == 0:
+            ret = 0
             os.close(wfd)
             try:
                 self.process(rfd)
+                sys.stdout.flush()
             except:
                 traceback.print_exc()
-                sys.exit(1)
-            else:
-                sys.exit(0)
+                ret = 1
+            os._exit(ret)
         os.close(rfd)
         self.pipe = os.fdopen(wfd, "w")
 
