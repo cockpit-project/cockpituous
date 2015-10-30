@@ -4,11 +4,11 @@ Requires=docker.service libvirtd.service
 After=docker.service libvirtd.service
 
 [Service]
-Environment=TEST_OS=fedora-23
+Environment="TEST_OS=fedora-testing fedora-atomic"
 Restart=always
 RestartSec=60
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=verify-$TEST_OS --volume=/home/cockpit:/home/user:rw --volume=/home/cockpit/verify-$TEST_OS:/build:rw --net=host --pid=host --privileged --env=TEST_OS=$TEST_OS cockpit/infra-verify"
-ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f verify-$TEST_OS"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-verify --volume=/home/cockpit:/home/user:rw --volume=/home/cockpit/verify:/build:rw --net=host --pid=host --privileged --env=TEST_OS=\"$TEST_OS\" cockpit/infra-verify"
+ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-verify"
 
 [Install]
 WantedBy=multi-user.target
