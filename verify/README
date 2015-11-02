@@ -23,7 +23,7 @@ Setup a 'cockpit' user:
 
     # groupadd -g 1111 -r cockpit && useradd -r -g cockpit -u 1111 cockpit
     # mkdir -p /home/cockpit/.ssh /home/cockpit/.config
-    # chown cockpit:cockpit /home/cockpit
+    # chown -R cockpit:cockpit /home/cockpit
 
 Fill in the following files with valid credentials able to post logs to sink and
 update github status:
@@ -55,4 +55,3 @@ To update, just pull the new container and restart the cockpit-verify service.
 It will restart automatically when it finds a pause in the verification work.
 
     # docker pull cockpit/infra-verify
-
