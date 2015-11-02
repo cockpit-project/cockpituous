@@ -186,6 +186,14 @@ class Irc(object):
                 self.pipe.write(channel + " :" + line + "\n")
             self.pipe.flush()
 
+def write_new(path, content):
+    try:
+        os.remove(path)
+    except:
+        pass
+    with open(path, 'wb') as f:
+        f.write(content)
+
 class Badger(object):
     def __init__(self, config):
         self.location = os.path.expanduser(config.get("Badges", "Location"))
@@ -207,10 +215,10 @@ class Badger(object):
             else:
                 color = '#9f9f9f'
             content = self.template.format(description=description, status=status_text, color=color)
-            with open(os.path.join(self.location, name + ".svg"), 'wb') as f:
-                f.write(content)
-            with open(os.path.join(self.location, name + ".html"), 'wb') as f:
-                f.write('<html><head><meta http-equiv="refresh" content="0; {url}"></head></html>'.format(url=data['link']))
+            write_new(os.path.join(self.location, name + ".svg"),
+                      content)
+            write_new(os.path.join(self.location, name + ".html"),
+                      '<html><head><meta http-equiv="refresh" content="0; {url}"></head></html>'.format(url=data['link']))
 
 class Extras(object):
     def __init__(self, config):
