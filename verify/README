@@ -33,6 +33,11 @@ update github status:
     /home/cockpit/.config/github-token
     /home/cockpit/.config/github-whitelist
 
+Put the following into /home/cockpit/.ssh/config:
+
+    Host fedorapeople.org
+        User cockpit
+
 Get the service file. Edit it before installing it. Set the TEST_OS.
 Then install it and run it:
 
@@ -55,4 +60,3 @@ To update, just pull the new container and restart the cockpit-verify service.
 It will restart automatically when it finds a pause in the verification work.
 
     # docker pull cockpit/infra-verify
-
