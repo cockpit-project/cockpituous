@@ -65,7 +65,7 @@ prepare()
 
     trace "Extracting the tarball $TARBALL"
 
-    rm -rf $WORKDIR/extract
+    rm -rf $WORKDIR
     mkdir -p $WORKDIR/extract
     tar -f $TARBALL -C $WORKDIR/extract -x
 
@@ -73,15 +73,7 @@ prepare()
 
     cd $WORKDIR
 
-    if [ -d repo ]; then
-        git -C repo clean -fdx
-        git -C repo fetch origin
-        git -C repo checkout master
-        git -C repo reset --hard origin/master
-    else
-        git clone git@github.com:$REPO repo
-    fi
-
+    git clone git@github.com:$REPO repo
     cd extract
 
     set +f
