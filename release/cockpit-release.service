@@ -1,0 +1,13 @@
+[Unit]
+Description=Cockpit Release Runner
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=1800
+ExecStart=/bin/sh -c "/usr/bin/docker start -a cockpit-release || /usr/bin/docker run --name=cockpit-release --volume=/home/cockpit:/home/user:rw cockpit/infra-release"
+ExecStop=/usr/bin/docker stop cockpit-release
+
+[Install]
+WantedBy=multi-user.target

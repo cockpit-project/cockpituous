@@ -18,9 +18,9 @@ release-container:
 	docker build -t cockpit/infra-release release
 
 release-install: release-container
-	cp release/release-runner.service /etc/systemd/system/
+	cp release/cockpit-release.service /etc/systemd/system/
 	systemctl daemon-reload
-	systemctl enable release-runner
+	systemctl enable cockpit-release
 
 verify-shell:
 	docker run -ti --rm \

@@ -1,0 +1,55 @@
+# Cockpit Release Runner
+
+This is the container for the Cockpit release runner.
+
+## How to deploy
+
+First get the container:
+
+    # docker pull cockpit/infra-release
+
+Setup a 'cockpit' user:
+
+    # groupadd -g 1111 -r cockpit && useradd -r -g cockpit -u 1111 cockpit
+    # mkdir -p /home/cockpit/.ssh /home/cockpit/.config
+    # chown cockpit:cockpit /home/cockpit
+
+Fill in the following files with valid credentials able to post logs to sink and
+update github status:
+
+    /home/cockpit/.ssh/id_rsa
+    /home/cockpit/.ssh/id_rsa.pub
+    /home/cockpit/.ssh/known_hosts
+    /home/cockpit/.config/bodhi-user
+    /home/cockpit/.config/bodhi-password
+    /home/cockpit/.config/copr
+    /home/cockpit/.config/github-token
+    /home/cockpit/.config/github-whitelist
+    /home/cockpit/.fedora.cert
+    /home/cockpit/.fedora-server-ca.cert
+    /home/cockpit/.gitconfig
+
+Get the service file. Edit it before installing it. Set the TEST_OS.
+Then install it and run it:
+
+    # wget https://raw.githubusercontent.com/cockpit-project/cockpituous/master/release/cockpit-release.service
+    # cp cockpit-release.service /etc/systemd/system/
+    # systemctl daemon-reload
+    # systemctl enable cockpit-release
+    # systemctl start cockpit-release
+
+# Troubleshooting
+
+Some helpful commands:
+
+    # journalctl -fu cockpit-release
+    # systemctl stop cockpit-release
+
+# Updates
+
+To update, just pull the new container and restart the cockpit-verify service.
+It will restart automatically when it finds a pause in the verification work.
+
+    # docker pull cockpit/infra-release
+    # systemctl restart cockpit-release
+
