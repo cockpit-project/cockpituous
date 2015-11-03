@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -ex
+
+
+if [ ! -d cockpit ]; then
+    sudo chown -R user .
+    git clone https://github.com/cockpit-project/cockpit
+fi
+
+if [ ! -d cockpit/tools/node_modules ]; then
+    ( cd cockpit/tools && npm install )
+fi
+
+echo "Starting release"
+release-runner /usr/local/bin/cockpit-script

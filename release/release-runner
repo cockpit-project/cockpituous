@@ -29,7 +29,6 @@ set -euf
 # We want job control
 set -m
 
-BASE=${RELEASE_BASE:-./}
 SINK=${RELEASE_SINK:-}
 RELEASE_TAG=${RELEASE_TAG:-}
 FAIL=0
@@ -104,8 +103,6 @@ job()
 
 runner()
 {
-    cd $BASE
-
     # Run the basic script
     . $1
 
@@ -167,9 +164,9 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
-if [ -z "$RELEASE_TAG" -a -d "$BASE/.git" ]; then
-    git -C "$BASE" fetch origin
-    RELEASE_TAG=$(git -C "$BASE" describe --abbrev=0 origin/master || true)
+if [ -z "$RELEASE_TAG" -a -d ".git" ]; then
+    git fetch origin
+    RELEASE_TAG=$(git describe --abbrev=0 origin/master || true)
 fi
 
 if [ -z "$RELEASE_TAG" ]; then
@@ -177,8 +174,8 @@ if [ -z "$RELEASE_TAG" ]; then
     exit 1
 fi
 
-if [ -d "$BASE/.git" ]; then
-    if git -C "$BASE" show "released-$RELEASE_TAG" -- 2> /dev/null > /dev/null; then
+if [ -d ".git" ]; then
+    if git show "released-$RELEASE_TAG" -- 2> /dev/null > /dev/null; then
         exit 0
     fi
 fi

@@ -11,16 +11,10 @@ RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
 ADD * /usr/local/bin/
 
 RUN chown -R user /build /home/user
-RUN runuser -u user -- /bin/sh -c "git -C /build clone https://github.com/cockpit-project/cockpit && cd /build/cockpit/tools && npm install"
 
-RUN printf "\nHost sink.cockpit-project.org\n\tUser user\n\tPort 2002\n\tHostName files.cockpit-project.org\n" >> /etc/ssh/ssh_config
-RUN printf "\nHost files.cockpit-project.org\n\tUser user\n\tPort 2001\n" >> /etc/ssh/ssh_config
-
-
-ENV RELEASE_BASE /build/cockpit
 ENV RELEASE_SINK fedorapeople.org
 VOLUME /home/user
+VOLUME /build
+WORKDIR /build
 USER user
-CMD ["/usr/local/bin/release-runner", "/usr/local/bin/cockpit-script"]
-
-LABEL RUN /usr/bin/docker run -ti --volume=/home/cockpit:/home/user:rw IMAGE /bin/bash
+ENTRYPOINT ["/usr/local/bin/cockpit-release"]
