@@ -326,7 +326,7 @@ def main():
     if os.path.exists(directory):
         files = os.listdir(directory)
         dest = tempfile.mkdtemp(prefix='backup.', dir=directory)
-        os.chmod(dest, 0755)
+        os.chmod(dest, 0o755)
         for filename in files:
             if not filename.startswith("backup."):
                 shutil.move(os.path.join(directory, filename), dest)
