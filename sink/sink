@@ -315,7 +315,10 @@ def main():
         parser.error("not a valid log identifier: " + identifier)
 
     # Load up configuration if available
-    user = os.environ.get("LOGNAME", os.getlogin())
+    try:
+        user = os.environ.get("LOGNAME", os.getlogin())
+    except:
+        user = os.environ.get("LOGNAME", None)
     config = ConfigParser.SafeConfigParser({ "user": user, "identifier": "@@" })
     config.readfp(StringIO.StringIO(DEFAULTS))
     config.read([ os.path.expanduser("~/.config/sink") ])
