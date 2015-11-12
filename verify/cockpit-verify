@@ -2,6 +2,9 @@
 
 set -ex
 
+if [ -n "$TMPDIR" ]; then
+    mkdir -p "$TMPDIR"
+fi
 
 if [ ! -d cockpit ]; then
     sudo chown -R user /build
