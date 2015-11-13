@@ -19,7 +19,8 @@ echo "Starting testing of $TEST_OS"
 while true; do
     fail=0
     for os in $TEST_OS; do
-        git -C cockpit reset --hard origin/master
+        git -C cockpit fetch origin master
+        git -C cockpit reset --hard FETCH_HEAD
         if ! TEST_OS=$os cockpit/test/check-verify --install --rebase "$@"; then
             fail=1
         fi
