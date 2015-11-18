@@ -11,8 +11,10 @@ containers: release-container verify-container
 	@true
 
 release-shell:
-	docker run -ti --rm -v /home/cockpit:/home/user \
-		-v $(CURDIR)/release:/usr/local/bin cockpit/infra-release /bin/bash
+	docker run -ti --rm -v /home/cockpit:/home/user:rw \
+		--volume=/home/cockpit/release:/build:rw \
+		--volume=$(CURDIR)/release:/usr/local/bin \
+		--entrypoint=/bin/bash cockpit/infra-release
 
 release-container:
 	docker build -t cockpit/infra-release release

@@ -59,6 +59,8 @@ prepare()
     trace "Checking out $TAG"
 
     git fetch origin
+    git reset --hard HEAD
+    git clean -fd
     git checkout --detach $TAG
 
     mkdir -p build
