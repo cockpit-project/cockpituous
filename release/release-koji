@@ -189,8 +189,7 @@ prepare()
             if [ $CONTINUE -eq 0 ]; then
                 exit $ret
             else
-                rm $CLEANUP
-                exit 0
+                already=1
             fi
         fi
     fi
@@ -202,6 +201,7 @@ prepare()
     fi
 
     if [ $already -eq 1 ]; then
+        rm $CLEANUP
         exit 0
     fi
 }
