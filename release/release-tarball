@@ -96,7 +96,7 @@ prepare()
     ln -snf build/$archive "$TARBALL"
 }
 
-while getopts "f:qvxz" opt; do
+while getopts "f:qt:vxz" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
@@ -104,6 +104,9 @@ while getopts "f:qvxz" opt; do
     q)
         QUIET=1
         VERBOSE=0
+        ;;
+    t)
+        TAG="$OPTARG"
         ;;
     v)
         QUIET=0
