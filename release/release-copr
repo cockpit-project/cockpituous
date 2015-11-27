@@ -70,8 +70,7 @@ prepare()
     srpm="$(readlink_or $SRPM)"
     base="$(basename "$srpm")"
 
-    user=$(ssh fedorapeople.org whoami)
-    ssh fedorapeople.org -- mkdir -p public_html
+    user=$(ssh fedorapeople.org -- mkdir -p public_html && whoami)
     scp $srpm fedorapeople.org:public_html/
     URL="https://fedorapeople.org/~$user/$base"
 }
