@@ -185,9 +185,8 @@ prepare()
 
         # Build it in brew
         if ! fedpkg scratch-build --srpm=$srpm; then
-            ret=$?
             if [ $CONTINUE -eq 0 ]; then
-                exit $ret
+                exit 1
             else
                 already=1
             fi
