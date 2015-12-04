@@ -207,7 +207,10 @@ prepare()
 
 commit()
 (
-    rm $CLEANUP
+    if [ -z "$CLEANUP" ]; then
+        rm $CLEANUP
+    fi
+
     cd $WORKDIR
 
     git checkout $BRANCH
