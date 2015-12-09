@@ -200,14 +200,16 @@ prepare()
     fi
 
     if [ $already -eq 1 ]; then
-        rm $CLEANUP
+        if [ "$CLEANUP" != "" ]; then
+            rm $CLEANUP
+        fi
         exit 0
     fi
 }
 
 commit()
 (
-    if [ -z "$CLEANUP" ]; then
+    if [ "$CLEANUP" != "" ]; then
         rm $CLEANUP
     fi
 
