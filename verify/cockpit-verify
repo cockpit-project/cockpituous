@@ -17,17 +17,16 @@ fi
 
 mkdir -p mock
 
-echo "Starting testing of $TEST_OS"
+echo "Starting testing"
 
 while true; do
     fail=0
-    for os in $TEST_OS; do
-        git -C cockpit fetch origin master
-        git -C cockpit reset --hard FETCH_HEAD
-        if ! TEST_OS=$os cockpit/test/github-task "$@"; then
-            fail=1
-        fi
-    done
+    git -C cockpit fetch origin master
+    git -C cockpit reset --hard FETCH_HEAD
+    cockpit/test/vm-download --prune
+    if ! cockpit/test/github-task "$@"; then
+        fail=1
+    fi
     if [ $fail != 0 ]; then
         sleep 60
     fi
