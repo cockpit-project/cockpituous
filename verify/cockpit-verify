@@ -24,7 +24,7 @@ while true; do
     for os in $TEST_OS; do
         git -C cockpit fetch origin master
         git -C cockpit reset --hard FETCH_HEAD
-        if ! TEST_OS=$os cockpit/test/check-verify --install --rebase "$@"; then
+        if ! TEST_OS=$os cockpit/test/github-task "$@"; then
             fail=1
         fi
     done
