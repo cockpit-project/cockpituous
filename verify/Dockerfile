@@ -27,4 +27,4 @@ VOLUME /build
 USER user
 WORKDIR /build
 ENTRYPOINT ["/usr/local/bin/cockpit-verify"]
-CMD ["--github=next", "--publish=fedorapeople.org", "--verbose", "--jobs=4"]
+CMD ["--publish=fedorapeople.org", "--verbose", "--jobs=4"]
