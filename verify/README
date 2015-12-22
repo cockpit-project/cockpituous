@@ -15,7 +15,7 @@ First get the container:
 
 Some bits need to be configured outside the container:
 
-    # yum install libvirt libvirt-client
+    # yum install libvirt libvirt-client qemu-system-x86
     # wget https://raw.githubusercontent.com/cockpit-project/cockpit/master/test/vm-prep
     # sh vm-prep
 
