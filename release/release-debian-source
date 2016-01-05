@@ -1,0 +1,175 @@
+#!/bin/sh -euf
+#
+# release-debian-source
+#
+# A release script that publishes a apt-gettable repository with a
+# Debian source package.
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tbz     RELEASE_TARBALL=tbz    The tarball
+#
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+# -z         RELEASE_CHECK=1        Check credentials only
+#
+
+set -euf
+
+# Various arguments
+TRANSACTION=${RELEASE_TRANSACTION:-0}
+CHECK=${RELEASE_CHECK:-0}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+
+TARBALL="${RELEASE_TARBALL:-}"
+TAG=${RELEASE_TAG:-}
+
+# Globals
+
+WORKDIR=debian.tmp
+REPODIR=debian.repo
+
+usage()
+{
+    echo "usage: release-debian-source [-qvxz] [-f TARBALL]" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        echo "> $@" >&2
+    fi
+}
+
+message()
+{
+    echo "release-debian: $@" >&2
+}
+
+check()
+{
+    true
+}
+
+trim_contents()
+{
+    # Remove line with just tag name. Remove signature
+    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+}
+
+format_date()
+{
+    LC_ALL=C date --date="$1" -R
+}
+
+changelog_lines()
+{
+    local tagdate tagauthor tagemail tagbody
+    eval $(git for-each-ref --shell --format='
+tagdate=%(taggerdate:short)
+tagauthor=%(taggername)
+tagemail=%(taggeremail)' "refs/tags/$TAG")
+    tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | sed -e 's/^/  /')"
+    tagdate="$(format_date $tagdate)"
+
+    printf "cockpit (%s) experimental; urgency=medium\n\n%s\n\n -- %s %s  %s\n" "$TAG" "$tagbody" "$tagauthor" "$tagemail" "$tagdate"
+}
+
+prepare()
+{
+    local absworkdir
+
+    trace "Creating Debian source repository"
+
+    rm -rf $WORKDIR $REPODIR
+    mkdir $WORKDIR $REPODIR
+
+    absworkdir=$(cd $WORKDIR && pwd)
+
+    tar -C $WORKDIR -xjf $TARBALL --strip-components=1
+
+    ( cd $WORKDIR
+      mv ./tools/debian .
+      # hack the packaging bits for building a release tarball
+      # - don't run autogen.sh
+      # - don't install or package test assets
+      sed -i -e 's/--with autoreconf//' -e 's/install-test-assets//' debian/rules
+      sed -i -e '/Package: cockpit-test-assets/,/^$/d' debian/control
+    )
+
+    changelog_lines >$WORKDIR/debian/changelog
+    ( cd $REPODIR
+      dpkg-source -b $absworkdir
+      dpkg-scansources . >Sources
+      gzip <Sources >Sources.gz
+    )
+}
+
+commit()
+(
+    trace "Publishing Debian source repository"
+
+    rsync --delete -a -e ssh $REPODIR/ fedorapeople.org:/project/cockpit/debian-unstable
+)
+
+while getopts "f:t:qvxz" opt; do
+    case "$opt" in
+    f)
+        TARBALL="$OPTARG"
+        ;;
+    t)
+        TAG="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    x)
+        TRANSACTION=1
+        ;;
+    z)
+        CHECK=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+if [ $CHECK -eq 1 ]; then
+    check
+    exit 0
+fi
+
+# The tag for the release
+if [ -z "$TAG" ]; then
+    TAG=$(git describe --abbrev=0)
+    if [ -z "$TAG" ]; then
+        message "could not find a tag to release"
+        exit 2
+    fi
+fi
+
+prepare
+
+if [ $TRANSACTION -eq 1 ]; then
+    kill -STOP $$
+fi
+
+commit
