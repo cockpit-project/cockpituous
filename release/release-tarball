@@ -78,7 +78,7 @@ prepare()
 
     # Print out the tarball
     printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' > GNUmakefile
-    archive=$(make print-DIST_ARCHIVES)
+    archive=$(make -s print-DIST_ARCHIVES)
 
     if [ ! -f "$archive" ]; then
         trace "Building the tarball"
@@ -90,7 +90,7 @@ prepare()
         trace "Skipping tarball build"
     fi
 
-    trace "Linking tarball"
+    trace "Linking tarball: $archive $TARBALL"
 
     cd ..
     ln -snf build/$archive "$TARBALL"
