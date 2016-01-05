@@ -3,7 +3,7 @@ MAINTAINER "Stef Walter" <stefw@redhat.com>
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 
-RUN dnf -y install git yum-utils npm tar bzip2 fedpkg copr-cli python python-irclib fpaste bind-utils nc gnupg freetype fontconfig krb5-workstation bodhi-client expect psmisc
+RUN dnf -y install git yum-utils npm tar bzip2 fedpkg copr-cli python python-irclib fpaste bind-utils nc gnupg freetype fontconfig krb5-workstation bodhi-client expect psmisc dpkg dpkg-dev
 RUN yum-builddep -y /tmp/cockpit.spec
 RUN npm -g install phantomjs
 

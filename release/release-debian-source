@@ -166,6 +166,14 @@ if [ -z "$TAG" ]; then
     fi
 fi
 
+if [ -z "$TARBALL" ]; then
+    message "no tarball input specified"
+    exit 2
+elif [ ! -f "$TARBALL" ]; then
+    message "tarball source not found: $TARBALL"
+    exit 1
+fi
+
 prepare
 
 if [ $TRANSACTION -eq 1 ]; then
