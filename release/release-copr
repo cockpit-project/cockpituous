@@ -9,6 +9,8 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
+# -k         RELEASE_CONTINUE=1     Ignore build failure and skip the
+#                                   branch without failing delivery.
 # -p srpm    RELEASE_SRPM=srpm      Path to SRPM
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
@@ -22,6 +24,7 @@ set -euf
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 CHECK=${RELEASE_CHECK:-0}
 QUIET=${RELEASE_QUIET:-0}
+CONTINUE=${RELEASE_CONTINUE:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
 COPR=${RELEASE_COPR:-}
@@ -77,11 +80,18 @@ prepare()
 
 commit()
 (
-    copr-cli build --nowait $COPR "$URL"
+    if ! copr-cli build --nowait $COPR "$URL"; then
+        if [ $CONTINUE -eq 0 ]; then
+            exit 1
+        fi
+    fi
 )
 
-while getopts "p:qvxz" opt; do
+while getopts "kp:qvxz" opt; do
     case "$opt" in
+    k)
+        CONTINUE=1
+        ;;
     p)
         SRPM="$OPTARG"
         ;;
