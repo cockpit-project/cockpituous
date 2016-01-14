@@ -155,7 +155,7 @@ prepare()
         base="$(basename $ball)"
         run_curl --data-binary @$TARBALL --progress-bar --output $uplog \
              -H "Accept: application/vnd.github.manifold-preview" \
-             -H "Content-Type: application/x-bz2" \
+             -H "Content-Type: application/x-xz" \
             "$upload?name=$base"
 
         # Remove this file later
