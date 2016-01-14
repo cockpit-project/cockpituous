@@ -89,7 +89,7 @@ prepare()
 
     absworkdir=$(cd $WORKDIR && pwd)
 
-    tar -C $WORKDIR -xjf $TARBALL --strip-components=1
+    tar -C $WORKDIR -xf $TARBALL --strip-components=1
 
     ( cd $WORKDIR
       mv ./tools/debian .
