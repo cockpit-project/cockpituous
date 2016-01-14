@@ -73,8 +73,9 @@ prepare()
         trace "Setting up the build"
         ../autogen.sh --prefix=/usr
         autogen=1
-        make
     fi
+
+    make
 
     # Print out the tarball
     printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' > GNUmakefile
