@@ -67,14 +67,9 @@ prepare()
     rm -rf build/*
 
     cd build
-    autogen=0
 
-    if [ ! -f ./Makefile ]; then
-        trace "Setting up the build"
-        ../autogen.sh --prefix=/usr
-        autogen=1
-    fi
-
+    trace "Setting up the build"
+    ../autogen.sh --prefix=/usr
     make
 
     # Print out the tarball
@@ -83,9 +78,6 @@ prepare()
 
     if [ ! -f "$archive" ]; then
         trace "Building the tarball"
-        if [ $autogen -eq 0 ]; then
-            ../autogen.sh --prefix=/usr
-        fi
         make -j1 distcheck
     else
         trace "Skipping tarball build"

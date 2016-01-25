@@ -141,6 +141,9 @@ prepare()
     # Update the spec file
     spec="$WORKDIR/$PACKAGE.spec"
 
+    tarball=$(readlink_or $TARBALL)
+    cp $tarball $WORKDIR/
+
     if grep -q "$TAG-1" "$spec"; then
         trace "Already have NVR $PACKAGE-$TAG-1 present"
         already=1
@@ -161,9 +164,7 @@ prepare()
         CLEANUP="$CLEANUP $tmpfile"
         trace "Updating sources"
 
-        tarball=$(readlink_or $TARBALL)
         SOURCES=$(basename $tarball)
-        cp $tarball $WORKDIR/
         (cd $WORKDIR && md5sum $SOURCES) > $WORKDIR/sources
         echo "/$SOURCES" >> $WORKDIR/.gitignore
 
