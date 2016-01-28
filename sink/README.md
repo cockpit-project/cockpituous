@@ -40,13 +40,27 @@ a tarball to follow. This tarball will be extracted into the log directory.
 # Status format
 
 When a status JSON object is present, then the sink will send updates to
-services like IRC or GitHub. The following fields are present:
+services like IRC or GitHub. The following fields might be present:
 
+ * `"onaborted"`: the status to process upon abortion
  * `"notify"`: message to send to IRC
  * `"github"`: object containing GitHub status info
  * `"badge"`: for updating badges
  * `"link"`: the link to the status message
  * `"extras"`: for putting extra files into the log directory
+
+### Aborted runs
+
+When the log ends without a final status line and the initial status
+contained a `"onaborted"` field, its value is used as the final
+status.
+
+Typically, the 'onaborted' value contains instructions to set a status
+on GitHub to "error", or to post a final message to IRC.
+
+If `"onaborted"` is not present, the sink will tweak to initial status
+and use that as the final status.  For example, it will modify the
+GitHub status to say "Aborted without status".
 
 ### Github Status format
 

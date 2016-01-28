@@ -268,12 +268,15 @@ class Status(object):
             used = True
         except:
             data = self.data
-            data["message"] = "Aborted"
-            if "github" in data and "status" in data["github"]:
-                data["github"]["status"]["state"] = "error"
-                data["github"]["status"]["description"] = "Aborted without status"
-            if "badge" in data:
-                data["badge"]["status"] = "error"
+            if "onaborted" in data:
+                data = data["onaborted"]
+            else:
+                data["message"] = "Aborted"
+                if "github" in data and "status" in data["github"]:
+                    data["github"]["status"]["state"] = "error"
+                    data["github"]["status"]["description"] = "Aborted without status"
+                    if "badge" in data:
+                        data["badge"]["status"] = "error"
         self.push(data, log)
         with open("status", "w") as fp:
             fp.write(json.dumps(data))
