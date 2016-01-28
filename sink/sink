@@ -55,11 +55,12 @@ import tempfile
 import traceback
 import urlparse
 import urllib
+import re
 
 import ConfigParser
 import StringIO
 
-class GitHub(object):
+class GitHubClassic(object):
     def __init__(self, config):
         self.token = None
         try:
@@ -94,6 +95,70 @@ class GitHub(object):
         if response.status < 200 or response.status >= 300:
             raise RuntimeError("Couldn't update GitHub: {0} {1}\n{2}\n".format(
                                response.status, response.reason, output.strip()))
+
+# Expansion of strings in JSON objects.
+
+def jpath(val, path):
+    for p in path:
+        if not isinstance(val, dict):
+            break
+        val = val.get(p, None)
+    return val
+
+def expand_str(val, env):
+    return re.sub(r':([-_.a-zA-Z0-9]+)', lambda m: str(jpath(env, m.group(1).split("."))), val)
+
+def expand(val, env):
+    if isinstance(val, basestring):
+        return expand_str(val,env)
+    elif isinstance(val, dict):
+        return { k: expand(v, env) for k, v in val.items() }
+    elif isinstance(val, list):
+        return [ expand(v, env) for v in val ]
+    else:
+        return val
+
+class GitHub(object):
+    def __init__(self, config):
+        self.results = { }
+
+    def req(self, token, method, resource, data):
+        headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
+        if token:
+            headers["Authorization"] = "token " + token
+        conn = httplib.HTTPSConnection("api.github.com", strict=True)
+        # conn.set_debuglevel(1)
+        conn.request(method, resource, json.dumps(data), headers)
+        response = conn.getresponse()
+        output = response.read()
+        conn.close()
+        if response.status < 200 or response.status >= 300:
+            raise RuntimeError("Couldn't update GitHub: {0} {1}\n{2}\n".format(
+                               response.status, response.reason, output.strip()))
+        return json.loads(output)
+
+    def push(self, status):
+        github = status.get("github", { })
+        token = github.get("token", None)
+        requests = github.get("requests", None)
+
+        if not token or not requests:
+            return
+
+        self.results['link'] = status['link']
+
+        for r in requests:
+            method = r.get('method', "GET")
+            resource = expand(r.get('resource', None), self.results)
+            data = expand(r.get('data', None),  self.results)
+            result_name = r.get('result', None)
+
+            if not method or not resource:
+                continue
+
+            result = self.req(token, method, resource, data)
+            if result_name:
+                self.results[result_name] = result
 
 class Irc(object):
     def __init__(self, config):
@@ -232,7 +297,7 @@ class Extras(object):
 
 class Status(object):
     def __init__(self, config, identifier):
-        self.reporters = [ GitHub(config), Irc(config), Badger(config), Extras(config) ]
+        self.reporters = [ GitHubClassic(config), GitHub(config), Irc(config), Badger(config), Extras(config) ]
         self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
 

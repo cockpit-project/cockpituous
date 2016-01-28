@@ -64,10 +64,59 @@ GitHub status to say "Aborted without status".
 
 ### Github Status format
 
-The `"github"` object above has the following fields:
+The `"github"` field of a status line can be used to make (almost)
+arbitrary REST requests against the GitHub API.  It can be used to
+update the status of commits and add comments to issues, for example.
 
- * `"resource"`: The full resource url of the Github Status
- * `"status"`: The GitHub status data
+The following fields are defined:
+
+ * `"token"`: The OAuth token to use
+ * `"requests"`: A list of requests to perform
+
+Each request can have the following fields:
+
+ * `"method"`: The HTTP method to use, such as GET or POST
+ * `"resource"`: The resource to use, such as "/user"
+ * `"data"`: The data to send in the request
+ * `"result"`: A name for the result, to be used with string expansion
+
+The `"token"`, `"requests"`, and `"resource"` fields are mandatory.
+
+The `"resource"` and `"data"` values will be expanded.  Any occurance
+of ":path" is replaced with a value from a previous request.  The
+'path' is a sequence of names, separated by "." characters.  The first
+name is looked up among all the named results of previous requests,
+and the remaining names are then used to walk into that result.
+
+Here is an example:
+
+  { "github":
+    { "token": "......",
+      "requests": [
+        { "method": "GET",
+          "resource": "/user",
+          "result": "user"
+        },
+        { "method": "POST",
+          "resource": "repos/:user.login/cockpit/issues",
+          "data": { "title": "New issue" }
+          "result": "issue"
+        },
+        { "method": "POST",
+          "resource": ":issue.comments_url",
+          "data": { "body": "Very urgent" }
+        }
+      ]
+    }
+  }
+
+This will create a new issue in the "cockpit" repo of the
+authenticated user and add a comment to it.
+
+As a special case, the result named "link" expands to the URL of the
+current log.
+
+You can use results from the initial status in the final status.
 
 ### Badge format
 
