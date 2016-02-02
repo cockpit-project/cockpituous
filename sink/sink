@@ -106,7 +106,12 @@ def jpath(val, path):
     return val
 
 def expand_str(val, env):
-    return re.sub(r':([-_.a-zA-Z0-9]+)', lambda m: str(jpath(env, m.group(1).split("."))), val)
+    def sub(m):
+        if m.group(1):
+            return str(jpath(env, m.group(1).split(".")))
+        else:
+            return ":"
+    return re.sub(r':([-_.a-zA-Z0-9]+)|::', sub, val)
 
 def expand(val, env):
     if isinstance(val, basestring):

@@ -88,6 +88,8 @@ of ":path" is replaced with a value from a previous request.  The
 name is looked up among all the named results of previous requests,
 and the remaining names are then used to walk into that result.
 
+To get a single ":" character, use "::".
+
 Here is an example:
 
   { "github":
