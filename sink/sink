@@ -329,6 +329,10 @@ class Status(object):
         sys.stderr.write(data["link"] + "\n")
         return True
 
+    def clean_status(self, data):
+        if "github" in data:
+            del data['github']['token']
+
     def finish(self, line, log):
         if not self.data:
             return False
@@ -349,7 +353,11 @@ class Status(object):
                         data["badge"]["status"] = "error"
         self.push(data, log)
         with open("status", "w") as fp:
-            fp.write(json.dumps(data))
+            clean_data = data
+            self.clean_status(clean_data)
+            if "onaborted" in clean_data:
+                self.clean_status(clean_data['onaborted'])
+            fp.write(json.dumps(clean_data))
         return used
 
 class Buffer(object):
