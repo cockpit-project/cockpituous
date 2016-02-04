@@ -330,7 +330,7 @@ class Status(object):
         return True
 
     def clean_status(self, data):
-        if "github" in data:
+        if "github" in data and "token" in data["github"]:
             del data['github']['token']
 
     def finish(self, line, log):
