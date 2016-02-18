@@ -29,13 +29,14 @@ SRPM=${RELEASE_SRPM:-$PWD/srpm}
 CHECK=${RELEASE_CHECK:-0}
 
 REPO=""
+SOURCE_REPO=""
 WORKDIR=""
 PUSH=""
 CLEANUP=""
 
 usage()
 {
-    echo "usage: release-dockerhub [-qvxz] [-p SRPM] REPO" >&2
+    echo "usage: release-dockerhub [-qvxz] [-p SRPM] [-s SOURCE_REPO ] REPO" >&2
     exit ${1-2}
 }
 
@@ -62,10 +63,10 @@ prepare()
 
     WORKDIR="dockerhub"
 
-    trace "Checking out Github repo $REPO"
+    trace "Checking out Github repo $SOURCE_REPO"
 
     rm -rf $WORKDIR
-    git clone git@github.com:$REPO $WORKDIR
+    git clone git@github.com:$SOURCE_REPO $WORKDIR
 
     trace "Getting version info"
 
@@ -102,12 +103,21 @@ commit()
 (
     trace "Pushing changes to Dockerfile"
 
-    git -C $WORKDIR push origin $PUSH
+    if [ "$SOURCE_REPO" = "$REPO" ]; then
+        git -C $WORKDIR push origin $PUSH
+    else
+        git -C $WORKDIR remote add fork "git@github.com:$REPO"
+        git -C $WORKDIR push -f fork $PUSH
+    fi
+
     rm $CLEANUP
 )
 
-while getopts "p:qvxz" opt; do
+while getopts "s:p:qvxz" opt; do
     case "$opt" in
+    s)
+        SOURCE_REPO="$OPTARG"
+        ;;
     p)
         SRPM="$OPTARG"
         ;;
@@ -141,6 +151,9 @@ if [ $# -ne 1 ]; then
 fi
 
 REPO="$1"
+if [ -z "$SOURCE_REPO" ]; then
+    SOURCE_REPO="$REPO"
+fi
 
 if [ $CHECK -eq 1 ]; then
     check
