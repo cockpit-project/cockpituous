@@ -21,7 +21,7 @@ job release-copr -k @cockpit/cockpit-preview
 
 # Update the Github repo that Docker Hub is tracking
 job release-dockerhub cockpit-project/cockpit-container
-job release-dockerhub cockpituous/cockpit-container cockpit-project/cockpit
+job release-dockerhub cockpituous/cockpit cockpit-project/cockpit
 
 # Push out a Bodhi update
 job release-bodhi F23
