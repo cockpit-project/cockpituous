@@ -11,7 +11,7 @@ First get the container:
 Setup a 'cockpit' user:
 
     # groupadd -g 1111 -r cockpit && useradd -r -g cockpit -u 1111 cockpit
-    # mkdir -p /home/cockpit/.ssh /home/cockpit/.config
+    # mkdir -p /home/cockpit/.ssh /home/cockpit/.config /home/cockpit/release
     # chown cockpit:cockpit /home/cockpit
 
 Fill in the following files with valid credentials able to post logs to sink and
