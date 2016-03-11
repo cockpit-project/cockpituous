@@ -61,11 +61,10 @@ prepare()
 {
     local version release tmpfile
 
-    WORKDIR="dockerhub"
+    WORKDIR=$(mktemp --directory .dockerhub-git.XXXXXX)
 
     trace "Checking out Github repo $SOURCE_REPO"
 
-    rm -rf $WORKDIR
     git clone git@github.com:$SOURCE_REPO $WORKDIR
 
     trace "Getting version info"
@@ -117,6 +116,7 @@ commit()
     fi
 
     rm $CLEANUP
+    rm -rf "$WORKDIR"
 )
 
 while getopts "s:p:qvxz" opt; do
