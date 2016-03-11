@@ -4,7 +4,7 @@ MAINTAINER "Stef Walter" <stefw@redhat.com>
 RUN dnf -y install git yum-utils npm rpm-build curl libvirt-client openssl rpmdevtools libguestfs-tools \
          rpm-build krb5-workstation python-lxml expect selinux-policy-devel tar bzip2 python bind-utils \
          nc gnupg freetype fontconfig krb5-workstation expect psmisc mock libvirt \
-         libvirt-python sudo python-libguestfs net-tools
+         libvirt-python sudo python-libguestfs net-tools virt-install
 RUN dnf -y install koji bodhi-client copr-cli fedpkg
 RUN npm -g install phantomjs
 
