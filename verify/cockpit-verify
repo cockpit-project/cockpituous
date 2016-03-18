@@ -4,6 +4,9 @@ set -ex
 
 if [ -n "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
+    mkdir -p $TMPDIR/libvirt
+    rm -rf /tmp/libvirt
+    ln -snf $TMPDIR/libvirt /tmp/libvirt
 fi
 
 if [ ! -d cockpit ]; then
