@@ -18,9 +18,11 @@ RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cf
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
 ENV TEST_IMAGES_RHEL http://file.rdu.redhat.com/~swalter/images/
-ENV XDG_CACHE_HOME /tmp
-ENV XDG_CONFIG_HOME /tmp
+ENV XDG_CACHE_HOME /build/tmp
+ENV XDG_CONFIG_HOME /build/tmp
 ENV TMPDIR /build/tmp
+ENV TEMP /build/tmp
+ENV TEMPDIR /build/tmp
 
 VOLUME /home/user
 VOLUME /build
