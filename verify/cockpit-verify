@@ -26,9 +26,6 @@ while true; do
     git -C cockpit reset --hard FETCH_HEAD
     cockpit/test/vm-download --prune
     if ! cockpit/test/github-task "$@"; then
-        fail=1
-    fi
-    if [ $fail != 0 ]; then
-        sleep 60
+	exit
     fi
 done
