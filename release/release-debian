@@ -59,7 +59,7 @@ prepare()
     printf "USENETWORK=yes\n" > pbuilderrc
 
     sudo pbuilder clean
-    sudo pbuilder create --distribution unstable
+    sudo pbuilder update --distribution unstable
     sudo pbuilder build --configfile pbuilderrc \
                         --hookdir /etc/pbuilder/hooks \
                         $DEBIAN_SOURCE/cockpit_$TAG.dsc
