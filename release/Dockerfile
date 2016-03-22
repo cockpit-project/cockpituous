@@ -12,6 +12,17 @@ ADD * /usr/local/bin/
 
 RUN chown -R user /build /home/user
 
+RUN printf "user ALL=(root) NOPASSWD: /usr/sbin/pbuilder\n" > /etc/sudoers.d/allow-pbuilder
+
+# HACK remount devpts with newinstance in a hook so that the pbuilder chroot
+# can access it
+RUN mkdir -p /etc/pbuilder/hooks && \
+    echo -e \#\!"/bin/bash\n" \
+            "mount none \"\$BUILDPLACE/dev/pts\"" \
+            "-oremount,noexec,nosuid,gid=5,mode=620,newinstance,ptmxmode=0666" \
+            > /etc/pbuilder/hooks/D10remountdevpts && \
+    chmod +x /etc/pbuilder/hooks/D10remountdevpts
+
 ENV RELEASE_SINK fedorapeople.org
 VOLUME /home/user
 VOLUME /build
