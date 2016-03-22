@@ -18,7 +18,12 @@ release-shell:
 		--entrypoint=/bin/bash cockpit/infra-release
 
 release-container:
-	docker build -t cockpit/infra-release release
+	docker build -t cockpit/infra-release:staged release
+	docker rm -f cockpit-release-stage || true
+	docker run --privileged --name=cockpit-release-stage \
+		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/infra-release:staged
+	docker commit cockpit-release-stage cockpit/infra-release
+	docker rm -f cockpit-release-stage
 
 release-install: release-container
 	cp release/cockpit-release.service /etc/systemd/system/
