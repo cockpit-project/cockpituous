@@ -1,0 +1,145 @@
+#!/bin/bash -eu
+#
+# release-debian
+#
+# A release script that publishes packages to a debian repository.
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -d src     RELEASE_DEBIAN_SOURCE=src  Debian source repository
+# -r repo    RELEASE_DEBIAN_REPO=repo   Generated Debian repository
+#
+# -q         RELEASE_QUIET=1            Make output more quiet
+# -x         RELEASE_TRANSACTION=1      SIGSTOP before pushing the dist-git commit
+# -v         RELEASE_VERBOSE=1          Make output more verbose
+# -z         RELEASE_CHECK=1            Check credentials only
+#
+
+set -eu
+
+TRANSACTION=${RELEASE_TRANSACTION:-0}
+CHECK=${RELEASE_CHECK:-0}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+
+TAG=${RELEASE_TAG:-}
+DEBIAN_SOURCE=${RELEASE_DEBIAN_SOURCE:-}
+DEBIAN_REPO=${RELEASE_DEBIAN_REPO:-debian-apt}
+
+usage()
+{
+    echo "usage: release-debian [-qvxz] [-t tag] [-d source] [-r repository]" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        echo "> $@" >&2
+    fi
+}
+
+message()
+{
+    echo "release-debian: $@" >&2
+}
+
+check()
+{
+    true
+}
+
+prepare()
+{
+    trace "Creating Debian repository"
+
+    rm -rf debian
+    cp -r tools/debian .
+
+    printf "USENETWORK=yes\n" > pbuilderrc
+
+    sudo pbuilder clean
+    sudo pbuilder create --distribution unstable
+    sudo pbuilder build --configfile pbuilderrc \
+                        --hookdir /etc/pbuilder/hooks \
+                        $DEBIAN_SOURCE/cockpit_$TAG.dsc
+
+    mkdir -p $DEBIAN_REPO/conf
+    cat > $DEBIAN_REPO/conf/distributions <<EOF
+Origin: Cockpit
+Label: Cockpit
+Codename: unstable
+Architectures: amd64
+Components: main
+Description: Apt repository for Cockpit
+SignWith: default
+EOF
+
+    reprepro -b $DEBIAN_REPO includedeb unstable /var/cache/pbuilder/result/*.deb
+}
+
+commit()
+(
+    trace "Publishing Debian repository"
+
+    rsync --delete -a -e ssh $DEBIAN_REPO/ fedorapeople.org:/project/cockpit/debian
+)
+
+while getopts "t:d:r:qvxz" opt; do
+    case "$opt" in
+    t)
+        TAG="$OPTARG"
+        ;;
+    d)
+        DEBIAN_SOURCE="$OPTARG"
+        ;;
+    r)
+        DEBIAN_REPO="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    x)
+        TRANSACTION=1
+        ;;
+    z)
+        CHECK=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+if [ $CHECK -eq 1 ]; then
+    check "$1"
+    exit 0
+fi
+
+if [ -z "$DEBIAN_SOURCE" ]; then
+    message "no source repository specified (generate with release-debian-source)"
+    exit 2
+fi
+
+prepare
+
+if [ $TRANSACTION -eq 1 ]; then
+    kill -STOP $$
+fi
+
+commit
+

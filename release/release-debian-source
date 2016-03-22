@@ -7,7 +7,8 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tbz     RELEASE_TARBALL=tbz    The tarball
+# -f tbz     RELEASE_TARBALL=tbz        The tarball
+# -d src     RELEASE_DEBIAN_SOURCE=src  Debian source repository
 #
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
@@ -29,7 +30,7 @@ TAG=${RELEASE_TAG:-}
 # Globals
 
 WORKDIR=debian.tmp
-REPODIR=debian.repo
+REPODIR=${RELEASE_DEBIAN_SOURCE:-}
 
 usage()
 {
@@ -115,10 +116,13 @@ commit()
     rsync --delete -a -e ssh $REPODIR/ fedorapeople.org:/project/cockpit/debian-unstable
 )
 
-while getopts "f:t:qvxz" opt; do
+while getopts "f:t:d:qvxz" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
+        ;;
+    d)
+        REPODIR="$OPTARG"
         ;;
     t)
         TAG="$OPTARG"

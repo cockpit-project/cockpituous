@@ -28,6 +28,7 @@ update github status:
     /home/cockpit/.fedora.cert
     /home/cockpit/.fedora-server-ca.cert
     /home/cockpit/.gitconfig
+    /home/cockpit/.gnupg
 
 Get the service file. Edit it before installing it. Set the TEST_OS.
 Then install it and run it:

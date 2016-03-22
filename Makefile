@@ -12,6 +12,7 @@ containers: release-container verify-container
 
 release-shell:
 	docker run -ti --rm -v /home/cockpit:/home/user:rw \
+		--privileged \
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
 		--entrypoint=/bin/bash cockpit/infra-release
@@ -26,6 +27,7 @@ release-install: release-container
 
 verify-shell:
 	docker run -ti --rm \
+		--privileged \
 		--volume /home/cockpit:/home/user \
 		--volume $(CURDIR)/verify:/usr/local/bin \
 		--volume=/opt/verify:/build:rw \
