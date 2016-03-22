@@ -51,18 +51,11 @@ check()
 
 prepare()
 {
+    local installed
+
     trace "Creating Debian repository"
 
-    rm -rf debian
-    cp -r tools/debian .
-
     printf "USENETWORK=yes\n" > pbuilderrc
-
-    sudo pbuilder clean
-    sudo pbuilder update --distribution unstable
-    sudo pbuilder build --configfile pbuilderrc \
-                        --hookdir /etc/pbuilder/hooks \
-                        $DEBIAN_SOURCE/cockpit_$TAG.dsc
 
     mkdir -p $DEBIAN_REPO/conf
     cat > $DEBIAN_REPO/conf/distributions <<EOF
@@ -75,7 +68,18 @@ Description: Apt repository for Cockpit
 SignWith: default
 EOF
 
-    reprepro -b $DEBIAN_REPO includedeb unstable /var/cache/pbuilder/result/*.deb
+    installed=$(reprepro -b $DEBIAN_REPO --list-format='${Package}' listfilter unstable "Package(==cockpit),\$Version(==$TAG)")
+    if [ "x$installed" != "xcockpit" ]; then
+        sudo pbuilder clean
+        sudo pbuilder update --distribution unstable
+        sudo pbuilder build --configfile pbuilderrc \
+                            --hookdir /etc/pbuilder/hooks \
+                            $DEBIAN_SOURCE/cockpit_$TAG.dsc
+
+        reprepro -b $DEBIAN_REPO includedeb unstable /var/cache/pbuilder/result/*.deb
+    else
+        trace "Skipping debian build"
+    fi
 }
 
 commit()
