@@ -80,7 +80,7 @@ commit()
     # Ignore bodhi failures until Fedora bodhi infrastructure stops being so broken
     set +e
 echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
-        --stablekarma=3 --unstablekarma=-1 --request=stable --release="$FEDORA" \
+        --stablekarma=2 --unstablekarma=-1 --request=stable --release="$FEDORA" \
         --username=$USER "$NVR"
     set -e
 )
