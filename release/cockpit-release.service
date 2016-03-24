@@ -6,7 +6,7 @@ After=docker.service
 [Service]
 Restart=always
 RestartSec=1800
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-release --volume=/home/cockpit:/home/user:rw --volume=/home/cockpit/release:/build:rw cockpit/infra-release"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-release --privileged --volume=/home/cockpit:/home/user:rw --volume=/home/cockpit/release:/build:rw cockpit/infra-release"
 ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-release"
 
 [Install]
