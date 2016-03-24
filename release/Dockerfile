@@ -28,5 +28,4 @@ VOLUME /home/user
 VOLUME /build
 WORKDIR /build
 USER user
-ENTRYPOINT ["/usr/local/bin/cockpit-release"]
 CMD ["dummy-arg"]
