@@ -6,7 +6,7 @@ RUN dnf -y install git yum-utils npm rpm-build curl libvirt-client openssl rpmde
          nc gnupg freetype fontconfig krb5-workstation expect psmisc mock libvirt \
          libvirt-python sudo python-libguestfs net-tools virt-install
 RUN dnf -y install koji bodhi-client copr-cli fedpkg
-RUN npm -g install phantomjs
+RUN npm -g install phantomjs-prebuilt
 
 RUN mkdir -p /usr/local/bin /home/user /build
 ADD cockpit-verify /usr/local/bin/
