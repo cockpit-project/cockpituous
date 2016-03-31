@@ -17,7 +17,7 @@ job release-koji f24
 job release-github
 
 # Push to COPR builds
-job release-copr -k @cockpit/cockpit-preview
+job release-copr @cockpit/cockpit-preview
 
 # Update the Github repo that Docker Hub is tracking
 job release-dockerhub cockpit-project/cockpit-container
