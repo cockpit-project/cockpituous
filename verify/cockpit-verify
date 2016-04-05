@@ -14,10 +14,7 @@ if [ ! -d cockpit ]; then
     git clone https://github.com/cockpit-project/cockpit
 fi
 
-if [ ! -d cockpit/node_modules ]; then
-    ( cd cockpit && npm install )
-fi
-
+(cd cockpit && npm install)
 mkdir -p mock
 
 echo "Starting testing"
@@ -28,7 +25,12 @@ while true; do
     git -C cockpit fetch origin master
     git -C cockpit reset --hard FETCH_HEAD
     cockpit/test/vm-download --prune
+
+    if ! git diff -C cockpit --exit-code origin/master package.json; then
+        (cd cockpit && npm install)
+    fi
+
     if ! cockpit/test/github-task "$@"; then
-	exit
+        exit
     fi
 done
