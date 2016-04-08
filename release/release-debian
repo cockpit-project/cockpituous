@@ -6,7 +6,7 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -d src     RELEASE_DEBIAN_SOURCE=src  Debian source repository
+# -f tbz     RELEASE_TARBALL=tbz        The tarball
 # -r repo    RELEASE_DEBIAN_REPO=repo   Generated Debian repository
 #
 # -q         RELEASE_QUIET=1            Make output more quiet
@@ -22,8 +22,8 @@ CHECK=${RELEASE_CHECK:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 
-TAG=${RELEASE_TAG:-}
-DEBIAN_SOURCE=${RELEASE_DEBIAN_SOURCE:-}
+TARBALL="${RELEASE_TARBALL:-}"
+TAG=${RELEASE_TAG:-$(git describe --abbrev=0)}
 DEBIAN_REPO=${RELEASE_DEBIAN_REPO:-debian-apt}
 
 usage()
@@ -49,9 +49,26 @@ check()
     true
 }
 
+trim_contents()
+{
+    # Remove line with just tag name. Remove signature
+    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+}
+
+changelog_lines()
+{
+    local date author body
+    date="$(git for-each-ref --format='%(taggerdate:rfc)' "refs/tags/$TAG")"
+    author="Cockpituous <cockpituous@gmail.com>"
+    body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | sed -e 's/^/  /')"
+
+    printf "cockpit (%s) experimental; urgency=medium\n\n%s\n\n -- %s  %s\n" "$1" "$body" "$author" "$date"
+}
+
 prepare()
 {
     local installed
+    local debversion="$TAG-0"
 
     trace "Creating Debian repository"
 
@@ -62,7 +79,7 @@ prepare()
 Origin: Cockpit
 Label: Cockpit
 Codename: unstable
-Architectures: amd64
+Architectures: source amd64
 Components: main
 Description: Apt repository for Cockpit
 SignWith: default
@@ -70,11 +87,29 @@ EOF
 
     installed=$(reprepro -b $DEBIAN_REPO --list-format='${Package}' listfilter unstable "Package(==cockpit),\$Version(==$TAG)")
     if [ "x$installed" != "xcockpit" ]; then
+
+        # build source package
+        rm -rf debian-tmp; mkdir debian-tmp
+        ln -sf $(readlink -f $TARBALL) cockpit_$TAG.orig.tar.xz
+        tar -C debian-tmp -xf $TARBALL --strip-components=1
+        ( cd debian-tmp
+          mv ./tools/debian .
+          changelog_lines $debversion >debian/changelog
+
+          # - don't install or package test assets
+          sed -i -e 's/install-test-assets//' debian/rules
+          sed -i -e '/Package: cockpit-test-assets/,/^$/d' debian/control
+
+          debuild -S
+        )
+        reprepro -b $DEBIAN_REPO includedsc unstable cockpit_$debversion.dsc
+
+        # build binary package
         sudo pbuilder clean
         sudo pbuilder update --distribution unstable
         sudo pbuilder build --configfile pbuilderrc \
                             --hookdir /etc/pbuilder/hooks \
-                            $DEBIAN_SOURCE/cockpit_$TAG.dsc
+                            cockpit_$debversion.dsc
 
         reprepro -b $DEBIAN_REPO includedeb unstable /var/cache/pbuilder/result/*.deb
     else
@@ -89,13 +124,13 @@ commit()
     rsync --delete -a -e ssh $DEBIAN_REPO/ fedorapeople.org:/project/cockpit/debian
 )
 
-while getopts "t:d:r:qvxz" opt; do
+while getopts "f:t:r:qvxz" opt; do
     case "$opt" in
+    f)
+        TARBALL="$OPTARG"
+        ;;
     t)
         TAG="$OPTARG"
-        ;;
-    d)
-        DEBIAN_SOURCE="$OPTARG"
         ;;
     r)
         DEBIAN_REPO="$OPTARG"
@@ -134,9 +169,17 @@ if [ $CHECK -eq 1 ]; then
     exit 0
 fi
 
-if [ -z "$DEBIAN_SOURCE" ]; then
-    message "no source repository specified (generate with release-debian-source)"
+if [ -z "$TAG" ]; then
+    message "could not find a tag to release"
     exit 2
+fi
+
+if [ -z "$TARBALL" ]; then
+    message "no tarball input specified"
+    exit 2
+elif [ ! -f "$TARBALL" ]; then
+    message "tarball source not found: $TARBALL"
+    exit 1
 fi
 
 prepare
