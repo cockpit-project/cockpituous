@@ -85,8 +85,7 @@ Description: Apt repository for Cockpit
 SignWith: default
 EOF
 
-    installed=$(reprepro -b $DEBIAN_REPO --list-format='${Package}' listfilter unstable "Package(==cockpit),\$Version(==$TAG)")
-    if [ "x$installed" != "xcockpit" ]; then
+    if [ -z "$(reprepro --silent -b $DEBIAN_REPO listfilter unstable \$Version\(==$TAG\))" ]; then
 
         # build source package
         rm -rf debian-tmp; mkdir debian-tmp
