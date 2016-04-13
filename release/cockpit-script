@@ -29,5 +29,6 @@ job release-bodhi F24
 # Upload documentation
 job release-guide doc/guide/html cockpit-project/cockpit-project.github.io
 
-# Create and publish a Debian repository
+# Create and publish a Debian repository and Ubuntu PPA
 job release-debian
+job release-ubuntu-ppa
