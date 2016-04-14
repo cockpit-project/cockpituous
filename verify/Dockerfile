@@ -8,6 +8,9 @@ RUN dnf -y install git yum-utils npm rpm-build curl libvirt-client openssl rpmde
 RUN dnf -y install koji bodhi-client copr-cli fedpkg
 RUN npm -g install phantomjs-prebuilt
 
+ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
+RUN yum-builddep -y /tmp/cockpit.spec
+
 RUN mkdir -p /usr/local/bin /home/user /build
 ADD cockpit-verify /usr/local/bin/
 
