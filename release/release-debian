@@ -59,7 +59,7 @@ changelog_lines()
 {
     local date author body
     date="$(git for-each-ref --format='%(taggerdate:rfc)' "refs/tags/$TAG")"
-    author="Cockpituous <cockpituous@gmail.com>"
+    author="Cockpit Project <cockpituous@gmail.com>"
     body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | sed -e 's/^/  /')"
 
     printf "cockpit (%s) experimental; urgency=medium\n\n%s\n\n -- %s  %s\n" "$1" "$body" "$author" "$date"
