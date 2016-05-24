@@ -82,7 +82,7 @@ EOF
 Origin: Cockpit
 Label: Cockpit
 Codename: unstable
-Architectures: source amd64
+Architectures: source amd64 i386
 Components: main
 Description: Apt repository for Cockpit
 SignWith: default
@@ -105,6 +105,9 @@ EOF
           debuild -S
         )
         reprepro -b $DEBIAN_REPO includedsc unstable cockpit_$debversion.dsc
+
+        # also export package listings for empty architectures
+        reprepro -b $DEBIAN_REPO export
 
         # build binary package
         sudo pbuilder clean
