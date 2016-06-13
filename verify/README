@@ -33,6 +33,11 @@ update github status:
     /home/cockpit/.config/github-token
     /home/cockpit/.config/github-whitelist
 
+Put the following into /home/cockpit/.ssh/config:
+
+    Host fedorapeople.org
+        User cockpit
+
 Get the service file. Edit it before installing it. Set the TEST_OS.
 Then install it and run it:
 
