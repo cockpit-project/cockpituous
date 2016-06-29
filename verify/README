@@ -9,6 +9,12 @@ test ahead of time.
 
 ## How to deploy
 
+Make sure docker is installed and running:
+
+    # yum -y install docker
+    # systemctl enable docker
+    # systemctl start docker
+
 First get the container:
 
     # docker pull cockpit/infra-verify
@@ -17,12 +23,14 @@ Some bits need to be configured outside the container:
 
     # yum install libvirt libvirt-client qemu-system-x86
     # wget https://raw.githubusercontent.com/cockpit-project/cockpit/master/test/vm-prep
+    # mkdir common
+    # wget -O ./common/network-cockpit.xml https://raw.githubusercontent.com/cockpit-project/cockpit/master/test/common/network-cockpit.xml
     # sh vm-prep
 
 Setup a 'cockpit' user:
 
     # groupadd -g 1111 -r cockpit && useradd -r -g cockpit -u 1111 cockpit
-    # mkdir -p /home/cockpit/.ssh /home/cockpit/.config
+    # mkdir -p /home/cockpit/.ssh /home/cockpit/.config /home/cockpit/verify
     # chown -R cockpit:cockpit /home/cockpit
 
 Fill in the following files with valid credentials able to post logs to sink and
@@ -31,12 +39,22 @@ update github status:
     /home/cockpit/.ssh/id_rsa
     /home/cockpit/.ssh/id_rsa.pub
     /home/cockpit/.config/github-token
+
+Optionally you can add a local whitelist with github usernames whose pull requests are considered for testing.
+Entries in this file are added to the in-tree cockpit/test/github-whitelist:
+
     /home/cockpit/.config/github-whitelist
 
-Put the following into /home/cockpit/.ssh/config:
+For cockpituous, /home/cockpit/.ssh/config might look like this:
 
     Host fedorapeople.org
+        IdentityFile ~/.ssh/id_rsa
         User cockpit
+
+The verification will use git, which complains if not set up properly. Do this as the cockpit user:
+
+    # git config --global user.email INSERT_EMAIL
+    # git config --global user.name INSERT_NAME
 
 Get the service file. Edit it before installing it. Set the TEST_OS.
 Then install it and run it:
