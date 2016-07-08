@@ -1,4 +1,4 @@
-FROM fedora:22
+FROM fedora:23
 MAINTAINER "Stef Walter" <stefw@redhat.com>
 
 RUN dnf -y update
