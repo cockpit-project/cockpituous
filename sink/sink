@@ -2,10 +2,12 @@
 
 # Rough configuration file follows, place it in ~/.config/sink
 
+# PruneInterval [days] defaults to 0 (disabled)
 DEFAULTS = """
 [Sink]
 Url: http://%(user)s.fedorapeople.org/logs/%(identifier)s/log
 Logs: ~/public_html/logs
+PruneInterval: 0
 
 [Irc]
 Server: chat.freenode.net:6667
@@ -42,6 +44,7 @@ BADGE_TEMPLATE = """\
 
 import argparse
 import errno
+import fcntl
 import httplib
 import json
 import os
@@ -52,6 +55,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import time
 import traceback
 import urlparse
 import urllib
@@ -412,16 +416,87 @@ def mkdir_and_chdir(base, identifier):
     os.fchmod(dirfd, 0o755)
     os.close(dirfd)
 
+def prune_logs(base_path=".", dry_run=False):
+    """ Check all subdirectories of the current path and delete the ones that
+        are either empty or contain only files older than the age threshold.
+
+        For dry runs, print the name of the directory instead.
+    """
+    reference_time = time.time()
+    age_threshold = 30
+    entries = os.listdir(base_path)
+    for entry in entries:
+        path = os.path.join(base_path, entry)
+
+        # skip non-directories
+        if not os.path.isdir(path):
+            continue
+
+        # if anything goes wrong, just skip and delete nothing
+        # this can happen for instance if some other log process changes dir content while we're pruning
+        try:
+            # initialize to threshold so empty dirs will be deleted
+            last_modified = 0
+            # use the last modified time of the logfile itself, not just the directory
+            for root, dirs, files in os.walk(path):
+                for filename in files:
+                    last_modified = max(last_modified, os.stat(os.path.join(root, filename)).st_mtime)
+
+            diff_days = (reference_time - last_modified) / (60*60*24)
+
+            # keep anything newer than 30 days old
+            if diff_days < age_threshold:
+                continue
+
+            if dry_run:
+                sys.stderr.write("Pruning {0} (age: {1} days)\n".format(path, int(round(diff_days))))
+            else:
+                shutil.rmtree(path)
+        except:
+            continue
+
+def check_prune(config, logs, dry_run):
+    """ See if we have to prune logs, and if we should, fork and do so
+        If the main process (log sink) exits before pruning is done,
+        the pruning process will be killed. This isn't critical since
+        pruning can just resume once the next PruneInterval has elapsed.
+    """
+    prune_interval = float(config.get("Sink", "PruneInterval"))
+    if prune_interval > 0:
+        status_file = os.path.join(logs, ".prune")
+        prune_now = True
+        # use the last modified time of the logfile itself, not just the directory
+        if os.path.isfile(status_file):
+            reference_time = time.time()
+            last_modified = os.stat(status_file).st_mtime
+            diff_days = (reference_time - last_modified) / (60*60*24)
+            prune_now = diff_days >= prune_interval
+
+        # if we should prune, fork so we don't block the sink
+        if prune_now:
+            if not os.path.isdir(logs):
+                sys.stderr.write("warning: log directory {0} doesn't exist, nothing to do\n".format(logs))
+            elif os.fork() == 0:
+                # update the file for writing and lock it (prevent concurrent pruning)
+                fd = os.open(status_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_NB | fcntl.LOCK_EX)
+                except IOError, ex:
+                    os.close(fd)
+                    print "can't lock, bailing out"
+                    sys.stderr.write("Unable to lock log pruning status file: {0}\n".format(status_file))
+                    sys.exit(0)
+
+                os.chdir(logs)
+                prune_logs(logs, dry_run)
+                sys.exit(0)
+
 def main():
     parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
+    parser.add_argument('-d', '--dry-run', dest='dry_run', action="store_true", help='Applies only to pruning: do not delete logs')
     parser.add_argument("identifier", nargs=1)
     parser.set_defaults(verbosity=1)
     args = parser.parse_args()
-
-    valid_chars = "-_.%s%s" % (string.ascii_letters, string.digits, )
-    identifier = "".join([c if c in valid_chars else '-' for c in args.identifier[0]])
-    if not identifier or identifier != args.identifier[0]:
-        parser.error("not a valid log identifier: " + identifier)
 
     # Load up configuration if available
     try:
@@ -434,6 +509,15 @@ def main():
 
     # Create the directory and chdir
     logs = os.path.expanduser(config.get("Sink", "Logs"))
+
+    # See if we have to prune logs
+    check_prune(config, logs, args.dry_run)
+
+    valid_chars = "-_.%s%s" % (string.ascii_letters, string.digits, )
+    identifier = "".join([c if c in valid_chars else '-' for c in args.identifier[0]])
+    if not identifier or identifier != args.identifier[0]:
+        parser.error("not a valid log identifier: " + identifier)
+
     mkdir_and_chdir(logs, identifier)
 
     # Initialize status reporters
