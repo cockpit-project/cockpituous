@@ -5,6 +5,9 @@ ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockp
 
 RUN dnf -y install git yum-utils npm tar bzip2 fedpkg copr-cli python python-irclib fpaste bind-utils nc gnupg freetype fontconfig krb5-workstation bodhi-client expect psmisc dpkg dpkg-dev pbuilder reprepro debian-keyring
 RUN yum-builddep -y /tmp/cockpit.spec
+
+# Needed on fedora:23
+RUN npm install -g isexe pinkie-promise is-stream har-validator is-typedarray isstream caseless stringstream mime-types aws4 aws-sign2 bl tough-cookie extend klaw path-is-absolute jsonfile debug concat-stream yauzl throttleit
 RUN npm install -g phantomjs-prebuilt
 
 RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
