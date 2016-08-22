@@ -10,8 +10,8 @@ job release-tarball
 # Release to rawhide first, last one is the srpm that
 # used by following jobs like release-bodhi
 job release-koji -k master
-job release-koji f23
 job release-koji f24
+job release-koji f25
 
 # Upload release to github, using tarball
 job release-github
