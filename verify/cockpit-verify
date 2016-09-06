@@ -25,7 +25,7 @@ echo "Starting testing"
 while true; do
     fail=0
     find cockpit -name '*.py?' -delete
-    git -C cockpit fetch origin master
+    git -C cockpit fetch origin
     git -C cockpit reset --hard FETCH_HEAD
     cockpit/test/vm-download --prune
     if ! cockpit/test/github-task "$@"; then
