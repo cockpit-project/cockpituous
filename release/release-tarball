@@ -78,7 +78,7 @@ prepare()
 
     if [ ! -f "$archive" ]; then
         trace "Building the tarball"
-        make -j1 distcheck
+        make -j1 clean distcheck
     else
         trace "Skipping tarball build"
     fi
