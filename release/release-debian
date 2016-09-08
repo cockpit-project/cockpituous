@@ -105,7 +105,7 @@ EOF
 
         # build binary package
         sudo pbuilder clean
-        sudo pbuilder update --distribution unstable
+        # sudo pbuilder update --distribution unstable
         sudo pbuilder build --configfile pbuilderrc \
                             --hookdir /etc/pbuilder/hooks \
                             cockpit_$debversion.dsc
