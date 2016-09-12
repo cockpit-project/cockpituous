@@ -302,7 +302,6 @@ class Extras(object):
         if 'extras' in data:
             for url in data['extras']:
                 urllib.urlretrieve(url, os.path.basename(url))
-            del data['extras']
 
 class Status(object):
     def __init__(self, config, identifier):
