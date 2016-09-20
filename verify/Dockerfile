@@ -4,12 +4,14 @@ MAINTAINER "Stef Walter" <stefw@redhat.com>
 RUN dnf -y install git yum-utils npm rpm-build curl libvirt-client openssl rpmdevtools libguestfs-tools \
          rpm-build krb5-workstation python-lxml expect selinux-policy-devel tar bzip2 python bind-utils \
          nc gnupg freetype fontconfig krb5-workstation expect psmisc mock libvirt \
-         libvirt-python sudo python-libguestfs net-tools virt-install
-RUN dnf -y install koji bodhi-client copr-cli fedpkg
+         libvirt-python sudo python-libguestfs net-tools virt-install \
+         kernel grubby libguestfs-xfs \
+         koji bodhi-client copr-cli fedpkg; \
+         dnf clean all
 RUN npm -g install phantomjs-prebuilt
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
-RUN yum-builddep -y /tmp/cockpit.spec
+RUN yum-builddep -y /tmp/cockpit.spec; dnf clean all
 
 RUN mkdir -p /usr/local/bin /home/user /build
 ADD cockpit-verify /usr/local/bin/
