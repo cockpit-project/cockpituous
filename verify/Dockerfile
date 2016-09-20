@@ -11,6 +11,7 @@ RUN npm -g install phantomjs-prebuilt
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 RUN yum-builddep -y /tmp/cockpit.spec
+RUN dnf clean all
 
 RUN mkdir -p /usr/local/bin /home/user /build
 ADD cockpit-verify /usr/local/bin/
