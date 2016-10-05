@@ -1,17 +1,49 @@
 FROM cockpit/infra-base
 MAINTAINER "Stef Walter" <stefw@redhat.com>
 
-RUN dnf -y install git yum-utils npm rpm-build curl libvirt-client openssl rpmdevtools libguestfs-tools \
-         rpm-build krb5-workstation python-lxml expect selinux-policy-devel tar bzip2 python bind-utils \
-         nc gnupg freetype fontconfig krb5-workstation expect psmisc mock libvirt \
-         libvirt-python sudo python-libguestfs net-tools virt-install \
-         kernel grubby libguestfs-xfs \
-         koji bodhi-client copr-cli fedpkg; \
-         dnf clean all
-RUN npm -g install phantomjs-prebuilt
-
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
-RUN yum-builddep -y /tmp/cockpit.spec; dnf clean all
+RUN dnf -y update && \
+    dnf -y install \
+        bind-utils \
+        bodhi-client \
+        bzip2 \
+        copr-cli \
+        curl \
+        expect \
+        fedpkg \
+        fontconfig \
+        freetype \
+        git \
+        gnupg \
+        grubby \
+        kernel \
+        koji \
+        krb5-workstation \
+        libguestfs-tools \
+        libguestfs-xfs \
+        libvirt \
+        libvirt-client \
+        libvirt-python \
+        mock \
+        nc \
+        net-tools \
+        npm \
+        openssl \
+        psmisc \
+        python \
+        python-libguestfs \
+        python-lxml \
+        rpm-build \
+        rpmdevtools \
+        selinux-policy-devel \
+        sudo \
+        tar \
+        virt-install \
+        yum-utils \
+        && \
+    npm -g install phantomjs-prebuilt && \
+    yum-builddep -y /tmp/cockpit.spec && \
+    dnf clean all
 
 RUN mkdir -p /usr/local/bin /home/user /build
 ADD cockpit-verify /usr/local/bin/
