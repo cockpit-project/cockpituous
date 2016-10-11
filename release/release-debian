@@ -72,7 +72,10 @@ prepare()
 
     trace "Creating Debian repository"
 
-    printf "USENETWORK=yes\n" > pbuilderrc
+    cat > pbuilderrc <<EOF
+USENETWORK=yes
+APTGETOPT=(-o Acquire::Pdiffs=false)
+EOF
 
     mkdir -p $DEBIAN_REPO/conf
     cat > $DEBIAN_REPO/conf/distributions <<EOF
@@ -105,7 +108,7 @@ EOF
 
         # build binary package
         sudo pbuilder clean
-        # sudo pbuilder update --distribution unstable
+        sudo pbuilder update --configfile pbuilderrc --distribution unstable
         sudo pbuilder build --configfile pbuilderrc \
                             --hookdir /etc/pbuilder/hooks \
                             cockpit_$debversion.dsc
