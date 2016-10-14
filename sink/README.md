@@ -1,6 +1,6 @@
 # Logging and Status Sink
 
-This is a logging and status sink for Cockpit continous integration and delivery.
+This is a logging and status sink for Cockpit continuous integration and delivery.
 
 It is a standalone python script. No other dependencies are required. Copy it
 to the home directory (or default login directory) of the public location where
@@ -82,7 +82,7 @@ Each request can have the following fields:
 
 The `"token"`, `"requests"`, and `"resource"` fields are mandatory.
 
-The `"resource"` and `"data"` values will be expanded.  Any occurance
+The `"resource"` and `"data"` values will be expanded.  Any occurrence
 of ":path" is replaced with a value from a previous request.  The
 'path' is a sequence of names, separated by "." characters.  The first
 name is looked up among all the named results of previous requests,
@@ -141,7 +141,7 @@ one of "passed", "failed", or "error".  If `status-text` is omitted,
 
 ### Link field
 
-The `"link"` field will be automitically filled in by the sink. If it
+The `"link"` field will be automatically filled in by the sink. If it
 is specified in the status JSON object, that the specified link will
 take precedence. If a relative link is specified, it will be relative
 to the URL that the sink would have used.
