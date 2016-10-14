@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 # Rough configuration file follows, place it in ~/.config/sink
 
 # PruneInterval [days] defaults to 0 (disabled)
@@ -45,7 +47,6 @@ BADGE_TEMPLATE = """\
 import argparse
 import errno
 import fcntl
-import httplib
 import json
 import os
 import select
@@ -57,20 +58,41 @@ import sys
 import tempfile
 import time
 import traceback
-import urlparse
-import urllib
 import re
 
-import ConfigParser
-import StringIO
+# Try Python 3, fail back to Python 2
+try:
+    from http.client import HTTPSConnection
+except ImportError:
+    from httplib import HTTPSConnection
+try:
+    from urllib.parse import urljoin
+except ImportError:
+    from urlparse import urljoin
+try:
+    from urllib.request import urlretrieve
+except ImportError:
+    from urllib import urlretrieve
+try:
+    from configparser import SafeConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser
+try:
+    from io import StringIO
+except ImportError:
+    from cStringIO import StringIO
+try:
+    MAX_BUFF_SIZE = sys.maxsize
+except:
+    MAX_BUFF_SIZE = sys.maxint
+
 
 class GitHubClassic(object):
     def __init__(self, config):
         self.token = None
         try:
-            gt = open(os.path.expanduser(TOKEN), "r")
-            self.token = gt.read().strip()
-            gt.close()
+            with open(os.path.expanduser(TOKEN), "r") as gt:
+                self.token = gt.read().strip()
         except IOError as exc:
             if exc.errno == errno.ENOENT:
                  pass
@@ -90,7 +112,7 @@ class GitHubClassic(object):
         headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
         if self.token:
             headers["Authorization"] = "token " + self.token
-        conn = httplib.HTTPSConnection("api.github.com", strict=True)
+        conn = HTTPSConnection("api.github.com", strict=True)
         # conn.set_debuglevel(1)
         conn.request("POST", resource, json.dumps(data), headers)
         response = conn.getresponse()
@@ -135,7 +157,7 @@ class GitHub(object):
         headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
         if token:
             headers["Authorization"] = "token " + token
-        conn = httplib.HTTPSConnection("api.github.com", strict=True)
+        conn = HTTPSConnection("api.github.com", strict=True)
         # conn.set_debuglevel(1)
         conn.request(method, resource, json.dumps(data), headers)
         response = conn.getresponse()
@@ -213,7 +235,6 @@ class Irc(object):
                     buf += data
                 elif fd == ircf:
                     data = ircf.recv(2048)
-                    # print >> sys.stderr, data
                     if "PING :" in data:
                         ircf.sendall("PONG :pingis\n")
                     if "ERROR :" in data:
@@ -301,7 +322,7 @@ class Extras(object):
     def push(self, data):
         if 'extras' in data:
             for url in data['extras']:
-                urllib.urlretrieve(url, os.path.basename(url))
+                urlretrieve(url, os.path.basename(url))
 
 class Status(object):
     def __init__(self, config, identifier):
@@ -311,7 +332,7 @@ class Status(object):
 
     def push(self, data, log):
         if "link" in data:
-            data["link"] = urlparse.urljoin(self.link, data["link"], True)
+            data["link"] = urljoin(self.link, data["link"], True)
         else:
             data["link"] = self.link
         for reporter in self.reporters:
@@ -364,14 +385,18 @@ class Status(object):
         return used
 
 class Buffer(object):
+
     def __init__(self, fd):
         self.fd = fd
         self.buf = ''
+
     def push(self, piece):
         self.buf = piece + self.buf
+
     def readall(self):
-        self.read(sys.maxint)
-    def read(self, n=sys.maxint):
+        self.read(MAX_BUFF_SIZE)
+
+    def read(self, n=MAX_BUFF_SIZE):
         result = self.buf
         self.buf = ''
         while len(result) < n:
@@ -381,6 +406,7 @@ class Buffer(object):
                 break
             result += data
         return result
+
     def readone(self):
         result = self.buf
         self.buf = ''
@@ -419,7 +445,7 @@ def prune_logs(base_path=".", dry_run=False):
     """ Check all subdirectories of the current path and delete the ones that
         are either empty or contain only files older than the age threshold.
 
-        For dry runs, print the name of the directory instead.
+        For dry runs, print(the name of the directory instead.
     """
     reference_time = time.time()
     age_threshold = 30
@@ -480,9 +506,9 @@ def check_prune(config, logs, dry_run):
                 fd = os.open(status_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
                 try:
                     fcntl.flock(fd, fcntl.LOCK_NB | fcntl.LOCK_EX)
-                except IOError, ex:
+                except IOError as ex:
                     os.close(fd)
-                    print "can't lock, bailing out"
+                    print("can't lock, bailing out")
                     sys.stderr.write("Unable to lock log pruning status file: {0}\n".format(status_file))
                     sys.exit(0)
 
@@ -502,8 +528,8 @@ def main():
         user = os.environ.get("LOGNAME", os.getlogin())
     except:
         user = os.environ.get("LOGNAME", None)
-    config = ConfigParser.SafeConfigParser({ "user": user, "identifier": "@@" })
-    config.readfp(StringIO.StringIO(DEFAULTS))
+    config = SafeConfigParser({ "user": user, "identifier": "@@" })
+    config.readfp(StringIO(DEFAULTS))
     config.read([ os.path.expanduser("~/.config/sink") ])
 
     # Create the directory and chdir
