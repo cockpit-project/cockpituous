@@ -16,6 +16,7 @@ RUN dnf -y update && \
         git \
         gnupg \
         grubby \
+        hardlink \
         kernel \
         koji \
         krb5-workstation \
@@ -35,6 +36,7 @@ RUN dnf -y update && \
         python-lxml \
         rpm-build \
         rpmdevtools \
+        sed \
         selinux-policy-devel \
         sudo \
         tar \
