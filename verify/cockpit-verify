@@ -26,9 +26,9 @@ while true; do
     fail=0
     find cockpit -name '*.py?' -delete
     git -C cockpit fetch origin
-    git -C cockpit reset --hard FETCH_HEAD
+    git -C cockpit reset --hard origin/master
     cockpit/test/vm-download --prune
     if ! cockpit/test/github-task "$@"; then
-	exit
+        exit
     fi
 done
