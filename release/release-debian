@@ -124,6 +124,7 @@ commit()
     trace "Publishing Debian repository"
 
     rsync --delete -a -e ssh $DEBIAN_REPO/ fedorapeople.org:/project/cockpit/debian
+    rsync --delete -a -e ssh $DEBIAN_REPO/ repo-cockpitproject.rhcloud.com:app-root/repo/debian/
 )
 
 while getopts "f:t:r:qvxz" opt; do
