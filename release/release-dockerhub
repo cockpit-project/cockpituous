@@ -86,8 +86,8 @@ prepare()
            -e "s/ENV RELEASE .*/ENV RELEASE $release/" \
            $files
 
-    sed -i -e "s/ARG VERSION/ARG VERSION=$version/" \
-           -e "s/ARG RELEASE/ARG RELEASE=$release/" \
+    sed -i -e "s/ARG VERSION.*/ARG VERSION=$version/" \
+           -e "s/ARG RELEASE.*/ARG RELEASE=$release/" \
            $files
 
     if git -C $WORKDIR diff --exit-code; then
