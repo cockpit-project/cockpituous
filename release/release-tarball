@@ -29,6 +29,11 @@ QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 TARBALL=${RELEASE_TARBALL:-}
 
+# When building a tarball it's important to have a consistent
+# locale and charmap in particular when generating documentation
+LANG=en_US.UTF-8
+export LANG
+
 usage()
 {
     echo "usage: release-tarball [-qvxz] [-t TAG] -f TARBALL" >&2
