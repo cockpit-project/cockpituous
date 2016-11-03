@@ -1,3 +1,18 @@
+# Release Scripts
+
+The various release scripts are present in this directory. They are mostly
+meant to be reusable in standalone fashion, with as little logical input
+and interdependency as possible.
+
+Some notable scripts:
+
+ * release-source: Builds a tarball and patches from a git repository
+ * release-srpm: Builds a source rpm from a tarball, patches and spec file
+
+The scripts can be run by the release-runner script in such a way that
+they all prepare their steps, and then commit them after everything has
+been prepared.
+
 # Cockpit Release Runner
 
 This is the container for the Cockpit release runner.
