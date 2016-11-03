@@ -1,9 +1,13 @@
 
+# Initial variables which help the scripts share
 RELEASE_PACKAGE=cockpit
 RELEASE_SPEC=tools/cockpit.spec
+RELEASE_SRPM=$PWD/srpm
+RELEASE_TARBALL=$PWD/tarball
 
-# Build the tarball for the tag
-job release-tarball
+# Build the source tarball patches and srpm
+job release-source
+job release-srpm
 
 
 # Do fedora builds for the tag, using tarball

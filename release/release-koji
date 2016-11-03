@@ -2,35 +2,23 @@
 #
 # release-koji
 #
-# A script that does a Koji dist-git commit and build based on a git
-# repository. The git repository must have a spec file ready for use.
-# The $changelog will be added to the spec file.
+# A script that does a Koji dist-git commit and build based on an srpm.
+# The changelog from dist-git and the srpm are merged, and an appropriate
+# revision is chosen based on the version and latest dist-git revision.
 #
-# $ git tag -as 0.55
-# $ make distcheck
-# $ release-koji -p package -s package.spec -f package-0.55.tbz f22
+# $ release-koki -p cockpit-122.src.rpm f24
 #
 # The spec file will be updated and committed, along with the new source
 # tarball. An SRPM and scratch build will be done to test things, after
 # which the commit will be pushed to dist-git and the real build happens.
 #
-# If the tarball is a symlink it will be resolved to its actual file name.
-#
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tbz    The tarball to upload
-#                                   default: no file attachment
 # -k         RELEASE_CONTINUE=1     Ignore build failure and skip the
 #                                   branch without failing delivery.
-# -p package RELEASE_PACKAGE=name   The distgit name of the package
-# -t 0.X     RELEASE_TAG=0.X        The tag to create release from
-#                                   default: latest tag
-# -s spec    RELEASE_SPEC=spec      Path to spec file in source git repo.
-#                                   default: origin
+# -p SRPM    RELEASE_SRPM=srpm      The srpm to distribute
 # -q         RELEASE_QUIET=1        Make output more quiet
-# -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
-# -z         RELEASE_CHECK=1        Check credentials and configuration
 #
 # Specify a distgit branch to build as a command line argument.
 #
@@ -38,26 +26,21 @@
 set -euf
 
 # Various arguments
-TAG=${RELEASE_TAG:-}
-PACKAGE=${RELEASE_PACKAGE:-}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-}
 CONTINUE=${RELEASE_CONTINUE:-0}
-SPEC=${RELEASE_SPEC:-$PACKAGE.spec}
-SRPM=${RELEASE_SRPM:-$PWD/srpm}
+SRPM=${RELEASE_SRPM:-}
 CHECK=${RELEASE_CHECK:-0}
 
 # Other globals
-CLEANUP=""
-SOURCES=""
+PACKAGE=""
 WORKDIR=""
 BRANCH=""
 
 usage()
 {
-    echo "usage: release-koji [-kqvxz] [-t TAG] [-s SPEC] [-f TARBALL] [-p PACKAGE] BRANCH" >&2
+    echo "usage: release-koji [-kqv] -p SRPM BRANCH" >&2
     exit ${1-2}
 }
 
@@ -73,116 +56,135 @@ message()
     echo "release-koji: $@" >&2
 }
 
-dash_bullets()
+# Get the specified variable from a spec file
+#  $1: The name of the variable
+#  $2: The spec file
+spec_variable()
 {
-        sed -e 's/^\* /- /' \
-            -e 's/^ \* /- /' \
-            -e 's/^[^ *-]/- /'
+    # Note that the spec file can have multiple subpackages, just get first
+    rpm -q --specfile --queryformat="%{$1}\n\n" --undefine dist "$2" | sed -e '/^$/,$d'
 }
 
-trim_contents()
+# Get all values for specified variable from spec file
+#  $1: The name of the variable
+#  $2: The spec file
+spec_variables()
 {
-    # Remove line with just tag name. Remove signature
-    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+    rpm -q --specfile --queryformat="[%{$1}\n]" --undefine dist "$2"
 }
 
-format_date()
+# Get the specified variable name from a source rpm
+#  $1: The name of the variable
+#  $2: The source rpm file
+srpm_variable()
 {
-    LC_ALL=C date --date="$1" '+%a %b %d %Y'
+    # Note that the srpm file can have multiple subpackages, just get first
+    rpm -qp --queryformat="%{$1}\n\n" "$2" | sed -e '/^$/,$d'
 }
 
-changelog_lines()
-{
-    local tagdate tagauthor tagemail tagbody
-    eval $(git for-each-ref --shell --format='
-tagdate=%(taggerdate:short)
-tagauthor=%(taggername)
-tagemail=%(taggeremail)' "refs/tags/$TAG")
-    tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | dash_bullets)"
-    tagdate="$(format_date $tagdate)"
-
-    printf "* %s %s %s - %s-1\n%s\n\n" "$tagdate" "$tagauthor" "$tagemail" "$TAG" "$tagbody"
-}
-
-commit_lines()
-{
-    local body
-    body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents)"
-    printf "Update to version %s\n\n%s" "$TAG" "$body"
-}
-
-readlink_or()
-{
-    if ! readlink "$1"; then
-        echo "$1"
-    fi
-}
-
+# Called to check if we can perform our task
 check()
 {
    "$(dirname $0)/check-git-rw" pkgs.fedoraproject.org "$PACKAGE.git"
     fedora-cert -v -u prevent-prompt
 }
 
+# Prepare our task but don't push any changes
 prepare()
 {
-    local spec tmpfile srpm tarball ret already
+    local patch file spec logcut logfile spec oldver oldlog version release logtext srpm already
 
-    WORKDIR="koji-$BRANCH"
+    WORKDIR=$(mktemp --directory .koji.XXXXXX)
     already=0
 
     trace "Checking out koji package $PACKAGE"
 
-    rm -rf $WORKDIR
-    git clone ssh://pkgs.fedoraproject.org/$PACKAGE.git $WORKDIR
+    fedpkg clone -b "$BRANCH" "$PACKAGE" $WORKDIR
 
-    git -C $WORKDIR checkout "$BRANCH"
+    spec=$WORKDIR/$PACKAGE.spec
 
-    # Update the spec file
-    spec="$WORKDIR/$PACKAGE.spec"
+    # Get data from the old one
+    oldver=$(spec_variable VERSION $spec)
+    oldlog=$(spec_variable CHANGELOGTEXT $spec)
 
-    tarball=$(readlink_or $TARBALL)
-    cp $tarball $WORKDIR/
+    # And the new data
+    version=$(srpm_variable VERSION $SRPM)
+    logtext=$(srpm_variable CHANGELOGTEXT $SRPM)
 
-    if grep -q "$TAG-1" "$spec"; then
-        trace "Already have NVR $PACKAGE-$TAG-1 present"
+    # Already updated this file, then idempotent and skip
+    if [ "$oldver" = "$version" -a "$oldlog" = "$logtext" ]; then
+        trace "Already have NVR $PACKAGE-$oldver-$oldrev present"
         already=1
 
+    # Otherwise it's time to update the spec file
     else
         trace "Updating spec file"
 
-        tmpfile=$(mktemp .koji-changelog.XXXXXX)
-        printf "%%changelog\n" >> $tmpfile
-        changelog_lines >> $tmpfile
-        sed '1,/%changelog/d' "$spec" >> $tmpfile
+        logcut=$(spec_variable CHANGELOGNAME $spec)
+        logfile=$WORKDIR/changelog
+        sed '1,/%changelog/d' "$spec" > $logfile
 
-        sed -e "1s/^/%define tag $TAG\n%define rev 1\n/" \
-            -e "/%changelog/r $tmpfile" \
-            -e "/%changelog/,\$d" \
-            $SPEC > "$spec"
+        # Bump the release number
+        release=$(spec_variable RELEASE $spec)
+        release=$(expr ${release:-1} + 1)
 
-        CLEANUP="$CLEANUP $tmpfile"
+        # Remove all the old patches
+        # TODO: We would like to read this from the old spec file, but rpm comes back empty
+        git -C $WORKDIR rm -f '*.patch'
+
+        # Extract the source RPM
+        set +f
+        mkdir $WORKDIR/extract
+        rpm2cpio $SRPM | cpio -idm -D $WORKDIR/extract
+        mv $WORKDIR/extract/* $WORKDIR
+        set -f
+
+        # Add in all the new patches
+        srpm_variables PATCH $spec | while read patch; do
+            git -C $WORKDIR add -f $patch
+        done
+
+        # The release number in old notes
+        wrongrel=$(spec_variable RELEASE $spec)
+
+        # Update the current spec file and make sure to place marker
+        sed -i -e "s/^Release:.*/Release: $release/" \
+            -e "s/ - $version-$wrongrel\$/ - $version-$release/" \
+            -e "\$a$logcut" \
+            $spec
+
+        # Now insert the old changelog replacing everything from the marker
+        # Update the release and change log appropriately
+        sed -i -e "/.*$logcut/r $logfile" \
+            -e "/.*$logcut/,\$d" \
+            $spec
+
         trace "Updating sources"
 
-        SOURCES=$(basename $tarball)
-        (cd $WORKDIR && md5sum $SOURCES) > $WORKDIR/sources
-        echo "/$SOURCES" >> $WORKDIR/.gitignore
+        # Update the sources file
+        rm $WORKDIR/sources
+        spec_variables SOURCE $spec | while read file; do
+            (cd $WORKDIR && md5sum $file) >> $WORKDIR/sources
+            echo "/$file" >> $WORKDIR/.gitignore
+        done
 
         trace "Committing changes"
 
-        # Commit all of that
-        git -C $WORKDIR add cockpit.spec sources .gitignore
-        commit_lines | git -C $WORKDIR commit -F -
-    fi
+        # Add the the sources file and spec file
+        git -C $WORKDIR add sources $PACKAGE.spec .gitignore
 
-    trace "Building SRPM"
+        # Commit all of that with an appropriate message
+        (
+            printf "Update to %s-%s\n\n" $version $release
+            spec_variable CHANGELOGTEXT $spec
+        ) | git -C $WORKDIR commit -F -
 
-    # Make an SRPM out of that
-    cd $WORKDIR
-    srpm=$(fedpkg srpm | sed -n 's/Wrote: \(.\+\.src\.rpm\)$/\1/p')
-
-    if [ $already -eq 0 ]; then
         trace "Making a scratch build"
+
+        cd $WORKDIR
+
+        # We need a new srpm
+        srpm=$(fedpkg srpm | sed -n 's/Wrote: \(.\+\.src\.rpm\)$/\1/p')
 
         # Build it in brew
         if ! fedpkg scratch-build --srpm=$srpm; then
@@ -192,56 +194,41 @@ prepare()
                 already=1
             fi
         fi
-    fi
 
-    # Link it into place
-    cd ..
-    if [ -n "$SRPM" ]; then
-        ln -snf $srpm $SRPM
+        cd ..
     fi
 
     if [ $already -eq 1 ]; then
-        if [ "$CLEANUP" != "" ]; then
-            rm $CLEANUP
-        fi
         exit 0
     fi
 }
 
+# Push all the changes that we've prepared
 commit()
 (
-    if [ "$CLEANUP" != "" ]; then
-        rm $CLEANUP
-    fi
-
     cd $WORKDIR
 
-    git checkout $BRANCH
+    git checkout "$BRANCH"
 
-    fedpkg new-sources $SOURCES
-    git reset --hard HEAD  # Undo any silliness above
+    # Upload all the sources again
+    fedpkg new-sources $(cut -d ' ' -f 2- sources)
+    git reset --hard HEAD  # Undo any silliness littered by above
 
     # Push the changes
-    git push origin $BRANCH
+    git push origin "$BRANCH"
     fedpkg build
+
+    cd ..
+    rm -rf $WORKDIR
 )
 
-while getopts "f:kp:s:t:qvxz" opt; do
+while getopts "f:kp:qvxz" opt; do
     case "$opt" in
-    f)
-        TARBALL="$OPTARG"
-        ;;
     k)
         CONTINUE=1
         ;;
     p)
-        PACKAGE="$OPTARG"
-        ;;
-    s)
-        SPEC="$OPTARG"
-        ;;
-    t)
-        TAG="$OPTARG"
+        SRPM="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -272,6 +259,10 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
+if [ $VERBOSE -eq 1 ]; then
+    set -x
+fi
+
 if [ $CHECK -eq 1 ]; then
     check
     exit 0
@@ -279,33 +270,17 @@ fi
 
 BRANCH="$1"
 
-# The tag for the release
-if [ -z "$TAG" ]; then
-    TAG=$(git describe --abbrev=0)
-    if [ -z "$TAG" ]; then
-        message "could not find a tag to release"
-        exit 2
-    fi
-fi
-
-if [ -z "$PACKAGE" ]; then
-    message "no package specified"
+if [ -z "$SRPM" ]; then
+    message "no source rpm file specified"
     exit 2
-fi
-
-if [ -z "$SPEC" ]; then
-    message "no spec source file specified"
-    exit 2
-elif [ ! -f "$SPEC" ]; then
-    message "spec source file not found: $SPEC"
+elif [ ! -f "$SRPM" ]; then
+    message "source rpm file not found: $SRPM"
     exit 1
 fi
 
-if [ -z "$TARBALL" ]; then
-    message "no tarball input specified"
-    exit 2
-elif [ ! -f "$TARBALL" ]; then
-    message "tarball source not found: $TARBALL"
+PACKAGE=$(srpm_variable NAME $SRPM)
+if [ -z "$PACKAGE" ]; then
+    message "could not determine package name from source rpm"
     exit 1
 fi
 
