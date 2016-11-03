@@ -1,0 +1,291 @@
+#!/bin/sh -euf
+#
+# release-srpm
+#
+# A script that creates an SRPM based on a tarball and patches.
+# The spec file is specified on the command line. It is updated with
+# version and patch information as well as changelog entries.
+#
+# If current working directory is a git repository and a tag is specified.
+# then the changelog is updated based on the text in that git tag.
+#
+# $ release-srpm -f cockpit-122.tar.xz -p patches -s tools/cockpit.spec
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tgz     RELEASE_TARBALL=tbz    The tarball to include
+# -p dir     RELEASE_PATCHES=dir    Directory with patches to include
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -s spec    RELEASE_SPEC=spec      Path to spec file
+# -t tag     RELEASE_TAG=tag        Tag to use for SRPM version and log
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
+
+set -euf
+
+# Various arguments
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+TARBALL=${RELEASE_TARBALL:-}
+PATCHES=${RELEASE_PATCHES:-}
+SPEC=${RELEASE_SPEC:-}
+SRPM=${RELEASE_SRPM:-}
+TAG=${RELEASE_TAG:-}
+REVESION=1
+
+usage()
+{
+    echo "usage: release-srpm [-qvxz] [-p PATCHES] [-t TAG] -s SPEC -f TARBALL" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        echo "> $@" >&2
+    fi
+}
+
+message()
+{
+    echo "release-srpm: $@" >&2
+}
+
+dash_bullets()
+{
+        sed -e 's/^\* /- /' \
+            -e 's/^ \* /- /' \
+            -e 's/^[^ *-]/- /'
+}
+
+# Trim tag message on stdio
+trim_tag()
+{
+    # Remove line with just tag name. Remove signature
+    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+}
+
+# Format a date for a changelog
+#  $1: The date to format
+changelog_date()
+{
+    LC_ALL=C date --date="$1" '+%a %b %d %Y'
+}
+
+# Print changelog lines on stdout
+#  $1: The git tag and/or version
+#  $2: The rpm revision
+changelog_lines()
+{
+    local tagdate tagauthor tagemail tagbody
+
+    # Only use git information if not a revision > 1
+    if [ -f .git/refs/tags/$1 -a "$2" -eq 1 ]; then
+        eval $(git for-each-ref --shell --format='
+tagdate=%(taggerdate:short)
+tagauthor=%(taggername)
+tagemail=%(taggeremail)' "refs/tags/$1")
+        tagdate="$(changelog_date $tagdate)"
+        tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$1" | trim_tag | dash_bullets)"
+    else
+        tagdate=$(LC_ALL=C date '+%a %b %d %Y')
+        tagauthor=$(git config --global user.name)
+        tagemail=$(git config --global user.email)
+        tagbody="- Update to upstream $TAG release"
+    fi
+
+    printf "* %s %s %s - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
+
+    # Only include the main body if not a revision > 1
+    if [ "$2" -eq 1 ]; then
+        printf "%s\n" "$tagbody"
+    fi
+
+    # Code elsewhere includes lines from patches
+}
+
+# Find the line in the patch that looks like this
+# Subject: [PATCH] My text here
+#  $1: The patch file name
+changelog_patch()
+{
+    sed -ne 's/^Subject: \(\[.*\] \)\?\(.*\)$/- \2/p' "$1"
+}
+
+# Given a spec file figure out the release to use for the source rpm
+#  $1: The rpm version
+#  $2: The the specfile to read
+calc_release()
+{
+    # Asks rpm to print out the Release line of a spec file, without its 'dist' part
+    rpm -q --specfile --queryformat '%{VERSION} %{RELEASE}\n' --undefine dist "$2" | while read ver rel; do
+        if [ "$ver" -eq "$1" -a "$rel" -gt 0 ]; then
+            expr "$rel" \+ 1
+        else
+            echo "1" # different version restart release
+        fi
+        break
+    done
+}
+
+# Given a spec file figure out the source rpm it'll produce
+#  $1: The spec file
+spec_srpm()
+{
+    rpm -q --specfile --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.src.rpm\n' "$1" | head -n1
+}
+
+# Given a tarball path, figure out the version number it represents
+#  $1: The tarball path
+tarball_version()
+{
+    echo "$1" | sed -ne 's/.*-\([0-9.]\+\)\..*/\1/p'
+}
+
+# Build the source RPM
+prepare()
+{
+    local specfile logfile count workdir
+
+    # The version number comes from the tag or tarball
+    if [ -z "$TAG" ]; then
+        TAG=$(tarball_version $TARBALL)
+        if [ -z "$TAG" ]; then
+            message "could not identify version number for tarball: $TARBALL"
+            exit 2
+        fi
+    fi
+
+    # If our version is already in the spec file then just bump the version
+    # The revesion comes from the spec file
+    RELEASE=$(calc_release $TAG $SPEC)
+
+    if [ -z "$RELEASE" ]; then
+        message "could not calculate release number from spec file: $SPEC"
+        exit 1
+    fi
+
+    workdir=$(mktemp --directory .sources.XXXXXX)
+    specfile=$workdir/$(basename $SPEC)
+    logfile=$workdir/changelog
+
+    trace "Updating spec file"
+
+    # Resolve the tarball to real file if a symlink
+    TARBALL=$(realpath "$TARBALL")
+
+    printf "# This spec file has been automatically updated\n" >> $specfile
+    printf "Version:\t$TAG\nRelease:\t$RELEASE%{?dist}\n" >> $specfile
+
+    # Start the changelog appropriately
+    printf "%%changelog\n" >> $logfile
+    changelog_lines $TAG $RELEASE >> $logfile
+
+    # Build up the list of patches
+    count=1
+    ls -1 "$PATCHES" | while read patch; do
+        cp "$PATCHES/$patch" $workdir
+        changelog_patch "$workdir/$patch" >> $logfile
+        printf "Patch%s:\t%s\n" $count $patch >> $specfile
+        count=$(expr $count + 1)
+    done
+
+    # End of first changelog entry, and all the remainder
+    printf "\n" >> $logfile
+    sed '1,/%changelog/d' "$SPEC" >> $logfile
+
+    # Bring in the rest of the spec file
+    sed -e "/^# This spec file has been automatically updated/d" \
+        -e "/^Version:.*/d" \
+        -e "/^Release:.*/d" \
+        -e "/^Patch.*:.*/d" \
+        -e "/^%changelog/r $logfile" \
+        -e "/^%changelog/,\$d" \
+        $SPEC >> $specfile
+
+    trace "Copying sources"
+
+    cp $TARBALL $workdir
+
+    trace "Building SRPM"
+
+    # Make an SRPM out of that
+    rpmbuild -bs --quiet \
+        --define "_sourcedir $workdir" \
+        --define "_specdir $workdir" \
+        --define "_builddir $workdir" \
+        --define "_srcrpmdir $workdir" \
+        --define "_buildrootdir $workdir/.build" \
+        $specfile
+
+    srpm=$(spec_srpm $specfile)
+
+    # Link it into place
+    if [ -n "$SRPM" ]; then
+        cp $workdir/$srpm $(dirname $SRPM)
+        ln -snf $srpm $SRPM
+    else
+        cp $workdir/$srpm .
+    fi
+
+    rm -rf $workdir
+}
+
+while getopts "f:p:qs:t:v" opt; do
+    case "$opt" in
+    f)
+        TARBALL="$OPTARG"
+        ;;
+    p)
+        PATCHES="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    s)
+        SPEC="$OPTARG"
+        ;;
+    t)
+        TAG="$OPTARG"
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+if [ $VERBOSE -eq 1 ]; then
+    set -x
+fi
+
+if [ -z "$SPEC" ]; then
+    message "no spec source file specified"
+    exit 2
+elif [ ! -f "$SPEC" ]; then
+    message "spec source file not found: $SPEC"
+    exit 1
+fi
+
+if [ -z "$TARBALL" ]; then
+    message "no tarball input specified"
+    exit 2
+elif [ ! -f "$TARBALL" ]; then
+    message "tarball source not found: $TARBALL"
+    exit 1
+fi
+
+prepare
