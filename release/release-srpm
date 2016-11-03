@@ -79,22 +79,27 @@ changelog_lines()
 {
     local tagdate tagauthor tagemail tagbody
 
+    tagbody=
+    tagauthor=
+
     # Only use git information if not a revision > 1
-    if [ -f .git/refs/tags/$1 -a "$2" -eq 1 ]; then
+    if [ -d .git -a "$2" -eq 1 ]; then
         eval $(git for-each-ref --shell --format='
 tagdate=%(taggerdate:short)
 tagauthor=%(taggername)
 tagemail=%(taggeremail)' "refs/tags/$1")
         tagdate="$(changelog_date $tagdate)"
         tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$1" | trim_tag | dash_bullets)"
-    else
+    fi
+
+    if [ -z "$tagbody" -a -z "$tagauthor" ]; then
         tagdate=$(LC_ALL=C date '+%a %b %d %Y')
         tagauthor=$(git config --global user.name)
         tagemail=$(git config --global user.email)
         tagbody="- Update to upstream $TAG release"
     fi
 
-    printf "* %s %s %s - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
+    printf "* %s %s <%s> - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
 
     # Only include the main body if not a revision > 1
     if [ "$2" -eq 1 ]; then
@@ -175,7 +180,7 @@ prepare()
     TARBALL=$(realpath "$TARBALL")
 
     printf "# This spec file has been automatically updated\n" >> $specfile
-    printf "Version:\t$TAG\nRelease:\t$RELEASE%{?dist}\n" >> $specfile
+    printf "Version:\t$TAG\nRelease:\t$RELEASE%%{?dist}\n" >> $specfile
 
     # Start the changelog appropriately
     printf "%%changelog\n" >> $logfile
