@@ -12,7 +12,7 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tbz    The tarball to extract documentation from
+# -f tgz     RELEASE_SOURCE=tbz     The tarball to extract documentation from
 # -z         RELEASE_CHECK=1        Check access and configuration
 #
 # Specify a source directory (in the tarball) and the destination directory
@@ -26,16 +26,17 @@ CHECK=${RELEASE_CHECK:-0}
 TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-}
+SOURCE=${RELEASE_SOURCE:-}
 
 # Other globals
 WORKDIR="docs-upload"
-SOURCE=""
+TARBALL=""
+DIRECTORY=""
 DEST=""
 
 usage()
 {
-    echo "usage: release-docs [-qvx] [-f TARBALL] SOURCE DEST" >&2
+    echo "usage: release-docs [-qvx] [-f TARBALL] DIRECTORY TO" >&2
     exit ${1-2}
 }
 
@@ -49,13 +50,6 @@ trace()
 message()
 {
     echo "release-docs: $@" >&2
-}
-
-readlink_or()
-{
-    if ! readlink "$1"; then
-        echo "$1"
-    fi
 }
 
 parse_version()
@@ -105,7 +99,7 @@ prepare()
     fi
 
     trace "Uploading documentation for version $version"
-    mv $subdir/$SOURCE/ $version
+    mv $subdir/$DIRECTORY/ $version
     rsync -Hvax $version $DEST/./
 
     ln -snf $version latest
@@ -120,7 +114,7 @@ commit()
 while getopts "f:qvxz" opt; do
     case "$opt" in
     f)
-        TARBALL="$OPTARG"
+        SOURCE="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -151,12 +145,19 @@ if [ $# -ne 2 ]; then
     usage
 fi
 
-SOURCE="$1"
+DIRECTORY="$1"
 DEST="$2"
 
-if [ -z "$TARBALL" ]; then
-    message "no tarball input specified"
+if [ -z "$SOURCE" ]; then
+    message "no tarball source specified"
     exit 2
+elif [ -d "$SOURCE" ]; then
+    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+elif [ -f "$SOURCE" ]; then
+    TARBALL="$SOURCE"
+else
+    message "tarball source not found: $SOURCE"
+    exit 1
 fi
 
 if [ $CHECK -eq 1 ]; then

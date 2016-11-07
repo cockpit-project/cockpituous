@@ -57,9 +57,6 @@ job()
 {
     local ret
 
-    RELEASE_TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
-    RELEASE_SRPM=${RELEASE_SRPM:-$PWD/srpm}
-    RELEASE_DEBIAN_REPO=${RELEASE_DEBIAN_REPO:-$PWD/debian-apt}
     RELEASE_TRANSACTION=1
 
     # Export all RELEASE_XXXX variables
