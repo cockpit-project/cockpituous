@@ -2,17 +2,8 @@
 #
 # release-debian
 #
-# A release script that publishes packages to a debian repository.
-#
-# Arguments are described here. Most arguments have an equivalent envvar.
-#
-# -f tbz     RELEASE_TARBALL=tbz        The tarball
-# -r repo    RELEASE_DEBIAN_REPO=repo   Generated Debian repository
-#
-# -q         RELEASE_QUIET=1            Make output more quiet
-# -x         RELEASE_TRANSACTION=1      SIGSTOP before pushing the dist-git commit
-# -v         RELEASE_VERBOSE=1          Make output more verbose
-# -z         RELEASE_CHECK=1            Check credentials only
+# TODO: This script is currently very Cockpit specific
+# A release script that publishes Cockpit to a debian repository.
 #
 
 set -eu
@@ -21,10 +12,11 @@ TRANSACTION=${RELEASE_TRANSACTION:-0}
 CHECK=${RELEASE_CHECK:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-
-TARBALL="${RELEASE_TARBALL:-}"
+SOURCE="${RELEASE_SOURCE:-}"
 TAG=${RELEASE_TAG:-$(git describe --abbrev=0)}
 DEBIAN_REPO=${RELEASE_DEBIAN_REPO:-debian-apt}
+
+TARBALL=
 
 usage()
 {
@@ -92,7 +84,7 @@ EOF
 
         # build source package
         rm -rf debian-tmp; mkdir debian-tmp
-        ln -sf $(readlink -f $TARBALL) cockpit_$TAG.orig.tar.xz
+        ln -sf readlink -f $TARBALL cockpit_$TAG.orig.tar.xz
         tar -C debian-tmp -xf $TARBALL --strip-components=1
         ( cd debian-tmp
           mv ./tools/debian .
@@ -130,7 +122,7 @@ commit()
 while getopts "f:t:r:qvxz" opt; do
     case "$opt" in
     f)
-        TARBALL="$OPTARG"
+        SOURCE="$OPTARG"
         ;;
     t)
         TAG="$OPTARG"
@@ -177,11 +169,15 @@ if [ -z "$TAG" ]; then
     exit 2
 fi
 
-if [ -z "$TARBALL" ]; then
-    message "no tarball input specified"
+if [ -z "$SOURCE" ]; then
+    message "no tarball source specified"
     exit 2
-elif [ ! -f "$TARBALL" ]; then
-    message "tarball source not found: $TARBALL"
+elif [ -d "$SOURCE" ]; then
+    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+elif [ -f "$SOURCE" ]; then
+    TARBALL="$SOURCE"
+else
+    message "tarball source not found: $SOURCE"
     exit 1
 fi
 

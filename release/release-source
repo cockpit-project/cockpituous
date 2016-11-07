@@ -12,7 +12,7 @@
 # current directory and their names are printed on stdout.
 #
 # $ git tag -as 122
-# $ release-source -p patches -f tarball-output
+# $ release-source -o source-output
 #
 # Will symlink the tarball to the path you specify, so it's easily retrieved.
 # while retaining its original name in the linked to file.
@@ -21,9 +21,8 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tgz    Path to link place tarball at, with a
-#                                   symlink to the actual version.
-# -p dir     RELEASE_PATCHES=dir    Directory to place the patches in
+# -f dir     RELEASE_SOURCE=dir     Directory to place source at. If prepopulated
+#                                   with source then build will be skipped.
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -t tag     RELEASE_TAG=tag        When no patches are specified, this is a git
 #                                   repository tag to get patches until HEAD
@@ -35,8 +34,7 @@ set -euf
 
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-}
-PATCHES=${RELEASE_PATCHES:-.}
+SOURCE=${RELEASE_SOURCE:-}
 TAG=${RELEASE_TAG:-}
 
 # When building tarballs it's important to have a consistent
@@ -46,7 +44,7 @@ export LANG
 
 usage()
 {
-    echo "usage: release-source [-qv] [-t TAG] [-p DIRECTORY] -f TARBALL" >&2
+    echo "usage: release-source [-qv] [-t TAG] [-f SOURCE]" >&2
     exit ${1:-2}
 }
 
@@ -75,68 +73,98 @@ autogen_or_configure()
     fi
 }
 
+# Prints out an existing tarball archive for the given version
+#  $1: The tarball version
+#  $2: The directory containing tarballs
+find_tarball()
+{
+    local archive
+    find "$2" -maxdepth 1 -name "*-$1.tar.*" | LC_ALL=C sort | while read archive; do
+        echo "$archive"
+        break
+    done
+}
+
+# Copies all tarballs from build into source directory, clears
+# all previously existing tarballs, and prints name of first tarball
+#  $1: The make build directory
+#  $2: The directory to put tarballs
+output_tarballs()
+{
+    local archive name
+    printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES) >&4' \
+        | 1>&2 4>&1 make -C "$1" -s -f - print-DIST_ARCHIVES | tr ' ' '\n' | while read name; do
+
+        # Once we see the first archive, clear old stuff
+        if [ -z "$archive" ]; then
+            find "$2" -maxdepth 1 -name "*-*.tar.*" -delete
+            archive="$2/$name"
+            echo "$archive"
+        fi
+
+        cp -t "$2" "$1/$name"
+    done
+}
+
+
 # Use the specified patches to build an input git repo
 # Expands commits in input repo into full tarball patches
 prepare()
 {
-    local workdir srcdir commit first archive author date
+    local workdir stagedir repodir commit archive archives author date name exist
 
-    workdir=$(mktemp --directory .sources.XXXXXX)
+    workdir=$(mktemp --directory source.XXXXXX)
     repodir=$workdir/repo
     stagedir=$workdir/stage
+    archive=""
+
+    mkdir -p "$SOURCE"
 
     # Clone the repo into our repodir
     git clone -q . $repodir
 
-    # The stage where we put tarball output
-    mkdir $stagedir
-    git -C $stagedir init -q
-    git -C $stagedir config core.autocrlf false
-    git -C $stagedir config core.safecrlf false
-    git -C $stagedir config gc.auto 0
-
-    # Mark all sorts of extra files as binary for diffing purposes
-    printf "*.min.* binary\n*.map binary\n" > $stagedir/.git/info/attributes
-
     # Build the tarballs for each commit from $TAG to HEAD inclusive
-    first=1
     git log --reverse --pretty='%H' $TAG~1.. | while read commit; do
         git -C $repodir checkout -q --detach $commit
 
         # The first time a real tarball or provided
-        if [ $first -eq 1 ]; then
-            first=0
+        if [ -z "$archive" ]; then
 
-            # Optimization, if the tarball already exists then just use it on the first pass
-            if [ -f "$TARBALL" ]; then
-                archive="$TARBALL"
+            # Find archives in the source directory
+            archive="$(find_tarball $TAG $SOURCE)"
 
-            else
+            # If any of them are missing rebuild the tarball and copy into place
+            if [ -z "$archive" ]; then
                 trace "Creating first tarball"
 
                 autogen_or_configure $repodir
                 make -C $repodir/_build --silent dist
-                printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' \
-                    > $repodir/_build/GNUmakefile
-                archive="$(make -s -C $repodir/_build print-DIST_ARCHIVES)"
 
-                # Put the archive in the right place and symlink it
-                if [ "$archive" != "$(basename $TARBALL)" ]; then
-                    ln -snf "$archive" "$TARBALL"
-                fi
-                archive="$repodir/_build/$archive"
-                cp "$archive" "$(dirname $TARBALL)"
+                archive="$(output_tarballs $repodir/_build $SOURCE)"
             fi
 
-            trace "Committing tarball"
-            # HACK: Exclude node_modules/ which was in cockpit tarballs
-            tar -C $stagedir --exclude="node_modules" --strip-components=1 -xf "$archive"
-            git -C $stagedir add -f .
-            git -C $stagedir commit -q --message="initial"
-            git -C $stagedir tag -a initial --message="initial"
-
-        # Optimize somewhat after that by using a simple gzip tarball
         else
+
+            # The first patch, make a git repo and extract our tarball
+            if [ ! -d $stagedir ]; then
+
+                trace "Committing first tarball"
+                mkdir $stagedir
+                git -C $stagedir init -q
+                git -C $stagedir config core.autocrlf false
+                git -C $stagedir config core.safecrlf false
+                git -C $stagedir config gc.auto 0
+
+                # Mark all sorts of extra files as binary for diffing purposes
+                printf "*.min.* binary\n*.map binary\n" > $stagedir/.git/info/attributes
+
+                # HACK: Exclude node_modules/ which was in cockpit tarballs
+                tar -C $stagedir --exclude="node_modules" --strip-components=1 -xf "$archive"
+                git -C $stagedir add -f .
+                git -C $stagedir commit -q --message="initial"
+                git -C $stagedir tag -a initial --message="initial"
+            fi
+
             trace "Creating patched tarball"
 
             # Try to build without clearing out build. This allows us to trend toward a
@@ -172,10 +200,12 @@ prepare()
     trace "Extracting tarball expanded patches"
 
     # Extract patches for everything that was staged and put in right place
-    mkdir $stagedir/_build
-    mkdir -p $PATCHES
-    git -C $stagedir format-patch --output-directory=_build initial..
-    find $stagedir/_build -type f -exec mv {} "$PATCHES" \;
+    find "$SOURCE" -maxdepth 1 -name '*.patch' -delete
+    if [ -d $stagedir ]; then
+        mkdir $stagedir/_build
+        git -C $stagedir format-patch --output-directory=_build initial..
+        find $stagedir/_build -type f -exec mv {} "$SOURCE" \;
+    fi
 
     rm -rf $workdir
 }
@@ -183,10 +213,7 @@ prepare()
 while getopts "f:p:qt:vx" opt; do
     case "$opt" in
     f)
-        TARBALL="$OPTARG"
-        ;;
-    p)
-        PATCHES="$OPTARG"
+        SOURCE="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -209,11 +236,6 @@ while getopts "f:p:qt:vx" opt; do
 done
 
 shift $(expr $OPTIND - 1)
-
-if [ -z "$TARBALL" ]; then
-    message "no tarball output path specified"
-    exit 2
-fi
 
 if [ $VERBOSE -eq 1 ]; then
     set -x

@@ -13,8 +13,8 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tbz    The tarball to include
-# -p dir     RELEASE_PATCHES=dir    Directory with patches to include
+# -f tgz     RELEASE_SOURCE=dir     The tarball to include or directory
+#                                   containing tarball and patches
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -s spec    RELEASE_SPEC=spec      Path to spec file
 # -t tag     RELEASE_TAG=tag        Tag to use for SRPM version and log
@@ -26,8 +26,7 @@ set -euf
 # Various arguments
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-}
-PATCHES=${RELEASE_PATCHES:-}
+SOURCE=${RELEASE_SOURCE:-}
 SPEC=${RELEASE_SPEC:-}
 SRPM=${RELEASE_SRPM:-}
 TAG=${RELEASE_TAG:-}
@@ -35,7 +34,7 @@ REVESION=1
 
 usage()
 {
-    echo "usage: release-srpm [-qvxz] [-p PATCHES] [-t TAG] -s SPEC -f TARBALL" >&2
+    echo "usage: release-srpm [-qvxz] [-t TAG] -s SPEC -f SOURCE" >&2
     exit ${1-2}
 }
 
@@ -170,7 +169,7 @@ prepare()
         exit 1
     fi
 
-    workdir=$(mktemp --directory .sources.XXXXXX)
+    workdir=$(mktemp --directory srpm.XXXXXX)
     specfile=$workdir/$(basename $SPEC)
     logfile=$workdir/changelog
 
@@ -188,10 +187,10 @@ prepare()
 
     # Build up the list of patches
     count=1
-    ls -1 "$PATCHES" | while read patch; do
-        cp "$PATCHES/$patch" $workdir
-        changelog_patch "$workdir/$patch" >> $logfile
-        printf "Patch%s:\t%s\n" $count $patch >> $specfile
+    find $SOURCE -maxdepth 1 -name '*.patch' | while read patch; do
+        cp "$patch" $workdir
+        changelog_patch "$patch" >> $logfile
+        printf "Patch%s:\t%s\n" $count "$(basename patch)" >> $specfile
         count=$(expr $count + 1)
     done
 
@@ -236,13 +235,10 @@ prepare()
     rm -rf $workdir
 }
 
-while getopts "f:p:qs:t:v" opt; do
+while getopts "f:qs:t:v" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
-        ;;
-    p)
-        PATCHES="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -285,11 +281,15 @@ elif [ ! -f "$SPEC" ]; then
     exit 1
 fi
 
-if [ -z "$TARBALL" ]; then
-    message "no tarball input specified"
+if [ -z "$SOURCE" ]; then
+    message "no tarball source specified"
     exit 2
-elif [ ! -f "$TARBALL" ]; then
-    message "tarball source not found: $TARBALL"
+elif [ -d "$SOURCE" ]; then
+    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+elif [ -f "$SOURCE" ]; then
+    TARBALL="$SOURCE"
+else
+    message "tarball source not found: $SOURCE"
     exit 1
 fi
 
