@@ -84,7 +84,7 @@ EOF
 
         # build source package
         rm -rf debian-tmp; mkdir debian-tmp
-        ln -sf readlink -f $TARBALL cockpit_$TAG.orig.tar.xz
+        ln -sf $(readlink -f $TARBALL) cockpit_$TAG.orig.tar.xz
         tar -C debian-tmp -xf $TARBALL --strip-components=1
         ( cd debian-tmp
           mv ./tools/debian .
