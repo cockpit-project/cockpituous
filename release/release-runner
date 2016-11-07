@@ -57,9 +57,6 @@ job()
 {
     local ret
 
-    RELEASE_TARBALL=${RELEASE_TARBALL:-$PWD/tarball}
-    RELEASE_SRPM=${RELEASE_SRPM:-$PWD/srpm}
-    RELEASE_DEBIAN_REPO=${RELEASE_DEBIAN_REPO:-$PWD/debian-apt}
     RELEASE_TRANSACTION=1
 
     # Export all RELEASE_XXXX variables
@@ -167,7 +164,7 @@ fi
 
 if [ -z "$RELEASE_TAG" -a -d ".git" ]; then
     git fetch origin
-    RELEASE_TAG=$(git describe --abbrev=0 origin/master || true)
+    RELEASE_TAG=$(git describe --match='[0-9]*' --abbrev=0 origin/master || true)
 fi
 
 if [ -z "$RELEASE_TAG" ]; then

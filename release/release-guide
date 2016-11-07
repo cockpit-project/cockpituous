@@ -10,7 +10,7 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tbz    The tarball to extract documentation from
+# -f tgz     RELEASE_SOURCE=tbz     The tarball to extract documentation from
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -x         RELEASE_TRANSACTION=1  SIGSTOP before publishing the Github draft
 # -v         RELEASE_VERBOSE=1      Make output more verbose
@@ -24,16 +24,17 @@ TRANSACTION=${RELEASE_TRANSACTION:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-$PWD/srpm}
-TARBALL=${RELEASE_TARBALL:-}
+SOURCE=${RELEASE_SOURCE:-}
 CHECK=${RELEASE_CHECK:-0}
 
 REPO=""
 WORKDIR="guide-commit"
-SOURCE=""
+DIRECTORY=""
+TARBALL=""
 
 usage()
 {
-    echo "usage: release-guide [-qvxz] [-f TARBALL] SOURCE REPO" >&2
+    echo "usage: release-guide [-qvxz] [-f TARBALL] DIRECTORY REPO" >&2
     exit ${1-2}
 }
 
@@ -91,7 +92,7 @@ prepare()
     trace "Commiting documentation for version $version"
     mkdir -p repo/guide/
     rm -rf repo/guide/$version
-    mv -n extract/$subdir/$SOURCE/ repo/guide/$version
+    mv -n extract/$subdir/$DIRECTORY/ repo/guide/$version
     rm -rf repo/guide/latest
     cp -rp repo/guide/$version repo/guide/latest
 
@@ -147,12 +148,19 @@ if [ $# -ne 2 ]; then
     usage
 fi
 
-SOURCE="$1"
+DIRECTORY="$1"
 REPO="$2"
 
-if [ -z "$TARBALL" ]; then
-    message "no tarball input specified"
+if [ -z "$SOURCE" ]; then
+    message "no tarball source specified"
     exit 2
+elif [ -d "$SOURCE" ]; then
+    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+elif [ -f "$SOURCE" ]; then
+    TARBALL="$SOURCE"
+else
+    message "tarball source not found: $SOURCE"
+    exit 1
 fi
 
 if [ $CHECK -eq 1 ]; then

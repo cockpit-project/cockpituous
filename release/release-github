@@ -10,15 +10,14 @@
 # $ release-github -f package-0.55.tbz
 #
 # The tag will be pushed if it does not exist online. If specified, the
-# tarball will be attached to the release. If the tarball is a symlink
-# it will be resolved to its actual file name.
+# source tarball will be attached to the release.
 #
 # The current account's SSH keys will be used for the tag push, and the
 # file ~/.config/github-token will be read as a GitHub API token.
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tbz    The tarball to upload
+# -f tgz     RELEASE_SOURCE=tbz     The tarball or source directory
 #                                   default: no file attachment
 # -t 0.X     RELEASE_TAG=0.X        The tag to create release from
 #                                   default: latest tag
@@ -37,7 +36,7 @@ VERBOSE="${RELEASE_VERBOSE:-0}"
 QUIET="${RELEASE_QUIET:-0}"
 TRANSACTION="${RELEASE_TRANSACTION:-0}"
 ORIGIN="${RELEASE_ORIGIN:-origin}"
-TARBALL="${RELEASE_TARBALL:-}"
+SOURCE="${RELEASE_SOURCE:-}"
 TAG="${RELEASE_TAG:-}"
 CHECK=${RELEASE_CHECK:-0}
 
@@ -50,7 +49,7 @@ CLEANUP=
 
 usage()
 {
-    echo "usage: release-github [-qvxz] [-t TAG] [-o ORIGIN] [-f TARBALL]" >&2
+    echo "usage: release-github [-qvxz] [-t TAG] [-o ORIGIN] [-f TARBALL] ..." >&2
     exit ${1-2}
 }
 
@@ -96,13 +95,6 @@ run_curl()
     fi
 }
 
-readlink_or()
-{
-    if ! readlink "$1"; then
-        echo "$1"
-    fi
-}
-
 check()
 {
     "$(dirname $0)/check-git-rw" git@github.com "$REPO_PATH"
@@ -111,7 +103,7 @@ check()
 
 prepare()
 {
-    local tmpfile body upload uplog base progress
+    local tmpfile body upload uplog base progress tarball
 
     tmpfile=$(mktemp .github-draft.XXXXXX.json)
 
@@ -138,8 +130,8 @@ prepare()
     # The release URL for later commit
     RELEASE=$(sed -n 's/.*"url"\s*:\s*"\([^"]*\).*/\1/p' $tmpfile | head -n 1)
 
-    if [ -n "$TARBALL" ]; then
-        trace "Uploading file: $TARBALL"
+    for tarball in $SOURCE; do
+        trace "Uploading file: $tarball"
 
         # Figure out the URL to upload to
         upload=$(sed -n 's/.*"upload_url"\s*:\s*"\([^{"]*\).*/\1/p' $tmpfile)
@@ -151,16 +143,15 @@ prepare()
             progress="--progress-bar"
         fi
 
-        ball="$(readlink_or $TARBALL)"
-        base="$(basename $ball)"
-        run_curl --data-binary @$TARBALL --progress-bar --output $uplog \
+        base="$(basename $tarball)"
+        run_curl --data-binary @$tarball --progress-bar --output $uplog \
              -H "Accept: application/vnd.github.manifold-preview" \
              -H "Content-Type: application/x-xz" \
             "$upload?name=$base"
 
         # Remove this file later
         CLEANUP="$CLEANUP $uplog"
-    fi
+    done
 }
 
 commit()
@@ -179,7 +170,7 @@ commit()
 while getopts "f:o:t:qvxz" opt; do
     case "$opt" in
     f)
-        TARBALL="$OPTARG"
+        SOURCE="$OPTARG"
         ;;
     o)
         ORIGIN="$OPTARG"
@@ -246,8 +237,13 @@ if [ -z "$TAG" ]; then
     fi
 fi
 
-if [ -n "$TARBALL" -a ! -f "$TARBALL" ]; then
-    message "tarball source not found: $TARBALL"
+if [ -n "$SOURCE" ]; then
+    message "no tarball source set"
+    exit 2
+elif [ -d "$SOURCE" ]; then
+    SOURCE="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort)"
+elif [ ! -f "$SOURCE" ]; then
+    message "tarball source not found: $SOURCE"
     exit 1
 fi
 
