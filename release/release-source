@@ -12,7 +12,7 @@
 # current directory and their names are printed on stdout.
 #
 # $ git tag -as 122
-# $ release-source -p patches -f tarball-output
+# $ release-source -o source-output
 #
 # Will symlink the tarball to the path you specify, so it's easily retrieved.
 # while retaining its original name in the linked to file.
@@ -21,9 +21,10 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_TARBALL=tgz    Path to link place tarball at, with a
-#                                   symlink to the actual version.
-# -p dir     RELEASE_PATCHES=dir    Directory to place the patches in
+# -f tgz                            Already created input tarball for when only
+#                                   source patches are desired.
+# -o dir     RELEASE_SOURCE=dir     Directory to place source at. This directory
+#                                   will be cleared if it exists.
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -t tag     RELEASE_TAG=tag        When no patches are specified, this is a git
 #                                   repository tag to get patches until HEAD
@@ -35,9 +36,10 @@ set -euf
 
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-TARBALL=${RELEASE_TARBALL:-}
-PATCHES=${RELEASE_PATCHES:-.}
+OUTPUT=${RELEASE_SOURCE:-}
 TAG=${RELEASE_TAG:-}
+
+TARBALL=""
 
 # When building tarballs it's important to have a consistent
 # locale and charmap in particular when generating documentation
@@ -46,7 +48,7 @@ export LANG
 
 usage()
 {
-    echo "usage: release-source [-qv] [-t TAG] [-p DIRECTORY] -f TARBALL" >&2
+    echo "usage: release-source [-qv] [-t TAG] [-o DIRECTORY] [-f TARBALL]" >&2
     exit ${1:-2}
 }
 
@@ -81,6 +83,16 @@ prepare()
 {
     local workdir srcdir commit first archive author date
 
+    if [ -z "$OUTPUT" ]; then
+        OUTPUT=.
+    elif [ -d "$OUTPUT" ]; then
+        find "$OUTPUT" -type f -delete
+    elif [ -e "$OUTPUT" ]; then
+        message "output directory exists and is not a directory: $OUTPUT"
+    else
+        mkdir -p "$OUTPUT"
+    fi
+
     workdir=$(mktemp --directory .sources.XXXXXX)
     repodir=$workdir/repo
     stagedir=$workdir/stage
@@ -105,11 +117,11 @@ prepare()
 
         # The first time a real tarball or provided
         if [ $first -eq 1 ]; then
-            first=0
 
             # Optimization, if the tarball already exists then just use it on the first pass
-            if [ -f "$TARBALL" ]; then
+            if [ -n "$TARBALL" ]; then
                 archive="$TARBALL"
+                first=0
 
             else
                 trace "Creating first tarball"
@@ -118,14 +130,15 @@ prepare()
                 make -C $repodir/_build --silent dist
                 printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' \
                     > $repodir/_build/GNUmakefile
-                archive="$(make -s -C $repodir/_build print-DIST_ARCHIVES)"
+                archives="$(make -s -C $repodir/_build print-DIST_ARCHIVES)"
 
-                # Put the archive in the right place and symlink it
-                if [ "$archive" != "$(basename $TARBALL)" ]; then
-                    ln -snf "$archive" "$TARBALL"
-                fi
-                archive="$repodir/_build/$archive"
-                cp "$archive" "$(dirname $TARBALL)"
+                for name in $archives; do
+                    if [ $first -eq 1 ]; then
+                        archive="$repodir/_build/$name"
+                        first=0
+                    fi
+                    cp "$repodir/_build/$name" "$OUTPUT"
+                done
             fi
 
             trace "Committing tarball"
@@ -173,9 +186,8 @@ prepare()
 
     # Extract patches for everything that was staged and put in right place
     mkdir $stagedir/_build
-    mkdir -p $PATCHES
     git -C $stagedir format-patch --output-directory=_build initial..
-    find $stagedir/_build -type f -exec mv {} "$PATCHES" \;
+    find $stagedir/_build -type f -exec mv {} "$OUTPUT" \;
 
     rm -rf $workdir
 }
@@ -185,8 +197,8 @@ while getopts "f:p:qt:vx" opt; do
     f)
         TARBALL="$OPTARG"
         ;;
-    p)
-        PATCHES="$OPTARG"
+    o)
+        OUTPUT="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -209,11 +221,6 @@ while getopts "f:p:qt:vx" opt; do
 done
 
 shift $(expr $OPTIND - 1)
-
-if [ -z "$TARBALL" ]; then
-    message "no tarball output path specified"
-    exit 2
-fi
 
 if [ $VERBOSE -eq 1 ]; then
     set -x
