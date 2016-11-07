@@ -17,6 +17,9 @@
 #
 # -n                                Dry run, stop before publishing changes
 # -q         RELEASE_QUIET=1        Make output more quiet
+# -r                                Do major release from this repo. Clone it
+#                                   lookup latest tag, and run script
+#                                   checking out of tag
 # -v         RELEASE_VERBOSE=1      Make output more verbose
 # -z         RELEASE_CHECK=1        Check access and configuration
 # -l         RELEASE_SINK=1         Host to sink logs to
@@ -31,13 +34,17 @@ set -m
 
 SINK=${RELEASE_SINK:-}
 RELEASE_TAG=${RELEASE_TAG:-}
+RELEASE_VERBOSE=0
+RELEASE_TRANSACTION=1
+
 FAIL=0
 DRYRUN=0
 JOBS=""
+REPO=""
 
 usage()
 {
-    echo "usage: release-runner [-nqvz] [-t TAG] SCRIPT" >&2
+    echo "usage: release-runner [-nqvz] [-r REPO] [-t TAG] SCRIPT" >&2
     exit ${1:-2}
 }
 
@@ -53,14 +60,17 @@ message()
     echo "release-runner: $@" >&2
 }
 
+export_all()
+{
+    # Export all RELEASE_XXXX variables
+    eval $(set | sed -n 's/^\(RELEASE_[^=]\+\)=.*/export \1/p')
+}
+
 job()
 {
     local ret
 
-    RELEASE_TRANSACTION=1
-
-    # Export all RELEASE_XXXX variables
-    eval $(set | sed -n 's/^\(RELEASE_[^=]\+\)=.*/export \1/p')
+    export_all
 
     if [ ${RELEASE_CHECK:-0} -eq 1 ]; then
         trace "Checking: $@"
@@ -69,7 +79,7 @@ job()
     fi
 
     # Run the task
-    set +e
+    set +ea
     "$@"
     ret=$?
     set -e
@@ -102,7 +112,9 @@ job()
 runner()
 {
     # Run the basic script
+    set -a
     . $1
+    set +a
 
     if [ $DRYRUN -eq 1 ]; then
         exit $FAIL
@@ -116,13 +128,13 @@ runner()
     done
 
     # Mark the build as released
-    if [ -n "$RELEASE_TAG" -a -d .git ]; then
+    if [ -n "$REPO" ]; then
         git tag -d released-$RELEASE_TAG 2> /dev/null || true
         git tag released-$RELEASE_TAG
     fi
 }
 
-while getopts "l:nqvxz" opt; do
+while getopts "l:nqr:vxz" opt; do
     case "$opt" in
     l)
         SINK="$OPTARG"
@@ -133,6 +145,9 @@ while getopts "l:nqvxz" opt; do
     q)
         RELEASE_QUIET=1
         RELEASE_VERBOSE=0
+        ;;
+    r)
+        REPO="$OPTARG"
         ;;
     t)
         RELEASE_TAG="$OPTARG"
@@ -158,24 +173,33 @@ PATH=$PATH:$(dirname $0)
 
 shift $(expr $OPTIND - 1)
 
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ]; then
     usage
 fi
 
-if [ -z "$RELEASE_TAG" -a -d ".git" ]; then
-    git fetch origin
-    RELEASE_TAG=$(git describe --match='[0-9]*' --abbrev=0 origin/master || true)
+# Initialize the work directory
+if [ -n "$REPO" ]; then
+    if [ -d ".git" ]; then
+        git fetch origin
+    else
+        git clone https://github.com/cockpit-project/cockpit .
+    fi
+    if [ -z "$RELEASE_TAG" -a -d ".git" ]; then
+        RELEASE_TAG=$(git describe --match='[0-9]*' --abbrev=0 origin/master || true)
+    fi
 fi
 
 if [ -z "$RELEASE_TAG" ]; then
-    message "Could not find a release tag"
+    message "No release tag set"
     exit 1
 fi
 
-if [ -d ".git" ]; then
+# Already released this and checkout appropriately?
+if [ -n "$REPO" ]; then
     if git show "released-$RELEASE_TAG" -- 2> /dev/null > /dev/null; then
         exit 0
     fi
+    git checkout --detach $RELEASE_TAG
 fi
 
 if [ -z "$SINK" ]; then
@@ -185,6 +209,7 @@ else
         # Respawn the current script but redirect to ssh
         export RELEASE_SINK=
         export RELEASE_TAG
+        export_all
         exec 2>&1
         printf '{ "message": "Release running: %s", "irc": { "channel": "#cockpit" } }\n' "$RELEASE_TAG"
         if stdbuf -oL -eL "$0" "$@"; then

@@ -1,10 +1,9 @@
 
 # Initial variables which help the scripts share
 RELEASE_SPEC=tools/cockpit.spec
-RELEASE_SRPM=$PWD/srpm
-RELEASE_TARBALL=$PWD/tarball
-RELEASE_SOURCE=$PWD/source
-RELEASE_DEBIAN_REPO=$PWD/debian-apt
+RELEASE_SRPM=$PWD/_release/srpm
+RELEASE_SOURCE=$PWD/_release/source
+RELEASE_DEBIAN_REPO=$PWD/_release/debian-apt
 
 # Build the source tarball patches and srpm
 job release-source

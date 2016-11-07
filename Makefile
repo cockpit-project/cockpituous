@@ -22,7 +22,7 @@ release-container:
 	docker rm -f cockpit-release-stage || true
 	docker run --privileged --name=cockpit-release-stage \
 		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/infra-release:staged
-	docker commit --change='ENTRYPOINT ["/usr/local/bin/cockpit-release"]' \
+	docker commit --change='ENTRYPOINT ["/usr/local/bin/release-runner"]' \
 		cockpit-release-stage cockpit/infra-release
 	docker rm -f cockpit-release-stage
 
