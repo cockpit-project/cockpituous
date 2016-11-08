@@ -4,20 +4,23 @@ all:
 	@echo "       make release-container" >&2
 	@echo "       make release-install" >&2
 
-base-container:
+docker-running:
+	systemctl start docker
+
+base-container: docker-running
 	docker build -t cockpit/infra-base base
 
 containers: release-container verify-container
 	@true
 
-release-shell:
+release-shell: docker-running
 	docker run -ti --rm -v /home/cockpit:/home/user:rw \
 		--privileged \
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
 		--entrypoint=/bin/bash cockpit/infra-release
 
-release-container:
+release-container: docker-running
 	docker build -t cockpit/infra-release:staged release
 	docker rm -f cockpit-release-stage || true
 	docker run --privileged --name=cockpit-release-stage \
@@ -31,7 +34,7 @@ release-install: release-container
 	systemctl daemon-reload
 	systemctl enable cockpit-release
 
-verify-shell:
+verify-shell: docker-running
 	docker run -ti --rm \
 		--privileged \
 		--volume /home/cockpit:/home/user \
@@ -40,7 +43,7 @@ verify-shell:
 		--net=host --pid=host --privileged --entrypoint=/bin/bash \
         cockpit/infra-verify -i
 
-verify-container:
+verify-container: docker-running
 	docker build -t cockpit/infra-verify verify
 
 verify-install: verify-container
