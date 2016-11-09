@@ -44,7 +44,7 @@ export LANG
 
 usage()
 {
-    echo "usage: release-source [-qv] [-t TAG] [-f SOURCE]" >&2
+    echo "usage: release-source [-qv] [-t TAG] -f SOURCE" >&2
     exit ${1:-2}
 }
 
@@ -239,6 +239,11 @@ shift $(expr $OPTIND - 1)
 
 if [ $VERBOSE -eq 1 ]; then
     set -x
+fi
+
+if [ -z "$SOURCE" ]; then
+    message "no source directory specified"
+    exit 2
 fi
 
 # The tag for the release
