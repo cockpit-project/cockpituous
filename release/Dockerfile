@@ -55,7 +55,7 @@ throttleit \
 tough-cookie \
 yauzl \
     && \
-    yum-builddep -y /tmp/cockpit.spec && \
+    dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
 RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
