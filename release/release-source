@@ -92,8 +92,10 @@ find_tarball()
 output_tarballs()
 {
     local archive name
-    printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES) >&4' \
-        | 1>&2 4>&1 make -C "$1" -s -f - print-DIST_ARCHIVES | tr ' ' '\n' | while read name; do
+
+    archive=
+    printf 'include Makefile\nprint-DIST_ARCHIVES:\n\t@echo $(DIST_ARCHIVES)' \
+        | make -C "$1" -s -f - print-DIST_ARCHIVES | tr ' ' '\n' | while read name; do
 
         # Once we see the first archive, clear old stuff
         if [ -z "$archive" ]; then
