@@ -123,7 +123,7 @@ calc_release()
 {
     # Asks rpm to print out the Release line of a spec file, without its 'dist' part
     rpm -q --specfile --queryformat '%{VERSION} %{RELEASE}\n' --undefine dist "$2" | while read ver rel; do
-        if [ "$ver" -eq "$1" -a "$rel" -gt 0 ]; then
+        if [ "$ver" = "$1" -a "$rel" -gt 0 ]; then
             expr "$rel" \+ 1
         else
             echo "1" # different version restart release
@@ -161,7 +161,7 @@ prepare()
     fi
 
     # If our version is already in the spec file then just bump the version
-    # The revesion comes from the spec file
+    # The revision comes from the spec file
     RELEASE=$(calc_release $TAG $SPEC)
 
     if [ -z "$RELEASE" ]; then
