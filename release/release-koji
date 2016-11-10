@@ -82,6 +82,14 @@ srpm_variable()
     rpm -qp --queryformat="%{$1}\n\n" "$2" | sed -e '/^$/,$d'
 }
 
+# Get all values for specified variable from spec file
+#  $1: The name of the variable
+#  $2: The spec file
+srpm_variables()
+{
+    rpm -qp --queryformat="[%{$1}\n]" "$2"
+}
+
 # Called to check if we can perform our task
 check()
 {
@@ -167,7 +175,7 @@ prepare()
 
         # Update the sources file
         rm $WORKDIR/sources
-        spec_variables SOURCE $spec | while read file; do
+        srpm_variables SOURCE $SRPM | while read file; do
             (cd $WORKDIR && md5sum $file) >> $WORKDIR/sources
             echo "/$file" >> $WORKDIR/.gitignore
         done
