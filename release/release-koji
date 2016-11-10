@@ -126,7 +126,11 @@ prepare()
         sed '1,/%changelog/d' "$spec" > $logfile
 
         # Bump the release number
-        release=$(expr ${oldrev:-1} + 1)
+        if [ "$oldver" = "$version" ]; then
+            release=$(expr ${oldrev:-1} + 1)
+        else
+            release="1"
+        fi
 
         # Remove all the old patches
         # TODO: We would like to read this from the old spec file, but rpm comes back empty
