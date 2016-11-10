@@ -74,7 +74,6 @@ RUN mkdir -p /etc/pbuilder/hooks && \
             > /etc/pbuilder/hooks/D10remountdevpts && \
     chmod +x /etc/pbuilder/hooks/D10remountdevpts
 
-ENV RELEASE_SINK fedorapeople.org
 VOLUME /home/user
 VOLUME /build
 WORKDIR /build
