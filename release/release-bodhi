@@ -8,7 +8,6 @@
 #
 # -p srpm    RELEASE_SRPM=srpm      Path to SRPM
 # -q         RELEASE_QUIET=1        Make output more quiet
-# -x         RELEASE_TRANSACTION=1  SIGSTOP before pushing the dist-git commit
 # -v         RELEASE_VERBOSE=1      Make output more verbose
 #
 
@@ -63,13 +62,13 @@ check()
 
 prepare()
 {
-    NVR="$(rpm --qf '%{Name}-%{Version}-%{Release}\n' -qp $SRPM)"
+    NVR="$(rpm --qf '%{Name}-%{Version}-%{Release}\n' -qp --undefine dist $SRPM)"
     if [ -z "$NVR" ]; then
         message "$SRPM: is not a valid source rpm"
         exit 1
     fi
     NOTES="$(rpm --changelog -qp $SRPM | sed -n '2,/^$/p')"
-    if [ -z "NOTES" ]; then
+    if [ -z "$NOTES" ]; then
         message "$SRPM: doesn't have a valid changelog"
         exit 1
     fi
@@ -77,12 +76,12 @@ prepare()
 
 commit()
 (
-    # Ignore bodhi failures until Fedora bodhi infrastructure stops being so broken
-    set +e
-echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
+    local number
+    number=$(echo $FEDORA | tr -d '[A-Z][a-z]')
+
+    echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
         --stablekarma=2 --unstablekarma=-1 --request=stable --release="$FEDORA" \
-        --username=$USER "$NVR"
-    set -e
+        --username=$USER "${NVR/%fc*/fc$number}"
 )
 
 while getopts "p:qvxz" opt; do
