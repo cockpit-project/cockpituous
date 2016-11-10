@@ -160,7 +160,7 @@ prepare()
         wrongrel=$(spec_variable RELEASE $spec)
 
         # Update the current spec file and make sure to place marker
-        sed -i -e "s/^Release:.*/Release: $release/" \
+        sed -i -e "s/^Release:.*/Release: $release%{?dist}/" \
             -e "s/ - $version-$wrongrel\$/ - $version-$release/" \
             -e "\$a$logcut" \
             $spec
@@ -228,6 +228,8 @@ commit()
 
     # Push the changes
     git push origin "$BRANCH"
+
+    # We shouldn't need --skip-nvr-check
     fedpkg build
 
     cd ..
