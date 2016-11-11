@@ -32,6 +32,24 @@ release-container: docker-running
 	docker rm -f cockpit-release-stage
 	@true
 
+release-push: docker-running
+	{ \
+	ID=`docker images -q cockpit/infra-release:latest`; \
+	if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
+		echo "Expected exactly one image matching 'cockpit/infra-release:latest'"; \
+		exit 1; \
+	fi; \
+	TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
+	if [ `echo "$$TAGS" | wc -w` -ne "2" ]; then \
+		echo "Expected exactly two tags for the image to push: latest and one other"; \
+		exit 1; \
+	fi; \
+	for TAG in $$TAGS; do \
+		docker push "cockpit/infra-release:$$TAG"; \
+	done \
+	}
+	@true
+
 release-install: release-container
 	cp release/cockpit-release.service /etc/systemd/system/
 	systemctl daemon-reload
