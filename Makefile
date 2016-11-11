@@ -20,14 +20,17 @@ release-shell: docker-running
 		--volume=$(CURDIR)/release:/usr/local/bin \
 		--entrypoint=/bin/bash cockpit/infra-release
 
+TAG := cockpit/infra-release:$(shell date --iso-8601)
 release-container: docker-running
 	docker build -t cockpit/infra-release:staged release
 	docker rm -f cockpit-release-stage || true
 	docker run --privileged --name=cockpit-release-stage \
 		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/infra-release:staged
 	docker commit --change='ENTRYPOINT ["/usr/local/bin/release-runner"]' \
-		cockpit-release-stage cockpit/infra-release
+		cockpit-release-stage $(TAG)
+	docker tag $(TAG) cockpit/infra-release:latest
 	docker rm -f cockpit-release-stage
+	@true
 
 release-install: release-container
 	cp release/cockpit-release.service /etc/systemd/system/
