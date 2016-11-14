@@ -158,7 +158,7 @@ prepare()
                 git -C $stagedir config gc.auto 0
 
                 # Mark all sorts of extra files as binary for diffing purposes
-                printf "*.min.* binary\n*.map binary\n" > $stagedir/.git/info/attributes
+                printf "*.min.* binary\n*.map binary\n/dist/** binary\n" > $stagedir/.git/info/attributes
 
                 # HACK: Exclude node_modules/ which was in cockpit tarballs
                 tar -C $stagedir --exclude="node_modules" --exclude="aclocal.m4" \
