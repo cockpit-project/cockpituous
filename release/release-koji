@@ -142,7 +142,7 @@ prepare()
 
         # Remove all the old patches
         # TODO: We would like to read this from the old spec file, but rpm comes back empty
-        git -C $WORKDIR rm -f '*.patch'
+        git -C $WORKDIR ls-tree HEAD | grep '.patch$' | xargs --no-run-if-empty git -C $WORKDIR rm -f
 
         # Extract the source RPM
         set +f
