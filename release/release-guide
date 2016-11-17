@@ -8,13 +8,13 @@
 # the resulting URLs can be fetched. Commits the changes and pushes
 # the result.
 #
+# We expect an 'html' subdirectory and likely an 'index.html' file there.
+#
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
 # -f tgz     RELEASE_SOURCE=tbz     The tarball to extract documentation from
 # -q         RELEASE_QUIET=1        Make output more quiet
-# -x         RELEASE_TRANSACTION=1  SIGSTOP before publishing the Github draft
 # -v         RELEASE_VERBOSE=1      Make output more verbose
-# -z         RELEASE_CHECK=1        Check access and configuration
 #
 
 set -euf
@@ -28,7 +28,7 @@ SOURCE=${RELEASE_SOURCE:-}
 CHECK=${RELEASE_CHECK:-0}
 
 REPO=""
-WORKDIR="guide-commit"
+WORKDIR=""
 DIRECTORY=""
 TARBALL=""
 
@@ -66,7 +66,7 @@ prepare()
 
     trace "Extracting the tarball $TARBALL"
 
-    rm -rf $WORKDIR
+    WORKDIR=$(mktemp --directory source.XXXXXX)
     mkdir -p $WORKDIR/extract
     tar -f $TARBALL -C $WORKDIR/extract -x
 
@@ -92,7 +92,15 @@ prepare()
     trace "Commiting documentation for version $version"
     mkdir -p repo/guide/
     rm -rf repo/guide/$version
-    mv -n extract/$subdir/$DIRECTORY/ repo/guide/$version
+    if [ ! -f extract/$subdir/$DIRECTORY/html/index.html ]; then
+        message "no html/index.html documentation in $DIRECTORY"
+        exit 1
+    fi
+
+    mv -n extract/$subdir/$DIRECTORY/html/ repo/guide/$version
+    if [ -f extract/$subdir/$DIRECTORY/index.html ]; then
+        mv extract/$subdir/$DIRECTORY/index.html repo/guide/index.html
+    fi
     rm -rf repo/guide/latest
     cp -rp repo/guide/$version repo/guide/latest
 
@@ -111,13 +119,14 @@ prepare()
 commit()
 (
     trace "Pushing changes to guide"
-    git -C $WORKDIR/repo push origin master
+    echo git -C $WORKDIR/repo push origin master
+    echo rm -rf $WORKDIR
 )
 
 while getopts "f:qvxz" opt; do
     case "$opt" in
     f)
-        TARBALL="$OPTARG"
+        SOURCE="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -146,6 +155,10 @@ shift $(expr $OPTIND - 1)
 
 if [ $# -ne 2 ]; then
     usage
+fi
+
+if [ $VERBOSE -eq 1 ]; then
+    set -x
 fi
 
 DIRECTORY="$1"

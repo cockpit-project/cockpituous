@@ -29,7 +29,7 @@ job release-dockerhub cockpituous/cockpit cockpit-project/cockpit
 job release-bodhi F25
 
 # Upload documentation
-job release-guide doc/guide/html cockpit-project/cockpit-project.github.io
+job release-guide dist/guide cockpit-project/cockpit-project.github.io
 
 # Create and publish a Debian repository and Ubuntu PPA
 job release-debian
