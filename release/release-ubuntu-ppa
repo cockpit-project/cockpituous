@@ -2,7 +2,7 @@
 #
 # release-ubuntu-ppa
 #
-# A release script that publishes packages to an ubuntu ppa on launchpad.
+# HACK: This script is very Cockpit specific
 #
 # Depends on a source package built by release-debian.
 #
@@ -20,12 +20,11 @@ TRANSACTION=${RELEASE_TRANSACTION:-0}
 CHECK=${RELEASE_CHECK:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-
-TAG=${RELEASE_TAG:-$(git describe --abbrev=0)}
+DSC="${RELEASE_DSC:-}"
 
 usage()
 {
-    echo "usage: release-ubuntu-ppa [-qvxz] [-t tag]" >&2
+    echo "usage: release-ubuntu-ppa [-qvxz] -p dsc" >&2
     exit ${1-2}
 }
 
@@ -39,6 +38,13 @@ trace()
 message()
 {
     echo "release-ubuntu-ppa: $@" >&2
+}
+
+# Given a dsc path, figure out the version number it represents
+#  $1: The dsc path
+dsc_version()
+{
+    echo "$1" | sed -ne 's/.*_\([0-9.]\+\)-.*/\1/p'
 }
 
 check()
@@ -55,8 +61,11 @@ prepare()
 
 commit()
 (
+    local dir
+
     trace "Publishing Ubuntu PPA"
 
+    cd $(dirname $DSC)
     # upload files manually as there's no dput on fedora
     sftp -b - cockpit-project@ppa.launchpad.net <<EOF
 put cockpit_${TAG}-0_source.changes ~cockpit-project/cockpit/ubuntu/xenial/cockpit_${TAG}-0_source.changes
@@ -66,10 +75,10 @@ put cockpit_${TAG}.orig.tar.xz      ~cockpit-project/cockpit/ubuntu/xenial/cockp
 EOF
 )
 
-while getopts "t:qvxz" opt; do
+while getopts "p:qvxz" opt; do
     case "$opt" in
-    t)
-        TAG="$OPTARG"
+    p)
+        DSC="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -100,13 +109,20 @@ if [ $# -ne 0 ]; then
     usage
 fi
 
+if [ $VERBOSE -eq 1 ]; then
+    set -x
+fi
+
 if [ $CHECK -eq 1 ]; then
     check "$1"
     exit 0
 fi
 
+# The version number comes from dsc
+DSC=$(realpath $DSC)
+TAG=$(dsc_version $DSC)
 if [ -z "$TAG" ]; then
-    message "could not find a tag to release"
+    message "could not identify version number for debian source file: $DSC"
     exit 2
 fi
 

@@ -1,9 +1,10 @@
 
 # Initial variables which help the scripts share
 RELEASE_SPEC=tools/cockpit.spec
+RELEASE_CONTROL=tools/debian/control
 RELEASE_SRPM=$PWD/_release/srpm
+RELEASE_DSC=$PWD/_release/dsc
 RELEASE_SOURCE=$PWD/_release/source
-RELEASE_DEBIAN_REPO=$PWD/_release/debian-apt
 
 # Build the source tarball patches and srpm
 job release-source
@@ -32,5 +33,6 @@ job release-bodhi F25
 job release-guide dist/guide cockpit-project/cockpit-project.github.io
 
 # Create and publish a Debian repository and Ubuntu PPA
-job release-debian
+job release-dsc
+job release-debian fedorapeople.org:/project/cockpit/debian unstable jessie
 job release-ubuntu-ppa
