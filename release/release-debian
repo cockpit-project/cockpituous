@@ -12,15 +12,15 @@ TRANSACTION=${RELEASE_TRANSACTION:-0}
 CHECK=${RELEASE_CHECK:-0}
 QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
-SOURCE="${RELEASE_SOURCE:-}"
-TAG=${RELEASE_TAG:-$(git describe --abbrev=0)}
-DEBIAN_REPO=${RELEASE_DEBIAN_REPO:-debian-apt}
+DSC="${RELEASE_DSC:-}"
 
-TARBALL=
+TAG=""
+REPOSITORY=""
+WORKDIR=""
 
 usage()
 {
-    echo "usage: release-debian [-qvxz] [-t tag] [-d source] [-r repository]" >&2
+    echo "usage: release-debian [-qvx] -p dsc repository distribution ..." >&2
     exit ${1-2}
 }
 
@@ -41,97 +41,109 @@ check()
     true
 }
 
-trim_contents()
-{
-    # Remove line with just tag name. Remove signature
-    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
-}
-
-changelog_lines()
-{
-    local date author body
-    date="$(git for-each-ref --format='%(taggerdate:rfc)' "refs/tags/$TAG")"
-    author="Cockpit Project <cockpituous@gmail.com>"
-    body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | sed -e 's/^/  /')"
-
-    printf "cockpit (%s) experimental; urgency=medium\n\n%s\n\n -- %s  %s\n" "$1" "$body" "$author" "$date"
-}
-
-prepare()
-{
-    local installed basetgz
-    local debversion="$TAG-0"
-
-    trace "Creating Debian repository"
-
-    cat > pbuilderrc <<EOF
-USENETWORK=yes
-APTGETOPT=(-o Acquire::Pdiffs=false)
-EOF
-
-    mkdir -p $DEBIAN_REPO/conf
-    cat > $DEBIAN_REPO/conf/distributions <<EOF
+distributions() {
+    while [ $# -gt 0 ]; do
+        cat <<EOF
 Origin: Cockpit
 Label: Cockpit
-Codename: unstable
+Codename: $1
 Architectures: source amd64 i386
 Components: main
 Description: Apt repository for Cockpit
 SignWith: default
+
+EOF
+        shift
+    done
+}
+
+# Given a dsc path, figure out the version number it represents
+#  $1: The dsc path
+dsc_version()
+{
+    echo "$1" | sed -ne 's/.*_\([0-9.]\+\)-.*/\1/p'
+}
+
+# Check if the given query matches anything in the debian repo
+#  $1: Path to debian repo
+#  $2: The distribution
+#  $3: The query in reprepro listfilter format
+repo_contains()
+{
+    reprepro --silent -b "$1" listfilter "$2" "$3" | while read line; do
+        return 0
+    done
+    return 1
+}
+
+prepare()
+{
+    local distribution basetgz
+
+    trace "Retrieving Debian repository"
+
+    WORKDIR=$(mktemp --directory debian-apt.XXXXXX)
+    mkdir -p $WORKDIR/_repo/conf $WORKDIR/debuild/
+
+    # Retrieve the upstream repository
+    rsync --delete -a -e ssh $WORKDIR/_repo "$REPOSITORY"
+
+    # Generate a distribution file
+    distributions "$@" > $WORKDIR/_repo/conf/distributions
+
+    cat > $WORKDIR/pbuilderrc <<EOF
+USENETWORK=yes
+APTGETOPT=(-o Acquire::Pdiffs=false)
 EOF
 
-    if [ -z "$(reprepro --silent -b $DEBIAN_REPO listfilter unstable \$Version\(==$TAG\))" ]; then
+    # Figure out what needs to be built
+    while [ $# -gt 0 ]; do
+        distribution="$1"
+        shift
 
-        # build source package
-        rm -rf debian-tmp; mkdir debian-tmp
-        ln -sf $(readlink -f $TARBALL) cockpit_$TAG.orig.tar.xz
-        tar -C debian-tmp -xf $TARBALL --strip-components=1
-        ( cd debian-tmp
-          mv ./tools/debian .
-          changelog_lines $debversion >debian/changelog
+        if repo_contains $WORKDIR/_repo "$distribution" "\$Version\(==$TAG\)"; then
+            trace "Skipping debian $distribution build"
+            continue
+        fi
 
-          # - don't install or package test assets
-          sed -i -e 's/install-test-assets//' debian/rules
-          sed -i -e '/Package: cockpit-test-assets/,/^$/d' debian/control
+        trace "Performing Debian $distribution build"
 
-          debuild -S
-        )
-        reprepro -b $DEBIAN_REPO includedsc unstable cockpit_$debversion.dsc
+        # Put the source into the repo if not already there
+        if ! repo_contains $WORKDIR/_repo "$distribution" "\$Version\(==$TAG\),\$Architecture\(==source\)"; then
+            reprepro -b $WORKDIR/_repo includedsc $distribution $DSC
+        fi
 
-        # also export package listings for empty architectures
-        reprepro -b $DEBIAN_REPO export
+        # Build debian binary packages
+        mkdir -p $WORKDIR/$distribution
+        basetgz=/var/cache/pbuilder/$distribution.tgz
+        sudo pbuilder clean --distribution $distribution --basetgz $basetgz
+        sudo pbuilder update --configfile $WORKDIR/pbuilderrc --distribution $distribution --basetgz $basetgz
+        sudo pbuilder build --configfile $WORKDIR/pbuilderrc --distribution $distribution --basetgz $basetgz \
+                            --hookdir /etc/pbuilder/hooks --buildresult $WORKDIR/$distribution $DSC
 
-        # build binary package
-        basetgz=/var/cache/pbuilder/unstable.tgz
-        sudo pbuilder clean --distribution unstable --basetgz $basetgz
-        sudo pbuilder update --configfile pbuilderrc --distribution unstable --basetgz $basetgz
-        sudo pbuilder build --configfile pbuilderrc --distribution unstable --basetgz $basetgz \
-                            --hookdir /etc/pbuilder/hooks cockpit_$debversion.dsc
+        reprepro -b $WORKDIR/_repo includedeb $distribution $WORKDIR/$distribution/*.deb
+    done
 
-        reprepro -b $DEBIAN_REPO includedeb unstable /var/cache/pbuilder/result/*.deb
-    else
-        trace "Skipping debian build"
-    fi
+    # Also export source and package listings for empty architectures
+    reprepro -b $WORKDIR/_repo export
 }
 
 commit()
 (
     trace "Publishing Debian repository"
 
-    rsync --delete -a -e ssh $DEBIAN_REPO/ fedorapeople.org:/project/cockpit/debian
-    rsync --delete -a -e ssh $DEBIAN_REPO/ repo-cockpitproject.rhcloud.com:app-root/repo/debian/
+    rsync --delete -a -e ssh $WORKDIR/_repo "$REPOSITORY"
+
+    # HACK: for now to support TLS
+    rsync --delete -a -e ssh $WORKDIR/_repo repo-cockpitproject.rhcloud.com:app-rootrepo/debian/
+
+    rm -rf $WORKDIR
 )
 
-while getopts "f:t:r:qvxz" opt; do
+while getopts "p:qvxz" opt; do
     case "$opt" in
-    f)
-        SOURCE="$OPTARG"
-        ;;
-    t)
-        TAG="$OPTARG"
-        ;;
-    r)
-        DEBIAN_REPO="$OPTARG"
+    p)
+        DSC="$OPTARG"
         ;;
     q)
         QUIET=1
@@ -158,8 +170,12 @@ done
 
 shift $(expr $OPTIND - 1)
 
-if [ $# -ne 0 ]; then
+if [ $# -lt 2 ]; then
     usage
+fi
+
+if [ $VERBOSE -eq 1 ]; then
+    set -x
 fi
 
 if [ $CHECK -eq 1 ]; then
@@ -167,24 +183,30 @@ if [ $CHECK -eq 1 ]; then
     exit 0
 fi
 
-if [ -z "$TAG" ]; then
-    message "could not find a tag to release"
+if [ -z "$DSC" ]; then
+    message "no debian source file specified"
     exit 2
-fi
-
-if [ -z "$SOURCE" ]; then
-    message "no tarball source specified"
-    exit 2
-elif [ -d "$SOURCE" ]; then
-    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
-elif [ -f "$SOURCE" ]; then
-    TARBALL="$SOURCE"
-else
-    message "tarball source not found: $SOURCE"
+elif [ ! -f "$DSC" ]; then
+    message "debian source file not found: $DSC"
     exit 1
 fi
 
-prepare
+# The version number comes from the dsc
+DSC=$(realpath $DSC)
+TAG=$(dsc_version $DSC)
+if [ -z "$TAG" ]; then
+    message "could not identify version number for debian source file: $DSC"
+    exit 2
+fi
+
+REPOSITORY="$1"
+if [ -z "$REPOSITORY" ]; then
+    message "invalid empty repository rsync url: $REPOSITORY"
+    exit 2
+fi
+
+shift
+prepare "$@"
 
 if [ $TRANSACTION -eq 1 ]; then
     kill -STOP $$
