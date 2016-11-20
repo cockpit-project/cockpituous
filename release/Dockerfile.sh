@@ -7,4 +7,5 @@ BUILD_DEPENDS="debhelper dh-autoreconf autoconf automake intltool libssh-dev lib
                libjson-glib-dev libpam0g-dev libpcp-import1-dev libpcp-pmda3-dev xsltproc xmlto docbook-xsl
                glib-networking nodejs-legacy npm openssh-client"
 
-sudo pbuilder create --distribution unstable --extrapackages "$BUILD_DEPENDS"
+sudo pbuilder create --distribution jessie --basetgz /var/cache/pbuilder/jessie.tgz --extrapackages "$BUILD_DEPENDS"
+sudo pbuilder create --distribution unstable --basetgz /var/cache/pbuilder/unstable.tgz --extrapackages "$BUILD_DEPENDS"

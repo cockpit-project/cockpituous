@@ -59,7 +59,7 @@ changelog_lines()
 
 prepare()
 {
-    local installed
+    local installed basetgz
     local debversion="$TAG-0"
 
     trace "Creating Debian repository"
@@ -99,11 +99,11 @@ EOF
         reprepro -b $DEBIAN_REPO includedsc unstable cockpit_$debversion.dsc
 
         # build binary package
-        sudo pbuilder clean
-        sudo pbuilder update --configfile pbuilderrc --distribution unstable
-        sudo pbuilder build --configfile pbuilderrc \
-                            --hookdir /etc/pbuilder/hooks \
-                            cockpit_$debversion.dsc
+        basetgz=/var/cache/pbuilder/unstable.tgz
+        sudo pbuilder clean --distribution unstable --basetgz $basetgz
+        sudo pbuilder update --configfile pbuilderrc --distribution unstable --basetgz $basetgz
+        sudo pbuilder build --configfile pbuilderrc --distribution unstable --basetgz $basetgz \
+                            --hookdir /etc/pbuilder/hooks cockpit_$debversion.dsc
 
         reprepro -b $DEBIAN_REPO includedeb unstable /var/cache/pbuilder/result/*.deb
     else
