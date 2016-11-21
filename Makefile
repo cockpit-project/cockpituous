@@ -14,6 +14,8 @@ containers: release-container verify-container
 	@true
 
 release-shell: docker-running
+	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
+	chown -R cockpit:cockpit /home/cockpit/release
 	docker run -ti --rm -v /home/cockpit:/home/user:rw \
 		--privileged \
 		--volume=/home/cockpit/release:/build:rw \
