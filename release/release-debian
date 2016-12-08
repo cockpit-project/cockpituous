@@ -113,13 +113,23 @@ EOF
             reprepro -b $WORKDIR/_repo includedsc $distribution $DSC
         fi
 
+        # Append distribution to version, so that we can have packages for the
+        # multiple distributions in the same repo
+        (cd $WORKDIR
+        dpkg-source --extract $DSC $distribution
+        sed -i "s/$TAG-0/$TAG-0~$distribution/" $distribution/debian/changelog
+        sed -i "s/experimental/$distribution/" $distribution/debian/changelog
+        dpkg-source --build $distribution
+        )
+
         # Build debian binary packages
         mkdir -p $WORKDIR/$distribution
         basetgz=/var/cache/pbuilder/$distribution.tgz
         sudo pbuilder clean --distribution $distribution --basetgz $basetgz
         sudo pbuilder update --configfile $WORKDIR/pbuilderrc --distribution $distribution --basetgz $basetgz
         sudo pbuilder build --configfile $WORKDIR/pbuilderrc --distribution $distribution --basetgz $basetgz \
-                            --hookdir /etc/pbuilder/hooks --buildresult $WORKDIR/$distribution $DSC
+                            --hookdir /etc/pbuilder/hooks --buildresult $WORKDIR/$distribution \
+                            "$WORKDIR/cockpit_$TAG-0~$distribution.dsc"
 
         reprepro -b $WORKDIR/_repo includedeb $distribution $WORKDIR/$distribution/*.deb
     done
