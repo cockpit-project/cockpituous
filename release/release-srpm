@@ -30,11 +30,12 @@ SOURCE=${RELEASE_SOURCE:-}
 SPEC=${RELEASE_SPEC:-}
 SRPM=${RELEASE_SRPM:-}
 TAG=${RELEASE_TAG:-}
+TARBALL=${RELEASE_TARBALL:-}
 REVESION=1
 
 usage()
 {
-    echo "usage: release-srpm [-qvxz] [-t TAG] -s SPEC -f SOURCE" >&2
+    echo "usage: release-srpm [-qvxz] [-t TAG] -s SPEC -f SOURCEDIR" >&2
     exit ${1-2}
 }
 
@@ -282,12 +283,15 @@ elif [ ! -f "$SPEC" ]; then
 fi
 
 if [ -z "$SOURCE" ]; then
-    message "no tarball source specified"
+    message "no tarball directory specified"
     exit 2
 elif [ -d "$SOURCE" ]; then
-    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+    if [ -z "$TARBALL" ];then
+	TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+    fi
 elif [ -f "$SOURCE" ]; then
-    TARBALL="$SOURCE"
+    message "The source option only accepts a directory. Use RELEASE_TARBALL instead."
+    exit 1
 else
     message "tarball source not found: $SOURCE"
     exit 1
