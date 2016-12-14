@@ -15,6 +15,7 @@
 #
 # -f tgz     RELEASE_SOURCE=dir     The tarball to include or directory
 #                                   containing tarball and patches
+# -p         RELEASE_PATCHES=1      Include the %patch directives
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -s spec    RELEASE_SPEC=spec      Path to spec file
 # -t tag     RELEASE_TAG=tag        Tag to use for SRPM version and log
@@ -31,10 +32,11 @@ SPEC=${RELEASE_SPEC:-}
 SRPM=${RELEASE_SRPM:-}
 TAG=${RELEASE_TAG:-}
 TARBALL=${RELEASE_TARBALL:-}
+PATCHES=${RELEASE_PATCHES:-0}
 
 usage()
 {
-    echo "usage: release-srpm [-qvxz] [-t TAG] -s SPEC -f SOURCEDIR" >&2
+    echo "usage: release-srpm [-pqvxz] [-t TAG] -s SPEC -f SOURCEDIR" >&2
     exit ${1-2}
 }
 
@@ -207,6 +209,16 @@ prepare()
         -e "/^%changelog/,\$d" \
         $SPEC >> $specfile
 
+    if [ "$PATCHES" -eq 1 ]; then
+        # ensure that patches are applied
+        npatches=$(find $SOURCE -maxdepth 1 -name '*.patch'|wc -l)
+        i=$npatches
+        while [ "$i" -gt 0 ]; do
+            sed -i "/%setup/ a %patch$i -p1" $specfile
+            i=$((i-1))
+        done
+    fi
+
     trace "Copying sources"
 
     cp $TARBALL $workdir
@@ -243,6 +255,9 @@ while getopts "f:qs:t:v" opt; do
     q)
         QUIET=1
         VERBOSE=0
+        ;;
+    p)
+        PATCHES=1
         ;;
     s)
         SPEC="$OPTARG"
