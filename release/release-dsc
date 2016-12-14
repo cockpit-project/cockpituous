@@ -1,0 +1,210 @@
+#!/bin/bash -eu
+#
+# release-dsc
+#
+# A script that creates a Debian DSC based on a tarball.
+# The path to the debian directory is specified on the command line.
+# The Debian source files are updated with version information as well
+# as changelog entries.
+#
+# $ release-dsc -f cockpit-122.tar.xz -s tools/debian    xxxx
+#
+# Arguments are described here. Most arguments have an equivalent envvar.
+#
+# -f tgz     RELEASE_SOURCE=dir     The tarball to include or directory
+#                                   containing tarball and patches
+# -q         RELEASE_QUIET=1        Make output more quiet
+# -p dsc     RELEASE_DSC=dsc        Location to link the DSC file
+# -s control RELEASE_CONTROL=debian Path to debian control files
+# -t tag     RELEASE_TAG=tag        Tag to use for DSC version and log
+# -v         RELEASE_VERBOSE=1      Make output more verbose
+#
+
+set -eu
+
+CHECK=${RELEASE_CHECK:-0}
+QUIET=${RELEASE_QUIET:-0}
+VERBOSE=${RELEASE_VERBOSE:-0}
+SOURCE="${RELEASE_SOURCE:-}"
+CONTROL="${RELEASE_CONTROL:-}"
+TAG=${RELEASE_TAG:-}
+DSC="${RELEASE_DSC:-}"
+
+PACKAGE=""
+TARBALL=""
+
+usage()
+{
+    echo "usage: release-dsc [-qvx] [-t TAG] [-p DSC] -s CONTROL -f SOURCE" >&2
+    exit ${1-2}
+}
+
+trace()
+{
+    if [ $QUIET -eq 0 ]; then
+        echo "> $@" >&2
+    fi
+}
+
+message()
+{
+    echo "release-dsc: $@" >&2
+}
+
+trim_contents()
+{
+    # Remove line with just tag name. Remove signature
+    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
+}
+
+changelog_lines()
+{
+    local date author body email
+
+    date=
+    body=
+
+    if [ -d .git ]; then
+        date="$(git for-each-ref --format='%(taggerdate:rfc)' "refs/tags/$TAG")"
+        body="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | trim_contents | sed -e 's/^/  /')"
+    fi
+
+    if [ -z "$body" -a -z "$date" ]; then
+        date=$(LC_ALL=C date '+%a, %b %d %Y %H:%M:%S %z')
+        body=" * Update to upstream $TAG release"
+    fi
+
+    author=$(git config --global user.name)
+    email=$(git config --global user.email)
+    printf "%s (%s) experimental; urgency=medium\n\n%s\n\n -- %s <%s>  %s\n" \
+        "$PACKAGE" "$1" "$body" "$author" "$email" "$date"
+}
+
+# Given a tarball path, figure out the version number it represents
+#  $1: The tarball path
+tarball_version()
+{
+    echo "$1" | sed -ne 's/.*-\([0-9.]\+\)\..*/\1/p'
+}
+
+prepare()
+{
+    local dest
+
+    WORKDIR=$(mktemp --directory debian-source.XXXXXX)
+    mkdir -p $WORKDIR/build
+
+    trace "Performing Debian source build"
+
+    ln -sf $(readlink -f $TARBALL) $WORKDIR/${PACKAGE}_${TAG}.orig.tar.xz
+    tar -C $WORKDIR/build -xf $TARBALL --strip-components=1
+    cp -rp $(dirname $CONTROL) $WORKDIR/build/debian
+    changelog_lines $TAG-0 > $WORKDIR/build/debian/changelog
+
+    # HACK: don't install or package test assets
+    sed -i -e 's/install-test-assets//' $WORKDIR/build/debian/rules
+    sed -i -e '/Package: cockpit-test-assets/,/^$/d' $WORKDIR/build/debian/control
+
+    # Perform the actual build
+    ( cd $WORKDIR/build && debuild -S )
+
+    trace "Copying Debian source build"
+
+    # Clear out the destination if desired
+    dest="."
+    if [ -n "$DSC" ]; then
+        dest=$(dirname $DSC)
+        mkdir -p $dest
+    fi
+
+    # Copy stuff into place
+    cp $WORKDIR/${PACKAGE}_${TAG}-0_source.changes \
+        $WORKDIR/${PACKAGE}_${TAG}-0.dsc \
+        $WORKDIR/${PACKAGE}_${TAG}-0.debian.tar.xz \
+        $WORKDIR/${PACKAGE}_${TAG}.orig.tar.xz "$dest"
+
+    # Symlink things into place
+    if [ -n "$DSC" ]; then
+        ln -snf ${PACKAGE}_${TAG}-0.dsc $DSC
+    fi
+}
+
+while getopts "f:p:s:t:qvxz" opt; do
+    case "$opt" in
+    f)
+        SOURCE="$OPTARG"
+        ;;
+    p)
+        DSC="$OPTARG"
+        ;;
+    q)
+        QUIET=1
+        VERBOSE=0
+        ;;
+    s)
+        CONTROL="$OPTARG"
+        ;;
+    t)
+        TAG="$OPTARG"
+        ;;
+    v)
+        QUIET=0
+        VERBOSE=1
+        ;;
+    x)
+        ;;
+    -)
+        break
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+if [ $VERBOSE -eq 1 ]; then
+    set -x
+fi
+
+if [ -z "$SOURCE" ]; then
+    message "no tarball source specified"
+    exit 2
+elif [ -d "$SOURCE" ]; then
+    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+elif [ -f "$SOURCE" ]; then
+    TARBALL="$SOURCE"
+else
+    message "tarball source not found: $SOURCE"
+    exit 1
+fi
+
+# The version number comes from the tag or tarball
+if [ -z "$TAG" ]; then
+    TAG=$(tarball_version $TARBALL)
+    if [ -z "$TAG" ]; then
+        message "could not identify version number for tarball: $TARBALL"
+        exit 2
+    fi
+fi
+
+if [ -z "$CONTROL" ]; then
+    message "no debian control specified"
+    exit 2
+elif [ ! -f "$CONTROL" ]; then
+    message "debian control file not found: $CONTROL"
+    exit 1
+fi
+
+PACKAGE=$(sed -ne 's/Source: \(.*\)/\1/p' "$CONTROL")
+if [ -z "$PACKAGE" ]; then
+    message "could not determine package name from: $CONTROL"
+    exit 1
+fi
+
+prepare "$@"
