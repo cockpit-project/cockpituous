@@ -191,7 +191,7 @@ prepare()
     find $SOURCE -maxdepth 1 -name '*.patch' | while read patch; do
         cp "$patch" $workdir
         changelog_patch "$patch" >> $logfile
-        printf "Patch%s:\t%s\n" $count "$(basename patch)" >> $specfile
+        printf "Patch%s:\t%s\n" $count "$(basename $patch)" >> $specfile
         count=$(expr $count + 1)
     done
 
