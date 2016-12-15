@@ -8,12 +8,10 @@ RUN dnf -y update && \
 bind-utils \
 bodhi-client \
 bzip2 \
-copr-cli \
 debian-keyring \
 dpkg \
 dpkg-dev \
 expect \
-fedpkg \
 fontconfig \
 fpaste \
 freetype \
@@ -55,6 +53,7 @@ throttleit \
 tough-cookie \
 yauzl \
     && \
+    dnf -y install --enablerepo=updates-testing fedpkg koji copr-cli && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
