@@ -90,6 +90,10 @@ prepare()
            -e "s/ARG RELEASE.*/ARG RELEASE=$release/" \
            $files
 
+    sed -i -e "s/LABEL VERSION.*/LABEL VERSION $version/" \
+           -e "s/LABEL RELEASE.*/LABEL RELEASE $release/" \
+           $files
+
     if git -C $WORKDIR diff --exit-code; then
         trace "Already have correct version in Dockerfile"
         exit 0
