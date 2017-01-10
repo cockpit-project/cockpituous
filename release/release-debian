@@ -18,6 +18,8 @@ TAG=""
 REPOSITORY=""
 WORKDIR=""
 
+REPREPRO="reprepro --ignore=undefinedtarget"
+
 usage()
 {
     echo "usage: release-debian [-qvx] -p dsc repository distribution ..." >&2
@@ -70,7 +72,7 @@ dsc_version()
 #  $3: The query in reprepro listfilter format
 repo_contains()
 {
-    reprepro --silent -b "$1" listfilter "$2" "$3" | while read line; do
+    $REPREPRO --silent -b "$1" listfilter "$2" "$3" | while read line; do
         return 0
     done
     return 1
@@ -86,7 +88,7 @@ prepare()
     mkdir -p $WORKDIR/_repo/conf $WORKDIR/debuild/
 
     # Retrieve the upstream repository
-    rsync --delete -a -e ssh $WORKDIR/_repo "$REPOSITORY"
+    rsync --delete -a -e ssh "$REPOSITORY"/./ $WORKDIR/_repo/
 
     # Generate a distribution file
     distributions "$@" > $WORKDIR/_repo/conf/distributions
@@ -110,7 +112,7 @@ EOF
 
         # Put the source into the repo if not already there
         if ! repo_contains $WORKDIR/_repo "$distribution" "\$Version\(==$TAG\),\$Architecture\(==source\)"; then
-            reprepro -b $WORKDIR/_repo includedsc $distribution $DSC
+            $REPREPRO -b $WORKDIR/_repo includedsc $distribution $DSC
         fi
 
         # Append distribution to version, so that we can have packages for the
@@ -131,21 +133,21 @@ EOF
                             --hookdir /etc/pbuilder/hooks --buildresult $WORKDIR/$distribution \
                             "$WORKDIR/cockpit_$TAG-0~$distribution.dsc"
 
-        reprepro -b $WORKDIR/_repo includedeb $distribution $WORKDIR/$distribution/*.deb
+        $REPREPRO -b $WORKDIR/_repo includedeb $distribution $WORKDIR/$distribution/*.deb
     done
 
     # Also export source and package listings for empty architectures
-    reprepro -b $WORKDIR/_repo export
+    $REPREPRO -b $WORKDIR/_repo export
 }
 
 commit()
 (
     trace "Publishing Debian repository"
 
-    rsync --delete -a -e ssh $WORKDIR/_repo "$REPOSITORY"
+    rsync --delete -a -e ssh $WORKDIR/_repo/./ "$REPOSITORY"
 
     # HACK: for now to support TLS
-    rsync --delete -a -e ssh $WORKDIR/_repo repo-cockpitproject.rhcloud.com:app-root/repo/debian/
+    rsync --delete -a -e ssh $WORKDIR/_repo/./ repo-cockpitproject.rhcloud.com:app-root/repo/debian/
 
     rm -rf $WORKDIR
 )

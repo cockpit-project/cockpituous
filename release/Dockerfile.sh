@@ -12,7 +12,7 @@ JESSIE_DEPENDS="$DEPENDS nodejs libssh-dev"
 sudo pbuilder create --distribution jessie --basetgz /var/cache/pbuilder/jessie.tgz \
     --extrapackages "$JESSIE_DEPENDS"
 
-UNSTABLE_DEPENDS="$DEPENDS nodejs-legacy libssh-dev libssl-dev"
+UNSTABLE_DEPENDS="$DEPENDS nodejs-legacy libssh-dev"
 
-# sudo pbuilder create --distribution unstable --basetgz /var/cache/pbuilder/unstable.tgz \
-#     --extrapackages "$UNSTABLE_DEPENDS"
+sudo pbuilder create --distribution unstable --basetgz /var/cache/pbuilder/unstable.tgz \
+     --extrapackages "$UNSTABLE_DEPENDS"

@@ -119,8 +119,8 @@ prepare()
 commit()
 (
     trace "Pushing changes to guide"
-    echo git -C $WORKDIR/repo push origin master
-    echo rm -rf $WORKDIR
+    git -C $WORKDIR/repo push origin master
+    rm -rf $WORKDIR
 )
 
 while getopts "f:qvxz" opt; do
