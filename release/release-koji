@@ -176,7 +176,7 @@ prepare()
         # Update the sources file
         rm $WORKDIR/sources
         srpm_variables SOURCE $SRPM | while read file; do
-            (cd $WORKDIR && md5sum $file) >> $WORKDIR/sources
+            (cd $WORKDIR && sha512sum --tag $file) >> $WORKDIR/sources
             echo "/$file" >> $WORKDIR/.gitignore
         done
 
