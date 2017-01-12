@@ -223,7 +223,7 @@ commit()
     git checkout "$BRANCH"
 
     # Upload all the sources again
-    fedpkg new-sources $(cut -d ' ' -f 2- sources)
+    fedpkg new-sources $(sed 's/.*(\(.*\)).*/\1/' sources)
     git reset --hard HEAD  # Undo any silliness littered by above
 
     # Push the changes
