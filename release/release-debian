@@ -121,6 +121,11 @@ EOF
         dpkg-source --extract $DSC $distribution
         sed -i "s/$TAG-0/$TAG-0~$distribution/" $distribution/debian/changelog
         sed -i "s/experimental/$distribution/" $distribution/debian/changelog
+        # Hack: Remove PCP build dependencies while pcp is not in testing
+        # (https://tracker.debian.org/pcp)
+        if [ "$distribution" = unstable ]; then
+            sed -i '/libpcp.*-dev/d' $distribution/debian/control
+        fi
         dpkg-source --build $distribution
         )
 
