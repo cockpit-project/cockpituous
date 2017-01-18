@@ -4,7 +4,7 @@
 #
 # HACK: This script is very Cockpit specific
 #
-# Depends on a source package built by release-debian.
+# Depends on a source package built by release-dsc
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
