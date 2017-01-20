@@ -45,7 +45,6 @@ services like IRC or GitHub. The following fields might be present:
  * `"onaborted"`: the status to process upon abortion
  * `"notify"`: message to send to IRC
  * `"github"`: object containing GitHub status info
- * `"badge"`: for updating badges
  * `"link"`: the link to the status message
  * `"extras"`: for putting extra files into the log directory
 
@@ -119,25 +118,6 @@ As a special case, the result named "link" expands to the URL of the
 current log.
 
 You can use results from the initial status in the final status.
-
-### Badge format
-
-The `"badge"` part of a status object has the following fields:
-
- * `"name"`: The base filename of the badge file.
- * `"description"`: A short description of the thing that the badge is for.
- * `"status"`: A symbolic status of the thing, see below.
- * `"status-text"`: A short description of the status.
-
-The full name of the badge is `<dir>/<name>.svg` where <dir> comes
-from the `[Badges] Location` configuration item of the sink, and
-<name> comes from the status object.  By default, badges are placed
-into `~/public_html/status/`
-
-The badge itself is a small image that includes `description` and
-`status-text`, with a color determined by `status`.  `status` can be
-one of "passed", "failed", or "error".  If `status-text` is omitted,
-`status` is used instead.
 
 ### Link field
 
