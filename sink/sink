@@ -362,6 +362,10 @@ class Buffer(object):
 
 # Create the directory in a race free way
 def mkdir_and_chdir(base, identifier):
+    # make sure the base exists
+    if not os.path.exists(base):
+        os.makedirs(base)
+
     directory = os.path.abspath(os.path.join(base, identifier))
 
     # 1. Create a temporary non-empty directory and get its handle
