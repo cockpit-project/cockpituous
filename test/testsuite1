@@ -1,0 +1,2 @@
+docker run fedora:25 /bin/cat /etc/os-release
+
