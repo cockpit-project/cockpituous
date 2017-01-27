@@ -1,2 +1,5 @@
-docker run fedora:25 /bin/false
+#!/bin/sh
+
+echo "sample failure"
+/bin/false
 
