@@ -1,8 +1,0 @@
-The Cockpit Continuous Delivery Tools
-=====================================
-
- * base infra base image used by the other containers
- * release container to run releases
- * sink log sink used by testing infrastructure
- * verify container used to select and run integration testing
-
