@@ -126,9 +126,19 @@ def expand(val, env):
 
 class GitHub(object):
     def __init__(self, config):
+        self.token = None
+        try:
+            with open(os.path.expanduser(TOKEN), "r") as gt:
+                self.token = gt.read().strip()
+        except IOError as exc:
+            if exc.errno == errno.ENOENT:
+                 pass
+            else:
+                raise
         self.results = { }
 
     def req(self, token, method, resource, data):
+        token = token or self.token
         headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
         if token:
             headers["Authorization"] = "token " + token
@@ -145,7 +155,7 @@ class GitHub(object):
 
     def push(self, status):
         github = status.get("github", { })
-        token = github.get("token", None)
+        token = github.get("token", self.token)
         requests = github.get("requests", None)
 
         if not token or not requests:
