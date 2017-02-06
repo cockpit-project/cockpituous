@@ -2,7 +2,8 @@
 
 # Certain commands cannot be run in Dockerfile including pbuilder run them here
 
-DEPENDS="debhelper dpkg-dev dh-autoreconf autoconf automake intltool zlib1g-dev libkrb5-dev
+DEPENDS="debhelper dpkg-dev dh-autoreconf dh-systemd
+         autoconf automake intltool zlib1g-dev libkrb5-dev
          libxslt1-dev libkeyutils-dev libglib2.0-dev libsystemd-dev libpolkit-agent-1-dev
          libjson-glib-dev libpam0g-dev xsltproc xmlto docbook-xsl
          glib-networking openssh-client libssh-dev"
