@@ -106,7 +106,7 @@ prepare()
     sed -i -e '/Package: cockpit-test-assets/,/^$/d' $WORKDIR/build/debian/control
 
     # Perform the actual build
-    ( cd $WORKDIR/build && debuild -S )
+    ( cd $WORKDIR/build && debuild -S -nc -d)
 
     trace "Copying Debian source build"
 
