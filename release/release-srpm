@@ -187,14 +187,20 @@ prepare()
     printf "%%changelog\n" >> $logfile
     changelog_lines $TAG $RELEASE >> $logfile
 
-    # Build up the list of patches
-    count=1
-    find $SOURCE -maxdepth 1 -name '*.patch' | while read patch; do
-        cp "$patch" $workdir
-        changelog_patch "$patch" >> $logfile
-        printf "Patch%s:\t%s\n" $count "$(basename $patch)" >> $specfile
-        count=$(expr $count + 1)
-    done
+    # copy additional files available in source dir
+    # and build up the list of patches
+    pcount=1
+    if test -d "$SOURCE";then
+	    find $SOURCE -maxdepth 1 -type f | while read file; do
+	        cp "$file" $workdir
+
+	        if test "$file" != "${file%patch*}" ; then
+		    changelog_patch "$file" >> $logfile
+		    printf "Patch%s:\t%s\n" $pcount "$(basename $file)" >> $specfile
+		    pcount=$(expr $pcount + 1)
+	        fi
+	    done
+    fi
 
     # End of first changelog entry, and all the remainder
     printf "\n" >> $logfile
