@@ -247,7 +247,7 @@ prepare()
     rm -rf $workdir
 }
 
-while getopts "f:qs:t:v" opt; do
+while getopts "f:qs:t:vp" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
