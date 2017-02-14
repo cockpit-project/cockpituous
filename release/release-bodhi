@@ -67,6 +67,7 @@ prepare()
         message "$SRPM: is not a valid source rpm"
         exit 1
     fi
+
     NOTES="$(rpm --changelog -qp $SRPM | sed -n '2,/^$/p')"
     if [ -z "$NOTES" ]; then
         message "$SRPM: doesn't have a valid changelog"
@@ -76,12 +77,18 @@ prepare()
 
 commit()
 (
-    local number
-    number=$(echo $FEDORA | tr -d '[A-Z][a-z]')
+    local number fednvr
+    if test "$FEDORA" != "${FEDORA%el*}" ; then
+        number=$(echo $FEDORA | tr -d '[A-Z][a-z]')
+        fednvr="${NVR/%fc*/el$number}"
+    else
+        number=$(echo $FEDORA | tr -d '[A-Z][a-z]')
+        fednvr="${NVR/%fc*/fc$number}"
+    fi
 
     echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
         --stablekarma=2 --unstablekarma=-1 --request=stable --release="$FEDORA" \
-        --username=$USER "${NVR/%fc*/fc$number}"
+        --username=$USER ${fednvr}
 )
 
 while getopts "p:qvxz" opt; do
