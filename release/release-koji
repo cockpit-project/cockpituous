@@ -80,6 +80,13 @@ spec_patches()
     cat $1 | grep ^Patch | cut -d ':' -f 2 | sed "s/^[ \t]*//"
 }
 
+# Get all included sources from spec file
+#  $1: The spec file
+spec_included_sources()
+{
+    cat $1 | grep ^Source | cut -d ':' -f 2 | sed "s/^[ \t]*//" | grep -v ^"ftp://" | grep -v ^"http://"
+}
+
 # Get the specified variable name from a source rpm
 #  $1: The name of the variable
 #  $2: The source rpm file
@@ -160,7 +167,16 @@ prepare()
 
         # Add in all the new patches
         spec_patches $spec | while read patch; do
-            git -C $WORKDIR add -f $patch
+            if [ -f "$WORKDIR/$patch" ]; then
+                git -C $WORKDIR add -f $patch
+            fi
+        done
+
+        # Add in all additional files
+        spec_included_sources $spec | while read source; do
+            if [ -f "$WORKDIR/$source" ]; then
+                git -C $WORKDIR add -f $source
+            fi
         done
 
         # The release number in old notes
