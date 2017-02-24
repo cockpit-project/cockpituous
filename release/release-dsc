@@ -101,10 +101,6 @@ prepare()
     cp -rp $(dirname $CONTROL) $WORKDIR/build/debian
     changelog_lines $TAG-0 > $WORKDIR/build/debian/changelog
 
-    # HACK: don't install or package test assets
-    sed -i -e 's/install-test-assets//' $WORKDIR/build/debian/rules
-    sed -i -e '/Package: cockpit-test-assets/,/^$/d' $WORKDIR/build/debian/control
-
     # Perform the actual build
     ( cd $WORKDIR/build && debuild -S -nc -d)
 
