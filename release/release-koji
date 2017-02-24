@@ -73,6 +73,20 @@ spec_variables()
     rpm -q --specfile --queryformat="[%{$1}\n]" --undefine dist "$2"
 }
 
+# Get all patches from spec file
+#  $1: The spec file
+spec_patches()
+{
+    cat $1|grep ^Patch|cut -d ':' -f 2|sed "s/^[ \t]*//"
+}
+
+# Get all patches from spec file
+#  $1: The spec file
+spec_sources()
+{
+    cat $1|grep ^Source|cut -d ':' -f 2|sed "s/^[ \t]*//"|grep -v ^"ftp://"|grep -v ^"http://"
+}
+
 # Get the specified variable name from a source rpm
 #  $1: The name of the variable
 #  $2: The source rpm file
@@ -152,8 +166,13 @@ prepare()
         set -f
 
         # Add in all the new patches
-        spec_variables PATCH $spec | while read patch; do
+        spec_patches $spec | while read patch; do
             git -C $WORKDIR add -f $patch
+        done
+
+	# Add in all additional files
+        spec_sources $spec | while read source; do
+            test -f "$WORKDIR/$source" && git -C $WORKDIR add -f $source
         done
 
         # The release number in old notes
