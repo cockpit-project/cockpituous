@@ -134,7 +134,7 @@ runner()
     fi
 }
 
-while getopts "l:nqr:vxz" opt; do
+while getopts "l:nqr:tvxz" opt; do
     case "$opt" in
     l)
         SINK="$OPTARG"
