@@ -81,6 +81,7 @@ changelog_lines()
 {
     local tagdate tagauthor tagemail tagbody
 
+    tagdate=
     tagbody=
     tagauthor=
 
