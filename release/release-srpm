@@ -13,8 +13,9 @@
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
-# -f tgz     RELEASE_SOURCE=dir     The tarball to include or directory
-#                                   containing tarball and patches
+# -f tgz     RELEASE_TARBALL=tgz    The tarball to include
+#            RELEASE_SOURCE=dir     A directory containing the tarball
+#                                   and maybe patches
 # -p         RELEASE_PATCHES=1      Include the %patch directives
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -s spec    RELEASE_SPEC=spec      Path to spec file
@@ -296,18 +297,26 @@ elif [ ! -f "$SPEC" ]; then
     exit 1
 fi
 
-if [ -z "$SOURCE" ]; then
-    message "no tarball directory specified"
-    exit 2
-elif [ -d "$SOURCE" ]; then
+if [ -d "$SOURCE" ]; then
     if [ -z "$TARBALL" ];then
-	TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+	    TARBALL="$(find $SOURCE -maxdepth 1 -name '*.tar.*' | sort | head -n1)"
+        if [ ! -f "$TARBALL" ]; then
+            message "no tarball found in source directory: $SOURCE"
+            exit 1
+        fi
     fi
-elif [ -f "$SOURCE" ]; then
-    message "The source option only accepts a directory. Use RELEASE_TARBALL instead."
-    exit 1
+elif [ -z "$SOURCE" ]; then
+    if [ -z "$TARBALL" ]; then
+        message "no source or tarball specified"
+        exit 2
+    elif [ -f "$TARBALL" ]; then
+        SOURCE=/dev/null
+    else
+        message "tarball not found: $TARBALL"
+        exit 1
+    fi
 else
-    message "tarball source not found: $SOURCE"
+    message "source directory not found: $SOURCE"
     exit 1
 fi
 
