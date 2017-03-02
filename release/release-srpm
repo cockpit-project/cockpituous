@@ -155,6 +155,9 @@ prepare()
 {
     local specfile logfile count workdir
 
+    # Resolve the tarball to real file if a symlink
+    TARBALL=$(realpath "$TARBALL")
+
     # The version number comes from the tag or tarball
     if [ -z "$TAG" ]; then
         TAG=$(tarball_version $TARBALL)
@@ -181,9 +184,6 @@ prepare()
     fi
 
     trace "Updating spec file"
-
-    # Resolve the tarball to real file if a symlink
-    TARBALL=$(realpath "$TARBALL")
 
     printf "# This spec file has been automatically updated\n" >> $specfile
     printf "Version:\t$TAG\nRelease:\t$RELEASE%%{?dist}\n" >> $specfile
