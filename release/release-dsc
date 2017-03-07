@@ -2,20 +2,22 @@
 #
 # release-dsc
 #
-# A script that creates a Debian DSC based on a tarball.
+# A script that creates a Debian DSC based on a tarball and patches.
 # The path to the debian directory is specified on the command line.
-# The Debian source files are updated with version information as well
-# as changelog entries.
+# The Debian source files are updated with version information, patches,
+# and changelog entries.
 #
-# $ release-dsc -f cockpit-122.tar.xz -s tools/debian    xxxx
+# $ release-dsc -f cockpit-122.tar.xz -s tools/debian/control
 #
 # Arguments are described here. Most arguments have an equivalent envvar.
 #
 # -f tgz     RELEASE_SOURCE=dir     The tarball to include or directory
 #                                   containing tarball and patches
+# -P         RELEASE_PATCHES=1      Include the patches
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -p dsc     RELEASE_DSC=dsc        Location to link the DSC file
-# -s control RELEASE_CONTROL=debian Path to debian control files
+# -s control RELEASE_CONTROL=tools/debian/control
+#                                   Path to debian/control file
 # -t tag     RELEASE_TAG=tag        Tag to use for DSC version and log
 # -v         RELEASE_VERBOSE=1      Make output more verbose
 #
@@ -29,13 +31,14 @@ SOURCE="${RELEASE_SOURCE:-}"
 CONTROL="${RELEASE_CONTROL:-}"
 TAG=${RELEASE_TAG:-}
 DSC="${RELEASE_DSC:-}"
+PATCHES=${RELEASE_PATCHES:-0}
 
 PACKAGE=""
 TARBALL=""
 
 usage()
 {
-    echo "usage: release-dsc [-qvx] [-t TAG] [-p DSC] -s CONTROL -f SOURCE" >&2
+    echo "usage: release-dsc [-qvxP] [-t TAG] [-p DSC] -s CONTROL -f SOURCE" >&2
     exit ${1-2}
 }
 
@@ -101,6 +104,13 @@ prepare()
     cp -rp $(dirname $CONTROL) $WORKDIR/build/debian
     changelog_lines $TAG-0 > $WORKDIR/build/debian/changelog
 
+    if [ "$PATCHES" -eq 1 ]; then
+        # Do NOT use regular debian/patches nor create a quilt series file, as
+        # we often have git binary patches which we can't apply with quilt.
+        mkdir -p $WORKDIR/build/debian/git-patches
+        cp $SOURCE/*.patch $WORKDIR/build/debian/git-patches
+    fi
+
     # Perform the actual build
     ( cd $WORKDIR/build && debuild -S -nc -d)
 
@@ -125,7 +135,7 @@ prepare()
     fi
 }
 
-while getopts "f:p:s:t:qvxz" opt; do
+while getopts "f:p:s:t:qvxzP" opt; do
     case "$opt" in
     f)
         SOURCE="$OPTARG"
@@ -136,6 +146,9 @@ while getopts "f:p:s:t:qvxz" opt; do
     q)
         QUIET=1
         VERBOSE=0
+        ;;
+    P)
+        PATCHES=1
         ;;
     s)
         CONTROL="$OPTARG"
