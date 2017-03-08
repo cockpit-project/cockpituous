@@ -163,18 +163,21 @@ prepare()
         fi
     fi
 
+    workdir=$(mktemp --directory srpm.XXXXXX)
+    specfile=$workdir/$(basename $SPEC)
+    logfile=$workdir/changelog
+
+    # Look for the spec file in the tarball or the cwd
+    (tar -xvf $TARBALL */$SPEC -O 2> /dev/null || cat $SPEC) > $specfile.orig
+
     # If our version is already in the spec file then just bump the version
     # The revision comes from the spec file
-    RELEASE=$(calc_release $TAG $SPEC)
+    RELEASE=$(calc_release $TAG $specfile.orig)
 
     if [ -z "$RELEASE" ]; then
         message "could not calculate release number from spec file: $SPEC"
         exit 1
     fi
-
-    workdir=$(mktemp --directory srpm.XXXXXX)
-    specfile=$workdir/$(basename $SPEC)
-    logfile=$workdir/changelog
 
     trace "Updating spec file"
 
@@ -205,7 +208,7 @@ prepare()
 
     # End of first changelog entry, and all the remainder
     printf "\n" >> $logfile
-    sed '1,/%changelog/d' "$SPEC" >> $logfile
+    sed '1,/%changelog/d' "$specfile.orig" >> $logfile
 
     # Bring in the rest of the spec file
     sed -e "/^# This spec file has been automatically updated/d" \
@@ -214,7 +217,7 @@ prepare()
         -e "/^Patch.*:.*/d" \
         -e "/^%changelog/r $logfile" \
         -e "/^%changelog/,\$d" \
-        $SPEC >> $specfile
+        $specfile.orig >> $specfile
 
     if [ "$PATCHES" -eq 1 ]; then
         # ensure that patches are applied
@@ -298,9 +301,6 @@ fi
 if [ -z "$SPEC" ]; then
     message "no spec source file specified"
     exit 2
-elif [ ! -f "$SPEC" ]; then
-    message "spec source file not found: $SPEC"
-    exit 1
 fi
 
 if [ -d "$SOURCE" ]; then
