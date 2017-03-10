@@ -42,7 +42,6 @@ RUN dnf -y update && \
         tar \
         virt-install \
         && \
-    npm -g install phantomjs-prebuilt && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
