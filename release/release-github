@@ -68,7 +68,7 @@ message()
 json_escape()
 {
     # Escape quotes, backslashes and new lines
-    sed -e 's/[\\"]/\\\0/g' -e 's/$/\\n/g'
+    sed -e 's/[\\"]/\\\0/g' -e 's/$/\\n/g' | tr -cd '[[:print:][:space:]]'
 }
 
 trim_contents()
