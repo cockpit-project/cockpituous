@@ -37,6 +37,8 @@ VERBOSE=${RELEASE_VERBOSE:-0}
 SOURCE=${RELEASE_SOURCE:-}
 TAG=${RELEASE_TAG:-}
 
+MAKE="make V=1"
+
 # When building tarballs it's important to have a consistent
 # locale and charmap in particular when generating documentation
 LANG=en_US.UTF-8
@@ -140,7 +142,7 @@ prepare()
                 trace "Creating first tarball"
 
                 autogen_or_configure $repodir
-                make -C $repodir/_build --silent dist
+                $MAKE -C $repodir/_build dist
 
                 archive="$(output_tarballs $repodir/_build $SOURCE)"
             fi
@@ -178,12 +180,12 @@ prepare()
             # Try to build without clearing out build. This allows us to trend toward a
             # shorter patch set and build time if all goes well ... then fall back to a
             # hard reset and reconfigure if the fast approach doesn't work.
-            if ! make -C $repodir/_build --silent dist-gzip distdir=release-patched; then
+            if ! $MAKE -C $repodir/_build dist-gzip distdir=release-patched; then
                 trace "Cleaning out build and trying again"
 
                 rm -rf $repodir/_build
                 autogen_or_configure $repodir
-                make -C $repodir/_build --silent dist-gzip distdir=release-patched
+                $MAKE -C $repodir/_build dist-gzip distdir=release-patched
             fi
 
             # TODO: So if the above make dist-gzip fails there is the opportunity
@@ -248,6 +250,8 @@ shift $(expr $OPTIND - 1)
 
 if [ $VERBOSE -eq 1 ]; then
     set -x
+elif [ $QUIET -eq 1 ]; then
+    MAKE="make --silent"
 fi
 
 if [ -z "$SOURCE" ]; then
