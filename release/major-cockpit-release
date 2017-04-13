@@ -31,7 +31,6 @@ job release-dockerhub cockpit-project/cockpit-container
 job release-dockerhub cockpituous/cockpit cockpit-project/cockpit
 
 # Push out a Bodhi update
-job release-bodhi F25
 job release-bodhi F26
 
 # Upload documentation
