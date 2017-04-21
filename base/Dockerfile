@@ -4,6 +4,7 @@ MAINTAINER "Stef Walter" <stefw@redhat.com>
 RUN dnf -y update && \
     dnf -y install \
         bzip2 \
+        findutils \
         git \
         gnupg \
         nc \
