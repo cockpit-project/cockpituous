@@ -7,8 +7,29 @@ all:
 docker-running:
 	systemctl start docker
 
+TAG := $(shell date --iso-8601)
+
 base-container: docker-running
-	docker build -t cockpit/infra-base base
+	docker build -t cockpit/infra-base:$(TAG) base
+	docker tag cockpit/infra-base:$(TAG) cockpit/infra-base:latest
+
+base-push: docker-running
+	{ \
+	ID=`docker images -q cockpit/infra-base:latest`; \
+	if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
+		echo "Expected exactly one image matching 'cockpit/infra-base:latest'"; \
+		exit 1; \
+	fi; \
+	TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
+	if [ `echo "$$TAGS" | wc -w` -ne "2" ]; then \
+		echo "Expected exactly two tags for the image to push: latest and one other"; \
+		exit 1; \
+	fi; \
+	for PUSHTAG in $$TAGS; do \
+		docker push "cockpit/infra-base:$$PUSHTAG"; \
+	done \
+	}
+	@true
 
 containers: release-container verify-container
 	@true
@@ -22,15 +43,14 @@ release-shell: docker-running
 		--volume=$(CURDIR)/release:/usr/local/bin \
 		--entrypoint=/bin/bash cockpit/infra-release
 
-TAG := cockpit/infra-release:$(shell date --iso-8601)
 release-container: docker-running
 	docker build -t cockpit/infra-release:staged release
 	docker rm -f cockpit-release-stage || true
 	docker run --privileged --name=cockpit-release-stage \
 		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/infra-release:staged
 	docker commit --change='ENTRYPOINT ["/usr/local/bin/release-runner"]' \
-		cockpit-release-stage $(TAG)
-	docker tag $(TAG) cockpit/infra-release:latest
+		cockpit-release-stage cockpit/infra-release:$(TAG)
+	docker tag cockpit/infra-release:$(TAG) cockpit/infra-release:latest
 	docker rm -f cockpit-release-stage
 	@true
 
@@ -46,8 +66,8 @@ release-push: docker-running
 		echo "Expected exactly two tags for the image to push: latest and one other"; \
 		exit 1; \
 	fi; \
-	for TAG in $$TAGS; do \
-		docker push "cockpit/infra-release:$$TAG"; \
+	for PUSHTAG in $$TAGS; do \
+		docker push "cockpit/infra-release:$$PUSHTAG"; \
 	done \
 	}
 	@true
@@ -67,7 +87,26 @@ verify-shell: docker-running
         cockpit/infra-verify -i
 
 verify-container: docker-running
-	docker build -t cockpit/infra-verify verify
+	docker build -t cockpit/infra-verify:$(TAG) verify
+	docker tag cockpit/infra-verify:$(TAG) cockpit/infra-verify:latest
+
+verify-push: docker-running
+		{ \
+		ID=`docker images -q cockpit/infra-verify:latest`; \
+		if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
+			echo "Expected exactly one image matching 'cockpit/infra-verify:latest'"; \
+			exit 1; \
+		fi; \
+		TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
+		if [ `echo "$$TAGS" | wc -w` -ne "2" ]; then \
+			echo "Expected exactly two tags for the image to push: latest and one other"; \
+			exit 1; \
+		fi; \
+		for PUSHTAG in $$TAGS; do \
+			docker push "cockpit/infra-verify:$$PUSHTAG"; \
+		done \
+		}
+		@true
 
 verify-install: verify-container
 	cp verify/cockpit-verify.service /etc/systemd/system/
