@@ -26,6 +26,7 @@ psmisc \
 python \
 python-irclib \
 reprepro \
+rpm-build \
 which \
 yum-utils \
     && \
