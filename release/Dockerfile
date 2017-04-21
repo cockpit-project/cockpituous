@@ -54,6 +54,7 @@ tough-cookie \
 yauzl \
     && \
     dnf -y install --enablerepo=updates-testing fedpkg koji copr-cli && \
+    dnf -y install 'dnf-command(builddep)' && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
