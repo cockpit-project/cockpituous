@@ -51,8 +51,8 @@ release-container: docker-running
 	docker commit --change='ENTRYPOINT ["/usr/local/bin/release-runner"]' \
 		cockpit-release-stage cockpit/infra-release:$(TAG)
 	docker tag cockpit/infra-release:$(TAG) cockpit/infra-release:latest
-	docker rmi cockpit/infra-release:staged
 	docker rm -f cockpit-release-stage
+	docker rmi cockpit/infra-release:staged
 	@true
 
 release-push: docker-running
