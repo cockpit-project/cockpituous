@@ -55,6 +55,9 @@ RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
+# Prevent us from screwing around with KVM settings in the container
+RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
+
 ENV TEST_IMAGES_RHEL http://file.rdu.redhat.com/~swalter/images/
 ENV XDG_CACHE_HOME /build/tmp
 ENV XDG_CONFIG_HOME /build/tmp
