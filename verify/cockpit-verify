@@ -22,12 +22,18 @@ mkdir -p mock
 
 echo "Starting testing"
 
+iteration=0
 while true; do
     fail=0
     find cockpit -name '*.py?' -delete
     git -C cockpit fetch origin
     git -C cockpit reset --hard origin/master
-    cockpit/test/vm-download --prune
+    if [ "$iteration" -eq 0 ]; then
+        cockpit/test/vm-download --prune
+    else
+        cockpit/test/vm-download
+    fi
+    iteration=$(( (iteration+1) % 25 ))
     if ! cockpit/test/github-task "$@"; then
         exit
     fi
