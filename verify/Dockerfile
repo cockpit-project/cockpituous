@@ -47,13 +47,12 @@ RUN dnf -y update && \
     dnf clean all
 
 RUN mkdir -p /usr/local/bin /home/user /build
-ADD cockpit-verify /usr/local/bin/
+ADD cockpit-verify vm-prep network-cockpit.xml /usr/local/bin/
 
 RUN chown -R user /build /home/user
 RUN usermod -a -G mock user
 RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
-RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
 # Prevent us from screwing around with KVM settings in the container
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf

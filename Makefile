@@ -84,7 +84,7 @@ verify-shell: docker-running
 		--volume /home/cockpit:/home/user \
 		--volume $(CURDIR)/verify:/usr/local/bin \
 		--volume=/home/cockpit/verify:/build:rw \
-		--net=host --pid=host --privileged --entrypoint=/bin/bash \
+		--entrypoint=/bin/bash \
         cockpit/infra-verify -i
 
 verify-container: docker-running

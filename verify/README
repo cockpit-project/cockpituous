@@ -21,11 +21,9 @@ First get the container:
 
 Some bits need to be configured outside the container:
 
-    # yum install libvirt libvirt-client qemu-system-x86
-    # wget https://raw.githubusercontent.com/cockpit-project/cockpit/master/test/vm-prep
-    # mkdir common
-    # wget -O ./common/network-cockpit.xml https://raw.githubusercontent.com/cockpit-project/cockpit/master/test/common/network-cockpit.xml
-    # sh vm-prep
+    # echo "options kvm-intel nested=1" > /etc/modprobe.d/kvm-intel.conf
+    # echo "options kvm-amd nested=1" > /etc/modprobe.d/kvm-amd.conf
+    # ( rmmod kvm-intel && modprobe kvm-intel ) || ( rmmod kvm-amd && modprobe kvm-amd )
 
 Setup a 'cockpit' user:
 
