@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -eufx
+
+SECRETS=/var/lib/cockpit-tests/secrets
+IMAGES=/var/lib/cockpit-tests/images
+
+mkdir -p $SECRETS $IMAGES
+chown -R 1111:1111 $SECRETS $IMAGES
+
+cat <<EOF > /etc/systemd/system/cockpit-tests.service
+[Unit]
+Description=Cockpit Verify
+Requires=docker.service libvirtd.service
+After=docker.service libvirtd.service
+
+[Service]
+Environment="TEST_JOBS=4"
+Environment="TEST_IMAGES=$IMAGES"
+Environment="TEST_SECRETS=$SECRETS"
+Restart=always
+RestartSec=60
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_IMAGES:/images:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" cockpit/tests"
+ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-tests"
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+
+echo "options kvm-intel nested=1" > /etc/modprobe.d/kvm-intel.conf
+echo "options kvm-amd nested=1" > /etc/modprobe.d/kvm-amd.conf
+( rmmod kvm-intel && modprobe kvm-intel ) || ( rmmod kvm-amd && modprobe kvm-amd )

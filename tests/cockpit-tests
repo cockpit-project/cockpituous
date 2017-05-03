@@ -1,6 +1,22 @@
 #!/bin/sh
 
-set -ex
+set -e
+
+# If first argument starts with a path no loop
+loop=yes
+case ${1-} in
+    /*)
+        loop=no
+        ;;
+esac
+
+# Set to verbose when looping
+if [ $loop = "yes" ]; then
+    set -x
+fi
+
+# Make sure directory is writable
+sudo chown user:user /images
 
 if [ -n "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
@@ -14,8 +30,9 @@ if [ ! -d cockpit ]; then
     git clone https://github.com/cockpit-project/cockpit
 fi
 
-if ! ip address show dev cockpit1 >/dev/null 2>/dev/null; then
+if [ ! -f $TMPDIR/vm-prep-was-run ]; then
     sudo /usr/local/bin/vm-prep
+    touch $TMPDIR/vm-prep-was-run
 fi
 
 if [ ! -d cockpit/node_modules ]; then
@@ -23,6 +40,12 @@ if [ ! -d cockpit/node_modules ]; then
 fi
 
 mkdir -p mock
+
+# If interactive arguments then just exec
+if [ $loop != "yes" ]; then
+    cd cockpit/
+    exec "$@"
+fi
 
 echo "Starting testing"
 

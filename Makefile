@@ -31,7 +31,7 @@ base-push: docker-running
 	}
 	@true
 
-containers: release-container verify-container
+containers: release-container tests-container
 	@true
 
 release-shell: docker-running
@@ -78,24 +78,24 @@ release-install: release-container
 	systemctl daemon-reload
 	systemctl enable cockpit-release
 
-verify-shell: docker-running
+tests-shell: docker-running
 	docker run -ti --rm \
 		--privileged --uts=host \
-		--volume /home/cockpit:/home/user \
-		--volume $(CURDIR)/verify:/usr/local/bin \
-		--volume=/home/cockpit/verify:/build:rw \
+		--volume=$(CURDIR)/tests:/usr/local/bin \
+		--volume=/var/lib/cockpit-tests/secrets:/secrets \
+		--volume=/var/lib/cockpit-tests/images:/images:rw \
 		--entrypoint=/bin/bash \
-        cockpit/infra-verify -i
+        cockpit/tests -i
 
-verify-container: docker-running
-	docker build -t cockpit/infra-verify:$(TAG) verify
-	docker tag cockpit/infra-verify:$(TAG) cockpit/infra-verify:latest
+tests-container: docker-running
+	docker build -t cockpit/tests:$(TAG) tests
+	docker tag cockpit/tests:$(TAG) cockpit/tests:latest
 
-verify-push: docker-running
+tests-push: docker-running
 		{ \
-		ID=`docker images -q cockpit/infra-verify:latest`; \
+		ID=`docker images -q cockpit/tests:latest`; \
 		if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
-			echo "Expected exactly one image matching 'cockpit/infra-verify:latest'"; \
+			echo "Expected exactly one image matching 'cockpit/tests:latest'"; \
 			exit 1; \
 		fi; \
 		TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
@@ -104,12 +104,10 @@ verify-push: docker-running
 			exit 1; \
 		fi; \
 		for PUSHTAG in $$TAGS; do \
-			docker push "cockpit/infra-verify:$$PUSHTAG"; \
+			docker push "cockpit/tests:$$PUSHTAG"; \
 		done \
 		}
 		@true
 
-verify-install: verify-container
-	cp verify/cockpit-verify.service /etc/systemd/system/
-	systemctl daemon-reload
-	systemctl enable cockpit-verify
+tests-secrets:
+	@sh -c "cd tests && ./build-secrets /var/lib/cockpit-tests/secrets"
