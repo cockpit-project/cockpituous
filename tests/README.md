@@ -92,6 +92,17 @@ Some helpful commands:
     $ oc describe pods
     $ oc log -f cockpit-tests-xxxx
 
+The tests need ```/dev/kvm``` to be accessible to non-root users on each node:
+
+    $ sudo chmod 666 /dev/kvm
+
+Some tests need nested virtualization enabled:
+
+    $ sudo -s
+    # echo "options kvm-intel nested=1" > /etc/modprobe.d/kvm-intel.conf
+    # echo "options kvm-amd nested=1" > /etc/modprobe.d/kvm-amd.conf
+    # ( rmmod kvm-intel && modprobe kvm-intel ) || ( rmmod kvm-amd && modprobe kvm-amd )
+
 ## Scaling
 
 We can scale the number of testing machines in the openshift cluster with this
