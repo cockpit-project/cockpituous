@@ -62,6 +62,6 @@ while true; do
     fi
     iteration=$(( (iteration+1) % 25 ))
     if ! cockpit/test/github-task "$@"; then
-        exit
+        sleep 60
     fi
 done
