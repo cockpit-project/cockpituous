@@ -6,9 +6,9 @@ or RHEL 7+.
 
 Use the following commands to run the tests container as a one off:
 
-   $ sudo yum -y install docker atomic
-   $ sudo systemctl start docker
-   $ sudo atomic run cockpit/tests
+    $ sudo yum -y install docker atomic
+    $ sudo systemctl start docker
+    $ sudo atomic run cockpit/tests
 
 You can run the tests in the resulting container shell like this.
 Or see tests/HACKING in the cockpit repo for more info.

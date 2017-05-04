@@ -5,5 +5,5 @@ The Cockpit Continuous Delivery Tools
  * example: A simple starter example
  * release: container to run releases
  * sink: log sink used by testing infrastructure
- * verify: container used to select and run integration testing
+ * tests: container used to select and run integration testing
 
