@@ -20,6 +20,7 @@ The container has optional mounts:
  * ```/secrets```: A directory containing at least the following files
    * ```ssh-config```: SSH configuration file
    * ```github-token```: A file containing a GitHub token to post results
+   * ```image-stores```: Non default locations to try downloading images from
  * ```/images```: A volume to store downloaded image files
 
 The mounts normally default to ```/var/lib/cockpit-tests/secrets``` and
