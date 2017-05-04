@@ -31,18 +31,18 @@ set -euf
 
 usage()
 {
-	echo >&2 "usage: $SELF [-u]"
+    echo >&2 "usage: $SELF [-u]"
 }
 
 warning()
 {
-	echo >&2 "$SELF: $@"
+    echo >&2 "$SELF: $@"
 }
 
 silent()
 {
-	"$@" > /dev/null 2> /dev/null
-	return $?
+    "$@" > /dev/null 2> /dev/null
+    return $?
 }
 
 prepare()
@@ -50,19 +50,19 @@ prepare()
     # Make sure permissions are correct in containers
     chown 666 /dev/kvm
 
-	if ! virsh list >/dev/null 2>&1; then
-		if systemctl status >/dev/null 2>&1; then
-			systemctl start libvirtd
-		else
-			libvirtd -d
-			virtlogd -d
-		fi
-	fi
+    if ! virsh list >/dev/null 2>&1; then
+        if systemctl status >/dev/null 2>&1; then
+            systemctl start libvirtd
+        else
+            libvirtd -d
+            virtlogd -d
+        fi
+    fi
 
-	if silent $VIRSH net-info $NETWORK_NAME; then
-		$VIRSH net-destroy $NETWORK_NAME || true
-		$VIRSH net-undefine $NETWORK_NAME
-	fi
+    if silent $VIRSH net-info $NETWORK_NAME; then
+        $VIRSH net-destroy $NETWORK_NAME || true
+        $VIRSH net-undefine $NETWORK_NAME
+    fi
 
     # In case a network has leaked in from elsewhere
     if ip address show dev $NETWORK_NAME >/dev/null 2>/dev/null; then
@@ -70,9 +70,9 @@ prepare()
         brctl delbr $NETWORK_NAME || true
     fi
 
-	# HACK: NetworkManager races with dnsmasq-dhcp on bridge
-	# https://bugzilla.redhat.com/show_bug.cgi?id=1205081
-	cat > /etc/sysconfig/network-scripts/ifcfg-$NETWORK_NAME << EOF
+    # HACK: NetworkManager races with dnsmasq-dhcp on bridge
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1205081
+    cat > /etc/sysconfig/network-scripts/ifcfg-$NETWORK_NAME << EOF
 DEVICE=$NETWORK_NAME
 NM_CONTROLLED=no
 EOF
@@ -81,58 +81,58 @@ EOF
     mount -o bind /mnt /sys/devices/virtual/net/
 
     $VIRSH net-define $BASE/network-cockpit.xml
-	$VIRSH net-start $NETWORK_NAME
+    $VIRSH net-start $NETWORK_NAME
 
     umount /sys/devices/virtual/net
 
-	if [ ! -u $QEMU_BRIDGE_HELPER ]; then
-		chmod -v u+s $QEMU_BRIDGE_HELPER
-	fi
+    if [ ! -u $QEMU_BRIDGE_HELPER ]; then
+        chmod -v u+s $QEMU_BRIDGE_HELPER
+    fi
 
-	qemu_config_dirs=()
-  for d in /etc/qemu-kvm/ /etc/qemu; do
-      if test -f ${d}/bridge.conf; then
-          qemu_config_dirs+=(${d})
-      fi
-	done
-  if [ ${#qemu_config_dirs[@]} -eq 0 ]; then
-      warning "Could not find qemu config dir"
-	    exit 1
-  fi
+    qemu_config_dirs=()
+    for d in /etc/qemu-kvm/ /etc/qemu; do
+        if test -f ${d}/bridge.conf; then
+            qemu_config_dirs+=(${d})
+        fi
+    done
+    if [ ${#qemu_config_dirs[@]} -eq 0 ]; then
+        warning "Could not find qemu config dir"
+        exit 1
+    fi
 
-	rule="allow $NETWORK_NAME"
-  for qemu_config_dir in ${qemu_config_dirs[@]}; do
-      if ! silent grep -F $NETWORK_NAME ${qemu_config_dir}/bridge.conf; then
-        echo "$rule" >> ${qemu_config_dir}/bridge.conf
-      fi
-  done
+    rule="allow $NETWORK_NAME"
+    for qemu_config_dir in ${qemu_config_dirs[@]}; do
+        if ! silent grep -F $NETWORK_NAME ${qemu_config_dir}/bridge.conf; then
+            echo "$rule" >> ${qemu_config_dir}/bridge.conf
+        fi
+    done
 }
 
 args=$(getopt -o "uh" -l "help" -- "$@")
 eval set -- "$args"
 while [ $# -gt 0 ]; do
-	case $1 in
-	-h|--help)
-		usage
-		exit 0
-		;;
-	--)
-		shift
-		break
-		;;
-	esac
-	shift
+    case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+    esac
+    shift
 done
 
 if [ $# -ne 0 ]; then
-	usage
-	exit 2
+    usage
+    exit 2
 fi
 
 uid=$(id -u)
 if [ "$uid" != "0" ]; then
-	warning "this script must be run as root"
-	exit 1
+    warning "this script must be run as root"
+    exit 1
 fi
 
 NETWORK_NAME=cockpit1
