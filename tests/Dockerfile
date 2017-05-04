@@ -57,6 +57,7 @@ RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpi
     mkdir -p /home/user/.config /home/user/.ssh && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/github-token /home/user/.config/github-token && \
+    ln -snf /secrets/image-stores /home/user/.config/image-stores && \
     git clone https://github.com/cockpit-project/cockpit /build/cockpit && \
     cd /build/cockpit && npm install && \
     chown -R user /build /secrets /images /home/user
