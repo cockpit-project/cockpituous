@@ -80,7 +80,7 @@ release-install: release-container
 
 verify-shell: docker-running
 	docker run -ti --rm \
-		--privileged \
+		--privileged --uts=host \
 		--volume /home/cockpit:/home/user \
 		--volume $(CURDIR)/verify:/usr/local/bin \
 		--volume=/home/cockpit/verify:/build:rw \
