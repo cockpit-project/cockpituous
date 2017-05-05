@@ -38,6 +38,10 @@
                                     {
                                         "name": "TEST_JOBS",
                                         "value": "8"
+                                    },
+                                    {
+                                        "name": "TEST_PUBLISH",
+                                        "value": "sink"
                                     }
                                 ],
                                 "volumeMounts": [
@@ -47,8 +51,8 @@
                                         "readOnly": true
                                     },
                                     {
-                                        "name": "images",
-                                        "mountPath": "/images",
+                                        "name": "cache",
+                                        "mountPath": "/cache",
                                         "readOnly": false
                                     }
                                 ]
@@ -62,9 +66,9 @@
                                 }
                             },
                             {
-                                "name": "images",
+                                "name": "cache",
                                 "hostPath": {
-                                    "path": "/var/lib/cockpit-tests/images"
+                                    "path": "/var/cache/cockpit-tests"
                                 }
                             }
                         ],

@@ -16,7 +16,8 @@ if [ $loop = "yes" ]; then
 fi
 
 # Make sure directory is writable
-sudo chown user:user /images
+sudo mkdir -p /cache/github /cache/images
+sudo chown user:user /cache /cache/github /cache/images
 
 if [ -n "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"

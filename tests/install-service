@@ -3,24 +3,25 @@
 set -eufx
 
 SECRETS=/var/lib/cockpit-tests/secrets
-IMAGES=/var/lib/cockpit-tests/images
+CACHE=/var/cache/cockpit-tests
 
-mkdir -p $SECRETS $IMAGES
-chown -R 1111:1111 $SECRETS $IMAGES
+mkdir -p $SECRETS $CACHE
+chown -R 1111:1111 $SECRETS $CACHE
 
 cat <<EOF > /etc/systemd/system/cockpit-tests.service
 [Unit]
 Description=Cockpit Verify
-Requires=docker.service libvirtd.service
-After=docker.service libvirtd.service
+Requires=docker.service
+After=docker.service
 
 [Service]
 Environment="TEST_JOBS=4"
-Environment="TEST_IMAGES=$IMAGES"
+Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
+Environment="TEST_PUBLISH=sink"
 Restart=always
 RestartSec=60
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_IMAGES:/images:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" cockpit/tests"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_CACHE:/cache:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PUBLISH=\"\$TEST_PUBLISH\" cockpit/tests"
 ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-tests"
 
 [Install]
