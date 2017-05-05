@@ -8,6 +8,8 @@ docker-running:
 	systemctl start docker
 
 TAG := $(shell date --iso-8601)
+TEST_SECRETS := /var/lib/cockpit-tests/secrets
+TEST_CACHE := /var/cache/cockpit-tests
 
 base-container: docker-running
 	docker build -t cockpit/infra-base:$(TAG) base
@@ -52,8 +54,8 @@ tests-shell: docker-running
 	docker run -ti --rm \
 		--privileged --uts=host \
 		--volume=$(CURDIR)/tests:/usr/local/bin \
-		--volume=/var/lib/cockpit-tests/secrets:/secrets \
-		--volume=/var/lib/cockpit-tests/images:/images:rw \
+		--volume=$(TEST_SECRETS):/secrets:ro \
+		--volume=$(TEST_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
         cockpit/tests -i
 
@@ -65,4 +67,4 @@ tests-push: docker-running
 	base/push-container cockpit/tests
 
 tests-secrets:
-	@sh -c "cd tests && ./build-secrets /var/lib/cockpit-tests/secrets"
+	@cd tests && ./build-secrets $(TEST_SECRETS)
