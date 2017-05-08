@@ -14,22 +14,7 @@ base-container: docker-running
 	docker tag cockpit/infra-base:$(TAG) cockpit/infra-base:latest
 
 base-push: docker-running
-	{ \
-	ID=`docker images -q cockpit/infra-base:latest`; \
-	if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
-		echo "Expected exactly one image matching 'cockpit/infra-base:latest'"; \
-		exit 1; \
-	fi; \
-	TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
-	if [ `echo "$$TAGS" | wc -w` -ne "2" ]; then \
-		echo "Expected exactly two tags for the image to push: latest and one other"; \
-		exit 1; \
-	fi; \
-	for PUSHTAG in $$TAGS; do \
-		docker push "cockpit/infra-base:$$PUSHTAG"; \
-	done \
-	}
-	@true
+	base/push-container cockpit/infra-base
 
 containers: release-container tests-container
 	@true
@@ -56,22 +41,7 @@ release-container: docker-running
 	@true
 
 release-push: docker-running
-	{ \
-	ID=`docker images -q cockpit/infra-release:latest`; \
-	if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
-		echo "Expected exactly one image matching 'cockpit/infra-release:latest'"; \
-		exit 1; \
-	fi; \
-	TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
-	if [ `echo "$$TAGS" | wc -w` -ne "2" ]; then \
-		echo "Expected exactly two tags for the image to push: latest and one other"; \
-		exit 1; \
-	fi; \
-	for PUSHTAG in $$TAGS; do \
-		docker push "cockpit/infra-release:$$PUSHTAG"; \
-	done \
-	}
-	@true
+	base/push-container cockpit/infra-release
 
 release-install: release-container
 	cp release/cockpit-release.service /etc/systemd/system/
@@ -92,22 +62,7 @@ tests-container: docker-running
 	docker tag cockpit/tests:$(TAG) cockpit/tests:latest
 
 tests-push: docker-running
-		{ \
-		ID=`docker images -q cockpit/tests:latest`; \
-		if [ `echo "$$ID" | wc -w` -ne "1" ]; then \
-			echo "Expected exactly one image matching 'cockpit/tests:latest'"; \
-			exit 1; \
-		fi; \
-		TAGS=`docker images --format "table {{.Tag}}\t{{.ID}}" | grep $$ID | awk '{print $$1}'`; \
-		if [ `echo "$$TAGS" | wc -w` -ne "2" ]; then \
-			echo "Expected exactly two tags for the image to push: latest and one other"; \
-			exit 1; \
-		fi; \
-		for PUSHTAG in $$TAGS; do \
-			docker push "cockpit/tests:$$PUSHTAG"; \
-		done \
-		}
-		@true
+	base/push-container cockpit/tests
 
 tests-secrets:
 	@sh -c "cd tests && ./build-secrets /var/lib/cockpit-tests/secrets"
