@@ -15,6 +15,9 @@ PruneInterval: 0
 Server: chat.freenode.net:6667
 Login: %(user)sbot %(user)sbot %(user)sbot
 Nick: %(user)sbot
+
+[GitHub]
+Server: https://api.github.com
 """
 
 TOKEN = "~/.config/github-token"
@@ -26,6 +29,7 @@ import json
 import os
 import select
 import shutil
+import signal
 import socket
 import string
 import subprocess
@@ -37,13 +41,17 @@ import re
 
 # Try Python 3, fail back to Python 2
 try:
+    from http.client import HTTPConnection
     from http.client import HTTPSConnection
 except ImportError:
+    from httplib import HTTPConnection
     from httplib import HTTPSConnection
 try:
     from urllib.parse import urljoin
+    from urllib.parse import urlparse
 except ImportError:
     from urlparse import urljoin
+    from urlparse import urlparse
 try:
     from urllib.request import urlretrieve
 except ImportError:
@@ -89,9 +97,41 @@ def expand(val, env):
     else:
         return val
 
+# Compare two JSON style values to see if one is contained in the other
+# For lists and dict make sure all items in expect are also present in result
+# For any other values a strict comparison is used
+def contains(expect, result, debug=True):
+    if isinstance(expect, list) and isinstance(result, list):
+        for exp in expect:
+            found = 0
+            for res in result:
+                if contains(exp, res, False):
+                    found += 1
+            if found == 0:
+                if debug:
+                    sys.stderr.write("Expected " + json.dumps(exp) + " but not present\n")
+                return False
+            elif found > 1:
+                if debug:
+                    sys.stderr.write("Expected one " + json.dumps(exp) + " but found " + str(found) + " times\n")
+                return False
+        return True
+    elif isinstance(expect, dict) and isinstance(result, dict):
+        for key in expect:
+            if not contains(expect[key], result.get(key), debug):
+                return False
+        return True
+    elif cmp(expect, result) != 0:
+        if debug:
+            sys.stderr.write("Expecting " + json.dumps(expect) + " but saw " + json.dumps(result) + "\n")
+        return False
+    else:
+        return True
+
 class GitHub(object):
     def __init__(self, config):
         self.token = None
+        self.url = urlparse(config.get("GitHub", "Server"))
         try:
             with open(os.path.expanduser(TOKEN), "r") as gt:
                 self.token = gt.read().strip()
@@ -101,15 +141,25 @@ class GitHub(object):
             else:
                 raise
         self.results = { }
+        self.child = 0
 
-    def req(self, token, method, resource, data):
+    def __del__(self):
+        self.cleanup()
+
+    def req(self, token, request):
+        method = request.get('method', "GET")
+        resource = expand(request.get('resource', None), self.results)
+        data = expand(request.get('data', None),  self.results)
         token = token or self.token
         headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
         if token:
             headers["Authorization"] = "token " + token
-        conn = HTTPSConnection("api.github.com", strict=True)
+        if self.url.scheme == 'http':
+            conn = HTTPConnection(self.url.netloc, strict=True)
+        else:
+            conn = HTTPSConnection(self.url.netloc, strict=True)
         # conn.set_debuglevel(1)
-        conn.request(method, resource, json.dumps(data), headers)
+        conn.request(method, resource, data and json.dumps(data) or None, headers)
         response = conn.getresponse()
         output = response.read()
         conn.close()
@@ -118,28 +168,62 @@ class GitHub(object):
                                response.status, response.reason, output.strip()))
         return json.loads(output)
 
+    def cleanup(self):
+        child = self.child
+        self.child = 0
+        if child == 0:
+            return
+        try:
+            os.kill(child, signal.SIGTERM)
+            os.waitpid(child, 0)
+        except OSError:
+            pass
+
+    # Check if a given field in GitHub is not as expected
+    def watches(self, token, watches):
+        while len(watches):
+            for watch in list(watches):
+                interval = watch.get('interval', 0)
+                time.sleep(interval or 60)
+                if not interval:
+                    watches.remove(watch)
+                result = self.req(token, watch)
+                expected = expand(watch.get('result', None), self.results)
+                if expected is not None and not contains(expected, result):
+                    return False
+        return True
+
     def push(self, status):
         github = status.get("github", { })
         token = github.get("token", self.token)
-        requests = github.get("requests", None)
-
-        if not token or not requests:
-            return
-
-        self.results['link'] = status['link']
+        requests = github.get("requests", [])
 
         for r in requests:
-            method = r.get('method', "GET")
-            resource = expand(r.get('resource', None), self.results)
-            data = expand(r.get('data', None),  self.results)
+            self.results['link'] = status['link']
             result_name = r.get('result', None)
 
-            if not method or not resource:
-                continue
-
-            result = self.req(token, method, resource, data)
+            result = self.req(token, r)
             if result_name:
                 self.results[result_name] = result
+
+        # Cleanup any previous watches
+        self.cleanup()
+
+        # Expect that a value is present on GitHub
+        watches = github.get("watches", None)
+        if watches:
+            self.child = os.fork()
+            if self.child == 0:
+                ret = 0
+                try:
+                    if not self.watches(token, watches):
+                        os.kill(os.getppid(), signal.SIGTERM)
+                        sys.stderr.write("State not as expected. Possible collision. Aborting.\n")
+                        sys.stderr.flush()
+                        ret = 1
+                except:
+                    traceback.print_exc()
+                os._exit(ret)
 
 class Irc(object):
     def __init__(self, config):
@@ -459,7 +543,10 @@ def check_prune(config, logs, dry_run):
 
 def main():
     parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
-    parser.add_argument('-d', '--dry-run', dest='dry_run', action="store_true", help='Applies only to pruning: do not delete logs')
+    parser.add_argument('-d', '--dry-run', dest='dry_run', action="store_true",
+                        help='Applies only to pruning: do not delete logs')
+    parser.add_argument('-c', '--config', dest='config', default="~/.config/sink",
+                        help='Set an alternate config file')
     parser.add_argument("identifier", nargs=1)
     parser.set_defaults(verbosity=1)
     args = parser.parse_args()
@@ -471,7 +558,7 @@ def main():
         user = os.environ.get("LOGNAME", None)
     config = SafeConfigParser({ "user": user, "identifier": "@@" })
     config.readfp(StringIO(DEFAULTS))
-    config.read([ os.path.expanduser("~/.config/sink") ])
+    config.read([ os.path.expanduser(args.config) ])
 
     # Create the directory and chdir
     logs = os.path.expanduser(config.get("Sink", "Logs"))
