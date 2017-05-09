@@ -53,9 +53,9 @@ check()
         exit 2
     fi
 
-    PASSWORD="$(cat ~/.config/bodhi-password)"
+    PASSWORD="$(cat ~/.fedora-password)"
     if [ -z "$PASSWORD" ]; then
-        message "no valid ~/.config/bodhi-password found"
+        message "no valid ~/.fedora-password found"
         exit 2
     fi
 }
