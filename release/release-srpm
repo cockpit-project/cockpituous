@@ -147,7 +147,7 @@ spec_srpm()
 #  $1: The tarball path
 tarball_version()
 {
-    echo "$1" | sed -ne 's/.*-\([0-9.]\+\)\..*/\1/p'
+    echo "$1" | sed -ne 's/.*-\([0-9.]\+\)\.[^0-9].*/\1/p'
 }
 
 # Build the source RPM
