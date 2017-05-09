@@ -119,6 +119,30 @@ current log.
 
 You can use results from the initial status in the final status.
 
+One can also setup an "watches" section in the GitHub status. This
+is a section where the sink will perform the request(s) after 60 seconds
+and check on the results. If the result is not as expected, the sink
+will abort. This is used to prevent collisions or stop in progress
+tasks.
+
+    {
+        "github": {
+            "token": ".......",
+            "watches": [{
+                "method": "GET",
+                "resource": ":repos/statuses/abcdef01234",
+                "result": [
+                    {
+                        "context": "verify/fedora-25",
+                        "state": "pending",
+                        "description": "Testing in progress [host]"
+                    }
+                ]
+            }]
+        }
+    }
+
+
 ### Link field
 
 The `"link"` field will be automatically filled in by the sink. If it

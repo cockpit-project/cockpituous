@@ -1,1 +1,8 @@
+set -ex
+
+# Run the cockpituous tests
+./sink/test-logic
+./sink/test-sink
+
+# Run the example test suites in a container
 docker run --volume=$PWD:/test:rw fedora:25 $@

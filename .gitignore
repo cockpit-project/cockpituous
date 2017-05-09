@@ -2,3 +2,4 @@
 .vimrc
 *.txt
 sink/logs
+sink/sinkc
