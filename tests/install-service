@@ -18,9 +18,10 @@ After=docker.service libvirtd.service
 Environment="TEST_JOBS=4"
 Environment="TEST_IMAGES=$IMAGES"
 Environment="TEST_SECRETS=$SECRETS"
+Environment="TEST_PROPRIETARY=no"
 Restart=always
 RestartSec=60
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_IMAGES:/images:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" cockpit/tests"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_IMAGES:/images:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PROPRIETARY=\"\$TEST_PROPRIETARY\" cockpit/tests"
 ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-tests"
 
 [Install]

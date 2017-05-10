@@ -46,7 +46,8 @@ RUN dnf -y update && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
-RUN mkdir -p /usr/local/bin /home/user /build /build/tmp /secrets /images
+RUN mkdir -p /usr/local/bin /home/user /build /build/tmp /secrets /images /etc/proprietary/virt-builder/repos.d/
+ADD rjones.conf /etc/proprietary/virt-builder/repos.d/
 ADD cockpit-tests install-service vm-prep network-cockpit.xml /usr/local/bin/
 
 RUN usermod -a -G mock user
@@ -69,11 +70,11 @@ RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
 ENV XDG_CACHE_HOME /build/tmp
-ENV XDG_CONFIG_HOME /build/tmp
 ENV TMPDIR /build/tmp
 ENV TEMP /build/tmp
 ENV TEMPDIR /build/tmp
 ENV TEST_DATA /build
+ENV TEST_PROPRIETARY no
 
 VOLUME /secrets
 VOLUME /images

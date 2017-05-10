@@ -18,6 +18,11 @@ fi
 # Make sure directory is writable
 sudo chown user:user /images
 
+# When running in proprietary mode one more place for config
+if [ "$TEST_PROPRIETARY" = "yes" ]; then
+    export XDG_CONFIG_DIRS=${XDG_CONFIG_DIRS:-/etc/xdg}:/etc/proprietary
+fi
+
 if [ -n "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
     mkdir -p $TMPDIR/libvirt
