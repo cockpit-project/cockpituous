@@ -18,8 +18,22 @@ base-container: docker-running
 base-push: docker-running
 	base/push-container cockpit/infra-base
 
-containers: release-container tests-container
+containers: images-container release-container tests-container
 	@true
+
+images-shell: docker-running
+	docker run -ti --rm --publish=8493:443 \
+		--volume=$(TEST_SECRETS):/secrets:ro \
+		--volume=$(TEST_CACHE):/cache:rw \
+		--entrypoint=/bin/bash \
+        cockpit/images -i
+
+images-container: docker-running
+	docker build -t cockpit/images:$(TAG) images
+	docker tag cockpit/images:$(TAG) cockpit/images:latest
+
+images-push: docker-running
+	base/push-container cockpit/images
 
 release-shell: docker-running
 	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release

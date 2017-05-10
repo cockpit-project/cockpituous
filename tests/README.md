@@ -38,6 +38,12 @@ For testing machines that publish back results create a file called
         IdentityFile /secrets/id_rsa
         User cockpit
 
+To transfer secrets from one host to another, you would do something like:
+
+    $ SRC=user@source.example.com
+    $ DEST=user@source.example.com
+    $ ssh $SRC sudo tar -czf - /var/lib/cockpit-tests/secrets/ | ssh $DEST sudo tar -C / -xzvf -
+
 Make sure docker and atomic are installed and running:
 
     $ sudo systemctl enable docker
