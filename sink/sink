@@ -335,6 +335,21 @@ class Buffer(object):
         result += os.read(self.fd, 1024)
         return result
 
+class Tee():
+    def __init__(self, log, std):
+        self.log = log
+        self.std = std
+    def write(self, *args):
+        self.log.write(*args)
+        self.std.write(*args)
+    def flush(self, *args):
+        self.log.flush(*args)
+        self.std.flush(*args)
+    def close(self, *args):
+        self.log.close(*args)
+        self.log.close(*args)
+
+
 # Create the directory in a race free way
 def mkdir_and_chdir(base, identifier):
     # make sure the base exists
@@ -474,37 +489,37 @@ def main():
     # Initialize status reporters
     status = Status(config, identifier)
 
+    log = open("log", "w")
+    sys.stdout = Tee(log, sys.stdout)
+    sys.stderr = Tee(log, sys.stderr)
+
     # Now relay any data until zero byte
     buffer = Buffer(0)
     attached = False
-    with open("log", "w") as log:
-        count = 0          # Number of lines processed
-        last = ""          # Last full output valid line
-        done = False       # Set when done
-        while not done:
-            log.flush()
-            sys.stdout.flush()
-            data = buffer.readone()
-            if not data:
-                done = True
-            (text, zero, trailing) = (last + data).partition('\x00')
-            if len(zero):
-                buffer.push(trailing)
-                attached = True
-                done = True
-            lines = text.split("\n")
-            last = lines.pop()
-            for line in lines:
-                line += "\n"
-                count += 1
-                if count == 1:
-                    if status.begin(line, log):
-                        continue
-                log.write(line)
-                sys.stdout.write(line)
-        if not status.finish(last, log):
-            log.write(last)
-            sys.stdout.write(last)
+    count = 0          # Number of lines processed
+    last = ""          # Last full output valid line
+    done = False       # Set when done
+    while not done:
+        sys.stdout.flush()
+        data = buffer.readone()
+        if not data:
+            done = True
+        (text, zero, trailing) = (last + data).partition('\x00')
+        if len(zero):
+            buffer.push(trailing)
+            attached = True
+            done = True
+        lines = text.split("\n")
+        last = lines.pop()
+        for line in lines:
+            line += "\n"
+            count += 1
+            if count == 1:
+                if status.begin(line, log):
+                    continue
+            sys.stdout.write(line)
+    if not status.finish(last, log):
+        sys.stdout.write(last)
 
     if attached:
         tar = subprocess.Popen(["tar", "-xzf", "-"], stdin=subprocess.PIPE)
