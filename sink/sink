@@ -62,41 +62,6 @@ except:
     MAX_BUFF_SIZE = sys.maxint
 
 
-class GitHubClassic(object):
-    def __init__(self, config):
-        self.token = None
-        try:
-            with open(os.path.expanduser(TOKEN), "r") as gt:
-                self.token = gt.read().strip()
-        except IOError as exc:
-            if exc.errno == errno.ENOENT:
-                 pass
-            else:
-                raise
-
-    def push(self, status):
-        github = status.get("github", { })
-        resource = github.get("resource", None)
-        data = github.get("status", None)
-        if not self.token or not data or not resource:
-            return
-        if "description" not in data and "message" in status:
-            data["description"] = status["message"]
-        if "target_url" not in data:
-            data["target_url"] = status["link"]
-        headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
-        if self.token:
-            headers["Authorization"] = "token " + self.token
-        conn = HTTPSConnection("api.github.com", strict=True)
-        # conn.set_debuglevel(1)
-        conn.request("POST", resource, json.dumps(data), headers)
-        response = conn.getresponse()
-        output = response.read()
-        conn.close()
-        if response.status < 200 or response.status >= 300:
-            raise RuntimeError("Couldn't update GitHub: {0} {1}\n{2}\n".format(
-                               response.status, response.reason, output.strip()))
-
 # Expansion of strings in JSON objects.
 
 def jpath(val, path):
@@ -285,7 +250,7 @@ class Extras(object):
 
 class Status(object):
     def __init__(self, config, identifier):
-        self.reporters = [ GitHubClassic(config), GitHub(config), Irc(config), Extras(config) ]
+        self.reporters = [ GitHub(config), Irc(config), Extras(config) ]
         self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
 
