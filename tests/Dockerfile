@@ -53,6 +53,7 @@ RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
 RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
+    ln -s /cache/images /build/virt-builder && \
     ln -s /cache/github /build/github && \
     mkdir -p /home/user/.config /home/user/.ssh && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
@@ -68,8 +69,7 @@ RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 # Continue to work with a host defined cockpit1 network if necessary
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
-ENV XDG_CACHE_HOME /build/tmp
-ENV XDG_CONFIG_HOME /build/tmp
+ENV XDG_CACHE_HOME /build
 ENV TMPDIR /build/tmp
 ENV TEMP /build/tmp
 ENV TEMPDIR /build/tmp
