@@ -69,6 +69,7 @@ RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 # Continue to work with a host defined cockpit1 network if necessary
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
+ENV LIBGUESTFS_BACKEND direct
 ENV XDG_CACHE_HOME /build
 ENV TMPDIR /build/tmp
 ENV TEMP /build/tmp
