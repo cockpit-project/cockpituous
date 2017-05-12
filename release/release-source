@@ -200,6 +200,11 @@ prepare()
                 --strip-components=1 -xzf - < $repodir/_build/release-patched.tar.gz
             git -C $stagedir add -f .
 
+            # If nothing added above, then just skip
+            if git -C $stagedir diff-index --exit-code --quiet HEAD --; then
+                continue
+            fi
+
             # Transfer key information to new stage commit
             author="$(git -C $repodir show $commit --pretty='%an <%ae>' --no-patch)"
             date="$(git -C $repodir show $commit --pretty='%ad' --no-patch)"
