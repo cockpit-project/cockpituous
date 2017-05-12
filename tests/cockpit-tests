@@ -31,16 +31,11 @@ if [ ! -d cockpit ]; then
     git clone https://github.com/cockpit-project/cockpit
 fi
 
+# TODO: This needs to move into tests bot
 if [ ! -f $TMPDIR/vm-prep-was-run ]; then
     sudo /usr/local/bin/vm-prep
     touch $TMPDIR/vm-prep-was-run
 fi
-
-if [ ! -d cockpit/node_modules ]; then
-    ( cd cockpit && npm install )
-fi
-
-mkdir -p mock
 
 # If interactive arguments then just exec
 if [ $loop != "yes" ]; then
@@ -53,16 +48,41 @@ echo "Starting testing"
 iteration=0
 while true; do
     fail=0
-    find cockpit -name '*.py?' -delete
     git -C cockpit fetch origin
     git -C cockpit reset --hard origin/master
-    if [ "$iteration" -eq 0 ]; then
-        cockpit/test/vm-download --prune
-    else
-        cockpit/test/vm-download
-    fi
+
+    # TODO: Soon we'll move this to an images bot
     iteration=$(( (iteration+1) % 25 ))
-    if ! cockpit/test/github-task "$@"; then
-        sleep 60
+    if [ -x cockpit/test/vm-download ]; then
+        if [ "$iteration" -eq 0 ]; then
+            cockpit/test/vm-download --prune
+        fi
     fi
+
+    (
+        # If the tasks file is executable, run it
+        if [ -x cockpit/.tasks ]; then
+            cockpit/.tasks
+
+        # If it exists then cat it
+        elif [ -e cockpit/.tasks ]; then
+            cat cockpit/.tasks
+
+        # No tasks found
+        else
+            echo "echo 'No tasks found in cockpit repo' >&2; exit 1"
+        fi
+
+    # Remove empty lines, comments, and reverse sort.
+    # Then randomly pick one of the first 10 commands
+    ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | while read line; do
+
+        # Execute the task in question
+        if ! /bin/sh -c "cd cockpit/; set -ex; $line"; then
+            sleep 60
+        fi
+
+        # Start the loop again up above
+        break
+    done
 done
