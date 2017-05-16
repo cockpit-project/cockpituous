@@ -111,6 +111,10 @@ Some tests need nested virtualization enabled:
     # echo "options kvm-amd nested=1" > /etc/modprobe.d/kvm-amd.conf
     # ( rmmod kvm-intel && modprobe kvm-intel ) || ( rmmod kvm-amd && modprobe kvm-amd )
 
+SELinux needs to know about the caching directories:
+
+    # chcon -Rt svirt_sandbox_file_t /var/cache/cockpit-tests/
+
 ## Scaling
 
 We can scale the number of testing machines in the openshift cluster with this
