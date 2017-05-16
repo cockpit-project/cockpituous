@@ -9,15 +9,15 @@ RUN mkdir -p /usr/local/bin && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
     rm -rf /usr/share/nginx/html && \
     ln -snf /cache/images /usr/share/nginx/html && \
-    sed -i -e 's/user .*;/user user;/' -e '/http {/a client_max_body_size 10000m;' /etc/nginx/nginx.conf && \
     chown -R user /home/user
 
 ADD install-service /usr/local/bin/
-ADD nginx-tls.conf /etc/nginx/conf.d/
+ADD nginx.conf /etc/nginx/
 
 VOLUME /secrets
 VOLUME /cache
 
+EXPOSE 80
 EXPOSE 443
 STOPSIGNAL SIGQUIT
 CMD /usr/sbin/nginx -g "daemon off;"
@@ -26,4 +26,4 @@ CMD /usr/sbin/nginx -g "daemon off;"
 LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --user=root IMAGE /bin/bash -c \"/usr/sbin/chroot /host /bin/sh -s < /usr/local/bin/install-service\"
 
 # Run a simple interactive instance of the tests container
-LABEL RUN /usr/bin/docker run -ti --rm --publish=8493:443 --volume=/var/lib/cockpit-tests/secrets:/secrets:ro --volume=/var/cache/cockpit-tests:/cache:rw IMAGE /bin/bash -i
+LABEL RUN /usr/bin/docker run -ti --rm --publish=8090:80 --publish=8493:443 --volume=/var/lib/cockpit-tests/secrets:/secrets:ro --volume=/var/cache/cockpit-tests:/cache:rw IMAGE /bin/bash -i
