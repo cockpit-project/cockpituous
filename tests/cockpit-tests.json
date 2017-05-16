@@ -56,6 +56,32 @@
                                         "readOnly": false
                                     }
                                 ]
+                            },
+                            {
+                                "name": "cockpit-images",
+                                "image": "docker.io/cockpit/images",
+                                "ports": [
+                                    {
+                                        "containerPort": 80,
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 443,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "volumeMounts": [
+                                    {
+                                        "name": "secrets",
+                                        "mountPath": "/secrets",
+                                        "readOnly": true
+                                    },
+                                    {
+                                        "name": "cache",
+                                        "mountPath": "/cache",
+                                        "readOnly": false
+                                    }
+                                ]
                             }
                         ],
                         "volumes": [
@@ -75,6 +101,30 @@
                         "serviceAccountName": "tester"
                     }
                 }
+            }
+        },
+        {
+            "kind": "Service",
+            "metadata": {
+                "name": "cockpit-images"
+            },
+            "spec": {
+                "clusterIP": "None",
+                "selector": {
+                    "infra": "cockpit-tests"
+                },
+                "ports": [
+                    {
+                        "name": "http",
+                        "port": 80,
+                        "protocol": "TCP"
+                    },
+                    {
+                        "name": "https",
+                        "port": 443,
+                        "protocol": "TCP"
+                    }
+                ]
             }
         }
     ]
