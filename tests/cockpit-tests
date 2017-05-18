@@ -45,20 +45,7 @@ fi
 
 echo "Starting testing"
 
-iteration=0
-while true; do
-    fail=0
-    git -C cockpit fetch origin
-    git -C cockpit reset --hard origin/master
-
-    # TODO: Soon we'll move this to an images bot
-    iteration=$(( (iteration+1) % 25 ))
-    if [ -x cockpit/test/vm-download ]; then
-        if [ "$iteration" -eq 0 ]; then
-            cockpit/test/vm-download --prune
-        fi
-    fi
-
+function task() {
     (
         # If the tasks file is executable, run it
         if [ -x cockpit/.tasks ]; then
@@ -75,14 +62,31 @@ while true; do
 
     # Remove empty lines, comments, and reverse sort.
     # Then randomly pick one of the first 10 commands
-    ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | while read line; do
+    ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | head -n 1
+}
+
+iteration=0
+while true; do
+    fail=0
+    git -C cockpit fetch origin
+    git -C cockpit reset --hard origin/master
+
+    # TODO: Soon we'll move this to an images bot
+    iteration=$(( (iteration+1) % 25 ))
+    if [ -x cockpit/test/vm-download ]; then
+        if [ "$iteration" -eq 0 ]; then
+            cockpit/test/vm-download --prune
+        fi
+    fi
+
+    line="$(task)"
+    if [ -n "$line" ]; then
 
         # Execute the task in question
-        if ! /bin/sh -c "cd cockpit/; set -ex; $line"; then
-            sleep 60
+        if /bin/sh -c "cd cockpit/; set -ex; $line"; then
+            continue
         fi
+    fi
 
-        # Start the loop again up above
-        break
-    done
+    sleep 60
 done
