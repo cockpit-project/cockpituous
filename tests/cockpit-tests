@@ -62,7 +62,7 @@ while true; do
     (
         # If the tasks file is executable, run it
         if [ -x cockpit/.tasks ]; then
-            cockpit/.tasks
+            cd cockpit/ && ./.tasks
 
         # If it exists then cat it
         elif [ -e cockpit/.tasks ]; then
