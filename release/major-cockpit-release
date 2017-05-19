@@ -17,8 +17,7 @@ job release-srpm
 
 # Do fedora builds for the tag, using tarball
 job release-koji -k master
-job release-koji f25
-job release-koji -k f26
+job release-koji f26
 
 # Upload release to github, using tarball
 job release-github
