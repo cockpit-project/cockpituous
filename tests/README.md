@@ -103,6 +103,7 @@ Some helpful commands:
 The tests need ```/dev/kvm``` to be accessible to non-root users on each node:
 
     $ sudo chmod 666 /dev/kvm
+    $ printf 'KERNEL=="kvm", GROUP="kvm", MODE="0666"\n' | sudo tee /etc/udev/rules.d/80-kvm.rules
 
 Some tests need nested virtualization enabled:
 
