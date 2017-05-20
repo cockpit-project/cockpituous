@@ -31,12 +31,6 @@ if [ ! -d cockpit ]; then
     git clone https://github.com/cockpit-project/cockpit
 fi
 
-# TODO: This needs to move into tests bot
-if [ ! -f $TMPDIR/vm-prep-was-run ]; then
-    sudo /usr/local/bin/vm-prep
-    touch $TMPDIR/vm-prep-was-run
-fi
-
 # If interactive arguments then just exec
 if [ $loop != "yes" ]; then
     cd cockpit/

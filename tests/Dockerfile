@@ -46,7 +46,7 @@ ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockp
 RUN dnf -y builddep /tmp/cockpit.spec && dnf clean all
 
 RUN mkdir -p /usr/local/bin /home/user /build /build/tmp /secrets /cache/images /cache/github
-ADD cockpit-tests install-service vm-prep network-cockpit.xml /usr/local/bin/
+ADD cockpit-tests install-service /usr/local/bin/
 
 RUN usermod -a -G mock user
 RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
