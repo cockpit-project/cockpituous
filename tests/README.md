@@ -105,6 +105,11 @@ The tests need ```/dev/kvm``` to be accessible to non-root users on each node:
     $ sudo chmod 666 /dev/kvm
     $ printf 'KERNEL=="kvm", GROUP="kvm", MODE="0666"\n' | sudo tee /etc/udev/rules.d/80-kvm.rules
 
+Some of the older tests need ip6_tables to be loaded:
+
+    $ sudo modprobe ip6_tables
+    $ printf 'ip6_tables\n' | sudo tee /etc/modules-load.d/ip6_tables.conf
+
 Some tests need nested virtualization enabled:
 
     $ sudo -s
