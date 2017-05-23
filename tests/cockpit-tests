@@ -59,7 +59,8 @@ function task() {
     ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | head -n 1
 }
 
-for i in $(seq 1 60); do
+# Perform N tasks or waits, then restart
+for i in $(seq 1 30); do
     git -C cockpit fetch origin
     git -C cockpit reset --hard origin/master
 
@@ -72,5 +73,6 @@ for i in $(seq 1 60); do
         fi
     fi
 
-    sleep 60
+    # Nothing to do, or failure, wait between 1 and 10 minutes
+    sleep $(shuf -i 60-600 -n 1)
 done
