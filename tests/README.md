@@ -121,6 +121,11 @@ SELinux needs to know about the caching directories:
 
     # chcon -Rt svirt_sandbox_file_t /var/cache/cockpit-tests/
 
+Service affinity currently wants all the cockpit-tests pods to be in the same region.
+If you have your own cluster make sure all the nodes are in the same region:
+
+    $ oc patch node node.example.com -p '{"metadata":{"labels": {"region": "infra"}}}'
+
 ## Scaling
 
 We can scale the number of testing machines in the openshift cluster with this
