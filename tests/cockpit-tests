@@ -26,6 +26,16 @@ if [ -n "$TMPDIR" ]; then
     ln -snf $TMPDIR/libvirt /tmp/libvirt
 fi
 
+# HACK: /sys is read-only in containers. And libvirt tries
+# to write there, but only if a specific subtree exists here
+sudo -n mount -o bind /run /sys/devices/virtual/net/ || true
+
+# In case a network has leaked in from elsewhere
+if sudo -n ip address show dev cockpit1 >/dev/null 2>/dev/null; then
+	sudo -n ip link set cockpit1 down || true
+	sudo -n brctl delbr cockpit1 || true
+fi
+
 if [ ! -d cockpit ]; then
     sudo chown -R user /build
     git clone https://github.com/cockpit-project/cockpit
