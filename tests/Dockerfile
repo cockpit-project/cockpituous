@@ -45,7 +45,7 @@ RUN dnf -y update && \
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 RUN dnf -y builddep /tmp/cockpit.spec && dnf clean all
 
-RUN mkdir -p /usr/local/bin /home/user /build /build/tmp /secrets /cache/images /cache/github
+RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github
 ADD cockpit-tests install-service /usr/local/bin/
 
 RUN usermod -a -G mock user
@@ -55,6 +55,7 @@ RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpi
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
     ln -s /cache/github /build/github && \
+    ln -s /tmp /build/tmp && \
     mkdir -p /home/user/.config /home/user/.ssh && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/github-token /home/user/.config/github-token && \
@@ -71,14 +72,15 @@ RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /et
 
 ENV LIBGUESTFS_BACKEND direct
 ENV XDG_CACHE_HOME /build
-ENV TMPDIR /build/tmp
-ENV TEMP /build/tmp
-ENV TEMPDIR /build/tmp
+ENV TMPDIR /tmp
+ENV TEMP /tmp
+ENV TEMPDIR /tmp
 ENV TEST_DATA /build
 ENV TEST_PUBLISH=
 
 VOLUME /secrets
 VOLUME /cache
+VOLUME /tmp
 
 USER user
 WORKDIR /build

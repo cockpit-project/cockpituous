@@ -19,13 +19,6 @@ fi
 sudo mkdir -p /cache/github /cache/images
 sudo chown user:user /cache /cache/github /cache/images
 
-if [ -n "$TMPDIR" ]; then
-    mkdir -p "$TMPDIR"
-    mkdir -p $TMPDIR/libvirt
-    rm -rf /tmp/libvirt
-    ln -snf $TMPDIR/libvirt /tmp/libvirt
-fi
-
 # HACK: /sys is read-only in containers. And libvirt tries
 # to write there, but only if a specific subtree exists here
 sudo -n mount -o bind /run /sys/devices/virtual/net/ || true
@@ -37,7 +30,7 @@ if sudo -n ip address show dev cockpit1 >/dev/null 2>/dev/null; then
 fi
 
 if [ ! -d cockpit ]; then
-    sudo chown -R user /build
+    sudo chown -R user .
     git clone https://github.com/cockpit-project/cockpit
 fi
 
