@@ -56,10 +56,12 @@ RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpi
     ln -s /cache/images /build/virt-builder && \
     ln -s /cache/github /build/github && \
     ln -s /tmp /build/tmp && \
-    mkdir -p /home/user/.config /home/user/.ssh && \
+    mkdir -p /home/user/.config /home/user/.ssh /home/user/.rhel && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/github-token /home/user/.config/github-token && \
     ln -snf /secrets/image-stores /home/user/.config/image-stores && \
+    ln -snf /secrets/rhel-login /home/user/.rhel/login && \
+    ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
     git clone https://github.com/cockpit-project/cockpit /build/cockpit && \
     cd /build/cockpit && npm install && \
     chown -R user /build /secrets /cache /home/user

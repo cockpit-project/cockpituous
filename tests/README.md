@@ -21,6 +21,8 @@ The container has optional mounts:
    * ```ssh-config```: SSH configuration file containing a 'sink' host
    * ```github-token```: A file containing a GitHub token to post results
    * ```image-stores```: Non default locations to try downloading images from
+   * ```rhel-login```: Red Hat subscription credential login (optional)
+   * ```rhel-password```: Red Hat subscription credential password (optional)
  * ```/cache```: A directory for reusable cached data such as downloaded image files
 
 The mounts normally default to ```/var/lib/cockpit-tests/secrets``` and
