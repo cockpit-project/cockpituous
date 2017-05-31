@@ -54,6 +54,11 @@
                                         "name": "cache",
                                         "mountPath": "/cache",
                                         "readOnly": false
+                                    },
+                                    {
+                                        "name": "tmp",
+                                        "mountPath": "/tmp",
+                                        "readonly": false
                                     }
                                 ]
                             },
@@ -96,6 +101,10 @@
                                 "hostPath": {
                                     "path": "/var/cache/cockpit-tests"
                                 }
+                            },
+                            {
+                                "name": "tmp",
+                                "emptyDir": { }
                             }
                         ],
                         "serviceAccountName": "tester"
