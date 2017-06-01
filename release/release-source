@@ -163,7 +163,7 @@ prepare()
                 printf "*.min.* binary\n*.map binary\n/dist/** binary\n" > $stagedir/.git/info/attributes
 
                 # HACK: Exclude node_modules/ which was in cockpit tarballs
-                tar -C $stagedir --exclude="node_modules" --exclude="aclocal.m4" \
+                tar -C $stagedir --exclude="node_modules" \
                     --strip-components=1 -xf "$archive"
                 git -C $stagedir add -f .
                 git -C $stagedir commit -q --message="initial"
@@ -196,7 +196,7 @@ prepare()
 
             # Now extract the tarball into our stage directory and commit it
             # HACK: Exclude node_modules/ which was in cockpit tarballs
-            tar -C $stagedir --exclude="node_modules" --exclude="aclocal.m4" \
+            tar -C $stagedir --exclude="node_modules" \
                 --strip-components=1 -xzf - < $repodir/_build/release-patched.tar.gz
             git -C $stagedir add -f .
 
