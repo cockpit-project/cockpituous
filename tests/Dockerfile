@@ -12,6 +12,7 @@ RUN dnf -y update && \
         fedpkg \
         fontconfig \
         freetype \
+        gettext \
         git \
         gnupg \
         grubby \
@@ -40,6 +41,7 @@ RUN dnf -y update && \
         sudo \
         tar \
         virt-install \
+        zanata-client \
         && \
     npm -g install phantomjs-prebuilt
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
@@ -62,6 +64,7 @@ RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpi
     ln -snf /secrets/image-stores /home/user/.config/image-stores && \
     ln -snf /secrets/rhel-login /home/user/.rhel/login && \
     ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
+    ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \
     git clone https://github.com/cockpit-project/cockpit /build/cockpit && \
     cd /build/cockpit && npm install && \
     chown -R user /build /secrets /cache /home/user
