@@ -55,8 +55,28 @@ readpath_or()
     fi
 }
 
+check_config() {
+    local expiration
+
+    trace "Validating ~/.config/copr"
+    if [ ! -e ~/.config/copr ]; then
+        message "~/.config/copr does not exist"
+        exit 1
+    fi
+    expiration=$(sed -n '/# expiration/ { s/^.*:[[:space:]]*//; p }' ~/.config/copr)
+    if [ -z "$expiration" ]; then
+        message "~/.config/copr does not contain expiration date"
+        exit 1
+    fi
+    if [ $(date +%s) -ge $(date -d"$expiration" +%s) ]; then
+        message "~/.config/copr is expired, please renew"
+        exit 1
+    fi
+}
+
 check()
 {
+    check_config
     copr-cli list
     ssh fedorapeople.org -- mkdir -p public_html
 }
@@ -64,6 +84,8 @@ check()
 prepare()
 {
     local spec tmpfile tarball ret
+
+    check_config
 
     trace "Uploading SRPM"
 
