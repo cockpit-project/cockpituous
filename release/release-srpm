@@ -98,11 +98,11 @@ tagemail=%(taggeremail)' "refs/tags/$1")
     if [ -z "$tagbody" -a -z "$tagauthor" ]; then
         tagdate=$(LC_ALL=C date '+%a %b %d %Y')
         tagauthor=$(git config --global user.name)
-        tagemail=$(git config --global user.email)
+        tagemail="<$(git config --global user.email)>"
         tagbody="- Update to upstream $TAG release"
     fi
 
-    printf "* %s %s <%s> - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
+    printf "* %s %s %s - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
 
     # Only include the main body if not a revision > 1
     if [ "$2" -eq 1 ]; then
