@@ -78,12 +78,21 @@ autogen_or_configure()
 # Prints out an existing tarball archive for the given version
 #  $1: The tarball version
 #  $2: The directory containing tarballs
-find_tarball()
+find_and_extract_tarballs()
 {
-    local archive
-    find "$2" -maxdepth 1 -name "*-$1.tar.*" | LC_ALL=C sort | while read archive; do
-        echo "$archive"
-        break
+    local archive name
+
+    archive=
+    find "$2" -maxdepth 1 -name "*-$1.tar.*" | LC_ALL=C sort | while read name; do
+
+        tar -xf "$name" -C "$3" --strip-components=1
+	git -C "$3" reset --quiet --hard HEAD
+
+        # The first tarball is the main one
+        if [ -z "$archive" ]; then
+            archive="$name"
+            echo "$name"
+	fi
     done
 }
 
@@ -135,9 +144,9 @@ prepare()
         if [ -z "$archive" ]; then
 
             # Find archives in the source directory
-            archive="$(find_tarball $TAG $SOURCE)"
+            archive="$(find_and_extract_tarballs $TAG $SOURCE $repodir)"
 
-            # If any of them are missing rebuild the tarball and copy into place
+            # If it is missing rebuild the tarball and copy into place
             if [ -z "$archive" ]; then
                 trace "Creating first tarball"
 
