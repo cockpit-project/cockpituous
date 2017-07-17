@@ -3,6 +3,7 @@ MAINTAINER "Stef Walter" <stefw@redhat.com>
 
 RUN dnf -y update && \
     dnf -y install \
+        american-fuzzy-lop \
         bind-utils \
         bodhi-client \
         bzip2 \
