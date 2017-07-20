@@ -48,7 +48,7 @@ RUN dnf -y update && \
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 RUN dnf -y builddep /tmp/cockpit.spec && dnf clean all
 
-RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github
+RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu
 ADD cockpit-tests install-service /usr/local/bin/
 
 RUN usermod -a -G mock user
@@ -57,6 +57,7 @@ RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cf
 RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
+    ln -s /cache/images /build/libvirt/qemu/log && \
     ln -s /cache/github /build/github && \
     ln -s /tmp /build/tmp && \
     mkdir -p /home/user/.config /home/user/.ssh /home/user/.rhel && \
