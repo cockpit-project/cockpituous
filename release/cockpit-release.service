@@ -7,7 +7,7 @@ After=docker.service
 Environment="RELEASE_SINK=fedorapeople.org"
 Restart=always
 RestartSec=1800
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-release --privileged --volume=/home/cockpit:/home/user:rw --volume=/home/cockpit/release:/build:rw --env=RELEASE_SINK=\"$RELEASE_SINK\" cockpit/infra-release -r https://github.com/cockpit-project/cockpit /usr/local/bin/major-cockpit-release"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-release --privileged --volume=/home/cockpit:/home/user:rw --volume=/home/cockpit/release:/build:rw --env=RELEASE_SINK=\"$RELEASE_SINK\" cockpit/infra-release -r https://github.com/cockpit-project/cockpit /build/bots/major-cockpit-release
 ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-release"
 
 [Install]
