@@ -23,7 +23,7 @@ The container has optional mounts:
    * ```image-stores```: Non default locations to try downloading images from
    * ```rhel-login```: Red Hat subscription credential login (optional)
    * ```rhel-password```: Red Hat subscription credential password (optional)
- * ```/cache```: A directory for reusable cached data such as downloaded image files
+ * ```/cache```: A directory for reusable cached state such as downloaded image files
 
 The mounts normally default to ```/var/lib/cockpit-tests/secrets``` and
 ```/var/cache/cockpit-tests``` on the host.

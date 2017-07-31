@@ -15,9 +15,13 @@ if [ $loop = "yes" ]; then
     set -x
 fi
 
-# Make sure directory is writable
+# Make sure directory is writable and linked
 sudo mkdir -p /cache/github /cache/images
-sudo chown user:user /cache /cache/github /cache/images
+if [ -d /cache/images -a \! -d /cache/state ]; then
+    sudo mv /cache/images /cache/state
+    sudo ln -s state /cache/images
+fi
+sudo chown user:user /cache /cache/github /cache/state
 
 # HACK: /sys is read-only in containers. And libvirt tries
 # to write there, but only if a specific subtree exists here

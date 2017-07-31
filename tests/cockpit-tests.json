@@ -63,8 +63,8 @@
                                 ]
                             },
                             {
-                                "name": "cockpit-images",
-                                "image": "docker.io/cockpit/images",
+                                "name": "cockpit-state",
+                                "image": "docker.io/cockpit/state",
                                 "ports": [
                                     {
                                         "containerPort": 80,
@@ -115,7 +115,7 @@
         {
             "kind": "Service",
             "metadata": {
-                "name": "cockpit-images"
+                "name": "cockpit-state"
             },
             "spec": {
                 "clusterIP": "None",

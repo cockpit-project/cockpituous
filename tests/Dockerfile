@@ -48,21 +48,24 @@ RUN dnf -y update && \
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 RUN dnf -y builddep /tmp/cockpit.spec && dnf clean all
 
-RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github
+RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/state /cache/github
 ADD cockpit-tests install-service /usr/local/bin/
 
 RUN usermod -a -G mock user
 RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
 RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
-    ln -s /cache/images /build/images && \
-    ln -s /cache/images /build/virt-builder && \
+    ln -s state /cache/images && \
+    ln -s /cache/state /build/images && \
+    ln -s /cache/state /build/state && \
+    ln -s /cache/state /build/virt-builder && \
     ln -s /cache/github /build/github && \
     ln -s /tmp /build/tmp && \
     mkdir -p /home/user/.config /home/user/.ssh /home/user/.rhel && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/github-token /home/user/.config/github-token && \
     ln -snf /secrets/image-stores /home/user/.config/image-stores && \
+    ln -snf /secrets/image-stores /home/user/.config/state-stores && \
     ln -snf /secrets/rhel-login /home/user/.rhel/login && \
     ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
     ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \

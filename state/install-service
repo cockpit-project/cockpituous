@@ -8,7 +8,7 @@ SECRETS=/var/lib/cockpit-tests/secrets
 mkdir -p $CACHE $SECRETS
 chown -R 1111:1111 $CACHE $SECRETS
 
-cat <<EOF > /etc/systemd/system/cockpit-images.service
+cat <<EOF > /etc/systemd/system/cockpit-state.service
 [Unit]
 Description=Cockpit Images
 Requires=docker.service
@@ -19,8 +19,8 @@ Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
 Restart=always
 RestartSec=60
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-images --publish=8090:80 --publish=8493:443 --volume=\$TEST_SECRETS:/secrets:ro --volume=\$TEST_CACHE:/cache:rw cockpit/images"
-ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-images"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-state --publish=8090:80 --publish=8493:443 --volume=\$TEST_SECRETS:/secrets:ro --volume=\$TEST_CACHE:/cache:rw cockpit/state"
+ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-state"
 
 [Install]
 WantedBy=multi-user.target
