@@ -150,7 +150,7 @@ class GitHub(object):
         method = request.get('method', "GET")
         resource = expand(request.get('resource', None), self.results)
         data = expand(request.get('data', None),  self.results)
-        token = token or self.token
+        token = request.get('token', token or self.token)
         headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
         if token:
             headers["Authorization"] = "token " + token
@@ -195,8 +195,9 @@ class GitHub(object):
 
     def push(self, status):
         github = status.get("github", { })
-        token = github.get("token", self.token)
-        requests = github.get("requests", [])
+        http = status.get("http", { })
+        token = github.get("token")
+        requests = github.get("requests", []) + http.get("requests", [])
 
         for r in requests:
             self.results['link'] = status['link']
@@ -210,7 +211,7 @@ class GitHub(object):
         self.cleanup()
 
         # Expect that a value is present on GitHub
-        watches = github.get("watches", None)
+        watches = github.get("watches", []) + http.get("watches", [])
         if watches:
             self.child = os.fork()
             if self.child == 0:
