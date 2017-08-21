@@ -86,9 +86,9 @@ commit()
         fednvr="${NVR/%fc*/fc$number}"
     fi
 
-    echo "$PASSWORD" | setsid -w -- bodhi --new --type=enhancement --close-bugs --notes="$NOTES" \
-        --stablekarma=2 --unstablekarma=-1 --request=stable --release="$FEDORA" \
-        --username=$USER ${fednvr}
+    echo "$PASSWORD" | setsid -w -- bodhi updates new --type=enhancement --close-bugs --notes="$NOTES" \
+        --stable-karma=2 --unstable-karma=-1 --request=stable --user $USER  \
+        ${fednvr}
 )
 
 while getopts "p:qvxz" opt; do
