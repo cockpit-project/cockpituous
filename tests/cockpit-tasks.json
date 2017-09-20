@@ -5,32 +5,25 @@
         {
             "kind": "ReplicationController",
             "metadata": {
-                "name": "cockpit-tests",
-                "annotations": {
-                    "openshift.io/scc": "privileged"
-                }
+                "name": "cockpit-tasks"
             },
             "spec": {
                 "replicas": 1,
                 "selector": {
-                    "infra": "cockpit-tests"
+                    "infra": "cockpit-tasks"
                 },
                 "template": {
                     "metadata": {
                         "labels": {
-                            "infra": "cockpit-tests"
-                        },
-                        "annotations": {
-                            "openshift.io/scc": "privileged"
+                            "infra": "cockpit-tasks"
                         }
                     },
                     "spec": {
                         "containers": [
                             {
-                                "name": "cockpit-tests",
+                                "name": "cockpit-tasks",
                                 "image": "docker.io/cockpit/tests",
                                 "securityContext": {
-                                    "privileged": true,
                                     "runAsUser": 1111,
                                     "hostNetwork": false
                                 },
@@ -107,7 +100,7 @@
                                 "emptyDir": { }
                             }
                         ],
-                        "serviceAccountName": "tester"
+                        "serviceAccountName": "cockpituous"
                     }
                 }
             }
@@ -120,7 +113,7 @@
             "spec": {
                 "clusterIP": "None",
                 "selector": {
-                    "infra": "cockpit-tests"
+                    "infra": "cockpit-tasks"
                 },
                 "ports": [
                     {
