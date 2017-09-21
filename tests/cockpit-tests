@@ -70,8 +70,8 @@ for i in $(seq 1 30); do
     line="$(task)"
     if [ -n "$line" ]; then
 
-        # Execute the task in question
-        if /bin/sh -c "cd cockpit/; set -ex; $line"; then
+        # Execute the task in question: 12 hours max
+        if /usr/bin/timeout 12h /bin/sh -c "cd cockpit/; set -ex; $line"; then
             continue
         fi
     fi
