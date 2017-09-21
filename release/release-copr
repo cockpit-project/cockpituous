@@ -100,7 +100,7 @@ prepare()
 
 commit()
 (
-    if ! copr-cli build --nowait $COPR "$URL"; then
+    if ! copr-cli build $COPR "$URL"; then
         if [ $CONTINUE -eq 0 ]; then
             exit 1
         fi
