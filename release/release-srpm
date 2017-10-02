@@ -57,7 +57,7 @@ dash_bullets()
 {
         sed -e 's/^\* /- /' \
             -e 's/^ \* /- /' \
-            -e 's/^[^ *-]/- /'
+            -e 's/^[^ *-]/- &/'
 }
 
 # Trim tag message on stdio
