@@ -6,7 +6,7 @@
 # The changelog from dist-git and the srpm are merged, and an appropriate
 # revision is chosen based on the version and latest dist-git revision.
 #
-# $ release-koki -p cockpit-122.src.rpm f24
+# $ release-koji -p cockpit-122.src.rpm f24
 #
 # The spec file will be updated and committed, along with the new source
 # tarball. An SRPM and scratch build will be done to test things, after

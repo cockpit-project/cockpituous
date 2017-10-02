@@ -57,7 +57,7 @@ dash_bullets()
 {
         sed -e 's/^\* /- /' \
             -e 's/^ \* /- /' \
-            -e 's/^[^ *-]/- /'
+            -e 's/^[^ *-]/- &/'
 }
 
 # Trim tag message on stdio
@@ -86,7 +86,7 @@ changelog_lines()
     tagauthor=
 
     # Only use git information if not a revision > 1
-    if [ -d .git -a "$2" -eq 1 ]; then
+    if [ -d .git -a "$2" -gt 1 ]; then
         eval $(git for-each-ref --shell --format='
 tagdate=%(taggerdate:short)
 tagauthor=%(taggername)
@@ -105,7 +105,7 @@ tagemail=%(taggeremail)' "refs/tags/$1")
     printf "* %s %s %s - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
 
     # Only include the main body if not a revision > 1
-    if [ "$2" -eq 1 ]; then
+    if [ "$2" -gt 1 ]; then
         printf "%s\n" "$tagbody"
     fi
 
