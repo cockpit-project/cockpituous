@@ -152,9 +152,6 @@ commit()
 
     rsync --delete -a -e ssh $WORKDIR/_repo/./ "$REPOSITORY"
 
-    # HACK: for now to support TLS
-    rsync --delete -a -e ssh $WORKDIR/_repo/./ repo-cockpitproject.rhcloud.com:app-root/repo/debian/
-
     rm -rf $WORKDIR
 )
 
