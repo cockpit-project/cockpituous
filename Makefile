@@ -12,11 +12,12 @@ TEST_SECRETS := /var/lib/cockpit-tests/secrets
 TEST_CACHE := /var/cache/cockpit-tests
 
 base-container: docker-running
-	docker build -t cockpit/infra-base:$(TAG) base
+	docker build -t docker.io/cockpit/infra-base:$(TAG) base
+	docker tag docker.io/cockpit/infra-base:$(TAG) docker.io/cockpit/infra-base:latest
 	docker tag cockpit/infra-base:$(TAG) cockpit/infra-base:latest
 
 base-push: docker-running
-	base/push-container cockpit/infra-base
+	base/push-container docker.io/cockpit/infra-base
 
 containers: images-container release-container tests-container
 	@true
@@ -29,11 +30,12 @@ images-shell: docker-running
         cockpit/images -i
 
 images-container: docker-running
-	docker build -t cockpit/images:$(TAG) images
-	docker tag cockpit/images:$(TAG) cockpit/images:latest
+	docker build -t docker.io/cockpit/images:$(TAG) images
+	docker tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
+	docker tag docker.io/cockpit/images:$(TAG) cockpit/images:latest
 
 images-push: docker-running
-	base/push-container cockpit/images
+	base/push-container docker.io/cockpit/images
 
 release-shell: docker-running
 	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
@@ -42,22 +44,23 @@ release-shell: docker-running
 		--privileged \
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
-		--entrypoint=/bin/bash cockpit/infra-release
+		--entrypoint=/bin/bash docker.io/cockpit/release
 
 release-container: docker-running
-	docker build -t cockpit/infra-release:staged release
+	docker build -t cockpit/release:staged release
 	docker rm -f cockpit-release-stage || true
 	docker run --privileged --name=cockpit-release-stage \
-		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/infra-release:staged
+		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/release:staged
 	docker commit --change='ENTRYPOINT ["/usr/local/bin/release-runner"]' \
-		cockpit-release-stage cockpit/infra-release:$(TAG)
-	docker tag cockpit/infra-release:$(TAG) cockpit/infra-release:latest
+		cockpit-release-stage docker.io/cockpit/release:$(TAG)
+	docker tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
+	docker tag docker.io/cockpit/release:$(TAG) cockpit/release:latest
 	docker rm -f cockpit-release-stage
-	docker rmi cockpit/infra-release:staged
+	docker rmi cockpit/release:staged
 	@true
 
 release-push: docker-running
-	base/push-container cockpit/infra-release
+	base/push-container docker.io/cockpit/release
 
 release-install: release-container
 	cp release/cockpit-release.service /etc/systemd/system/
@@ -71,14 +74,15 @@ tests-shell: docker-running
 		--volume=$(TEST_SECRETS):/secrets:ro \
 		--volume=$(TEST_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
-        cockpit/tests -i
+        docker.io/cockpit/tests -i
 
 tests-container: docker-running
-	docker build -t cockpit/tests:$(TAG) tests
-	docker tag cockpit/tests:$(TAG) cockpit/tests:latest
+	docker build -t docker.io/cockpit/tests:$(TAG) tests
+	docker tag docker.io/cockpit/tests:$(TAG) docker.io/cockpit/tests:latest
+	docker tag docker.io/cockpit/tests:$(TAG) cockpit/tests:latest
 
 tests-push: docker-running
-	base/push-container cockpit/tests
+	base/push-container docker.io/cockpit/tests
 
 tests-secrets:
 	@cd tests && ./build-secrets $(TEST_SECRETS)
