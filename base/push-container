@@ -7,7 +7,7 @@ if [ $(echo "$ID" | wc -w) -ne "1" ]; then
     echo "Expected exactly one image matching '$IMAGE:latest'"
 	exit 1
 fi
-TAGS=$(docker images --format "table {{.Tag}}\t{{.ID}}" | grep $ID | awk '{print $1}')
+TAGS=$(docker images --format "table {{.Tag}}\t{{.ID}}" $IMAGE | grep $ID | awk '{print $1}')
 if [ $(echo "$TAGS" | wc -w) -ne "2" ]; then
 	echo "Expected exactly two tags for the image to push: latest and one other"
 	exit 1
