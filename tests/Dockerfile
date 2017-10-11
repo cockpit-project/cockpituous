@@ -35,6 +35,7 @@ RUN dnf -y update && \
         python \
         python-libguestfs \
         python-lxml \
+        python-scikit-learn \
         rpm-build \
         rpmdevtools \
         sed \
