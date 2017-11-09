@@ -26,4 +26,4 @@ CMD /usr/sbin/nginx -g "daemon off;"
 LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --user=root IMAGE /bin/bash -c \"/usr/sbin/chroot /host /bin/sh -s < /usr/local/bin/install-service\"
 
 # Run a simple interactive instance of the tests container
-LABEL RUN /usr/bin/docker run -ti --rm --publish=8090:80 --publish=8493:443 --volume=/var/lib/cockpit-tests/secrets:/secrets:ro --volume=/var/cache/cockpit-tests:/cache:rw IMAGE /bin/bash -i
+LABEL RUN /usr/bin/docker run -ti --rm --publish=80:80 --publish=8493:443 --volume=/var/lib/cockpit-tests/secrets:/secrets:ro --volume=/var/cache/cockpit-tests:/cache:rw IMAGE /bin/bash -i
