@@ -7,6 +7,7 @@ RUN dnf -y update && \
         bind-utils \
         bodhi-client \
         bzip2 \
+        chromium-headless \
         copr-cli \
         curl \
         expect \
