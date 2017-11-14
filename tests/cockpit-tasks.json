@@ -49,6 +49,11 @@
                                         "readOnly": false
                                     },
                                     {
+                                        "name": "shm",
+                                        "mountPath": "/dev/shm",
+                                        "readonly": false
+                                    },
+                                    {
                                         "name": "tmp",
                                         "mountPath": "/tmp",
                                         "readonly": false
@@ -93,6 +98,12 @@
                                 "name": "cache",
                                 "hostPath": {
                                     "path": "/var/cache/cockpit-tests"
+                                }
+                            },
+                            {
+                                "name": "shm",
+                                "hostPath": {
+                                    "path": "/dev/shm"
                                 }
                             },
                             {
