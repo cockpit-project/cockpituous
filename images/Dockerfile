@@ -1,8 +1,7 @@
 FROM cockpit/infra-base
 MAINTAINER "Stef Walter" <stefw@redhat.com>
 
-RUN dnf -y update
-RUN dnf -y install nginx
+RUN dnf -y update && dnf -y install nginx && dnf clean all
 
 RUN mkdir -p /usr/local/bin && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
@@ -17,8 +16,7 @@ ADD nginx.conf /etc/nginx/
 VOLUME /secrets
 VOLUME /cache
 
-EXPOSE 80
-EXPOSE 443
+EXPOSE 80 443
 STOPSIGNAL SIGQUIT
 CMD /usr/sbin/nginx -g "daemon off;"
 
