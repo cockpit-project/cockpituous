@@ -1,6 +1,8 @@
 FROM cockpit/infra-base
 MAINTAINER "Stef Walter" <stefw@redhat.com>
 
+ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
+
 RUN dnf -y update && \
     dnf -y install \
         american-fuzzy-lop \
@@ -44,11 +46,9 @@ RUN dnf -y update && \
         sudo \
         tar \
         virt-install \
-        zanata-client \
-        && \
-    npm -g install phantomjs-prebuilt
-ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
-RUN dnf -y builddep /tmp/cockpit.spec && dnf clean all
+        zanata-client && \
+        dnf -y builddep /tmp/cockpit.spec && dnf clean all
+RUN npm -g install phantomjs-prebuilt
 
 RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu
 ADD cockpit-tests install-service /usr/local/bin/
@@ -79,13 +79,12 @@ RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 # Continue to work with a host defined cockpit1 network if necessary
 RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
 
-ENV LIBGUESTFS_BACKEND direct
-ENV XDG_CACHE_HOME /build
-ENV TMPDIR /tmp
-ENV TEMP /tmp
-ENV TEMPDIR /tmp
-ENV TEST_DATA /build
-ENV TEST_PUBLISH=
+ENV LIBGUESTFS_BACKEND=direct \
+    XDG_CACHE_HOME=/build \
+    TMPDIR=/tmp \
+    TEMPDIR=/tmp \
+    TEST_DATA=/build \
+    TEST_PUBLISH=
 
 VOLUME /secrets
 VOLUME /cache
