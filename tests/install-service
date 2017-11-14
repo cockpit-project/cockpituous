@@ -21,7 +21,7 @@ Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_PUBLISH=sink"
 Restart=always
 RestartSec=60
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_CACHE:/cache:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PUBLISH=\"\$TEST_PUBLISH\" cockpit/tests"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_CACHE:/cache:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --shm-size=500m --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PUBLISH=\"\$TEST_PUBLISH\" cockpit/tests"
 ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-tests"
 
 [Install]
