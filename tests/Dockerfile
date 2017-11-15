@@ -53,8 +53,8 @@ RUN dnf -y builddep /tmp/cockpit.spec && dnf clean all
 RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu
 ADD cockpit-tests install-service /usr/local/bin/
 
-RUN usermod -a -G mock user
-RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+RUN usermod -a -G mock user && useradd -a -G wheel admin
+RUN printf 'user ALL=(ALL) NOPASSWD: ALL\nadmin ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
 RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
@@ -70,7 +70,9 @@ RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpi
     ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
     ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \
     git clone https://github.com/cockpit-project/cockpit /build/cockpit && \
+    cp /build/cockpit/src/bridge/cockpit.pam.insecure /etc/pam.d/cockpit && \
     cd /build/cockpit && npm install && \
+    printf 'user:foobar\nadmin:foobar' | chpasswd && \
     chown -R user /build /secrets /cache /home/user
 
 # Prevent us from screwing around with KVM settings in the container
