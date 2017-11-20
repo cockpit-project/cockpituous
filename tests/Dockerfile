@@ -50,7 +50,7 @@ RUN dnf -y update && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
-ADD cockpit-tests install-service /usr/local/bin/
+COPY cockpit-tests install-service /usr/local/bin/
 
 RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
     usermod -a -G mock user && \
