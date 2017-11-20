@@ -90,7 +90,7 @@ VOLUME /secrets /cache /tmp
 
 USER user
 WORKDIR /build
-CMD /usr/local/bin/cockpit-tests --publish=$TEST_PUBLISH --verbose
+CMD ["/usr/local/bin/cockpit-tests", "--publish", "$TEST_PUBLISH", "--verbose"]
 
 # We execute the script in the host, but it doesn't exist on the host. So pipe it in
 LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --user=root IMAGE /bin/bash -c \"/usr/sbin/chroot /host /bin/sh -s < /usr/local/bin/install-service\"
