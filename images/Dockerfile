@@ -12,8 +12,8 @@ RUN mkdir -p /usr/local/bin && \
     ln -snf /cache/images /usr/share/nginx/html && \
     chown -R user /home/user
 
-ADD install-service /usr/local/bin/
-ADD nginx.conf /etc/nginx/
+COPY install-service /usr/local/bin/
+COPY nginx.conf /etc/nginx/
 
 VOLUME /secrets /cache
 
