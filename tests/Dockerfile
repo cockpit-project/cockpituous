@@ -86,9 +86,7 @@ ENV LIBGUESTFS_BACKEND=direct \
     TEST_DATA=/build \
     TEST_PUBLISH=
 
-VOLUME /secrets
-VOLUME /cache
-VOLUME /tmp
+VOLUME /secrets /cache /tmp
 
 USER user
 WORKDIR /build

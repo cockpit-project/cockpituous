@@ -75,8 +75,7 @@ RUN mkdir -p /etc/pbuilder/hooks && \
             > /etc/pbuilder/hooks/D10remountdevpts && \
     chmod +x /etc/pbuilder/hooks/D10remountdevpts
 
-VOLUME /home/user
-VOLUME /build
+VOLUME /home/user /build
 WORKDIR /build
 USER user
 CMD ["dummy-arg"]

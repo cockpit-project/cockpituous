@@ -13,8 +13,7 @@ RUN mkdir -p /usr/local/bin && \
 ADD install-service /usr/local/bin/
 ADD nginx.conf /etc/nginx/
 
-VOLUME /secrets
-VOLUME /cache
+VOLUME /secrets /cache
 
 EXPOSE 80 443
 STOPSIGNAL SIGQUIT
