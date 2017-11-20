@@ -1,5 +1,5 @@
 FROM cockpit/infra-base
-MAINTAINER "Stef Walter" <stefw@redhat.com>
+LABEL maintainer='"Stef Walter" <stefw@redhat.com>'
 
 RUN dnf -y update && dnf -y install nginx && dnf clean all
 
