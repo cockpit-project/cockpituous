@@ -1,8 +1,6 @@
 FROM cockpit/infra-base
 LABEL maintainer='"Stef Walter" <stefw@redhat.com>'
 
-ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
-
 RUN dnf -y update && \
     dnf -y install \
         american-fuzzy-lop \
@@ -47,16 +45,18 @@ RUN dnf -y update && \
         tar \
         virt-install \
         zanata-client && \
-        dnf -y builddep /tmp/cockpit.spec && dnf clean all
-RUN npm -g install phantomjs-prebuilt
+    npm -g install phantomjs-prebuilt && \
+    curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
+    dnf -y builddep /tmp/cockpit.spec && \
+    dnf clean all
 
-RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu
 ADD cockpit-tests install-service /usr/local/bin/
 
-RUN usermod -a -G mock user
-RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-RUN echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg
-RUN printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
+RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
+    usermod -a -G mock user && \
+    echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
+    echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg && \
+    printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
     ln -s /cache/images /build/libvirt/qemu/log && \

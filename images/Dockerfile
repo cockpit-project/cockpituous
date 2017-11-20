@@ -1,7 +1,9 @@
 FROM cockpit/infra-base
 LABEL maintainer='"Stef Walter" <stefw@redhat.com>'
 
-RUN dnf -y update && dnf -y install nginx && dnf clean all
+RUN dnf -y update && \
+    dnf -y install nginx && \
+    dnf clean all
 
 RUN mkdir -p /usr/local/bin && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \

@@ -62,9 +62,8 @@ yauzl \
 RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
 ADD * /usr/local/bin/
 
-RUN chown -R user /build /home/user
-
-RUN printf "user ALL=(root) NOPASSWD: /usr/sbin/pbuilder\n" > /etc/sudoers.d/allow-pbuilder
+RUN chown -R user /build /home/user && \
+    printf "user ALL=(root) NOPASSWD: /usr/sbin/pbuilder\n" > /etc/sudoers.d/allow-pbuilder
 
 # HACK remount devpts with newinstance in a hook so that the pbuilder chroot
 # can access it
