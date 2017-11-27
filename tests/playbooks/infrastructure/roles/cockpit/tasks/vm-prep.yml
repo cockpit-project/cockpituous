@@ -1,8 +1,0 @@
----
-- name: Git clone cockpit repo
-  git:
-    repo: "{{ cockpit_repo }}"
-    dest: ~/cockpit
-
-- name: Setup for nested vms run vm-prep
-  shell: pushd cockpit/test; ./vm-prep
