@@ -26,6 +26,7 @@ RUN dnf -y update && \
         libvirt \
         libvirt-client \
         libvirt-python \
+        libvirt-python3 \
         mock \
         nc \
         net-tools \
@@ -36,6 +37,8 @@ RUN dnf -y update && \
         python-libguestfs \
         python-lxml \
         python-scikit-learn \
+        python3 \
+        python3-scikit-learn \
         rpm-build \
         rpmdevtools \
         sed \
