@@ -197,7 +197,7 @@ class GitHub(object):
         github = status.get("github", { })
         http = status.get("http", { })
         token = github.get("token")
-        requests = github.get("requests", []) + http.get("requests", [])
+        requests = (github.get("requests") or []) + (http.get("requests") or [])
 
         for r in requests:
             self.results['link'] = status['link']
@@ -211,7 +211,7 @@ class GitHub(object):
         self.cleanup()
 
         # Expect that a value is present on GitHub
-        watches = github.get("watches", []) + http.get("watches", [])
+        watches = (github.get("watches") or []) + (http.get("watches") or [])
         if watches:
             self.child = os.fork()
             if self.child == 0:
