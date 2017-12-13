@@ -46,8 +46,9 @@ RUN dnf -y update && \
         sudo \
         tar \
         virt-install \
+        xorg-x11-server-Xvfb \
         zanata-client && \
-    dnf -y install chromium-headless --enablerepo=updates-testing && \
+    dnf -y install chromium --enablerepo=updates-testing && \
     npm -g install phantomjs-prebuilt && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
