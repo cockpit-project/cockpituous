@@ -19,8 +19,9 @@ Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
 Restart=always
 RestartSec=60
+ExecStartPre=-/usr/bin/docker rm -f cockpit-images
 ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-images --publish=8090:80 --publish=8493:443 --volume=\$TEST_SECRETS:/secrets:ro --volume=\$TEST_CACHE:/cache:rw cockpit/images"
-ExecStop=-/bin/sh -xc "/usr/bin/docker rm -f cockpit-images"
+ExecStop=/usr/bin/docker rm -f cockpit-images
 
 [Install]
 WantedBy=multi-user.target
