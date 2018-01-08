@@ -37,7 +37,7 @@ VERBOSE=${RELEASE_VERBOSE:-0}
 SOURCE=${RELEASE_SOURCE:-}
 TAG=${RELEASE_TAG:-}
 
-MAKE="make V=1"
+MAKE="make V=1 -j$(nproc)"
 
 # When building tarballs it's important to have a consistent
 # locale and charmap in particular when generating documentation
