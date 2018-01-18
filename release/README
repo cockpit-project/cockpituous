@@ -21,7 +21,7 @@ This is the container for the Cockpit release runner.
 
 First get the container:
 
-    # docker pull cockpit/infra-release
+    # docker pull cockpit/release
 
 Setup a 'cockpit' user:
 
@@ -66,6 +66,6 @@ Some helpful commands:
 To update, just pull the new container and restart the cockpit-verify service.
 It will restart automatically when it finds a pause in the verification work.
 
-    # docker pull cockpit/infra-release
+    # docker pull cockpit/release
     # systemctl restart cockpit-release
 
