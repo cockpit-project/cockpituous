@@ -4,7 +4,7 @@
 #
 # Runs a delivery script.
 #
-# The script is a shell script. Items in the script can be preceeded
+# The script is a shell script. Items in the script can be preceded
 # with the word 'job'. If so, they will get $RELEASE_XXX envars exported
 # and asked to run transactionally.
 #
