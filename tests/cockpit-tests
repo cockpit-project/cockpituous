@@ -66,6 +66,7 @@ function task() {
 for i in $(seq 1 30); do
     git -C cockpit fetch origin
     git -C cockpit reset --hard origin/master
+    git -C cockpit clean -dxff
 
     line="$(task)"
     if [ -n "$line" ]; then
