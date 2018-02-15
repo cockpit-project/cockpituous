@@ -47,7 +47,6 @@ jsonfile \
 klaw \
 mime-types \
 path-is-absolute \
-phantomjs-prebuilt \
 pinkie-promise \
 stringstream \
 throttleit \
