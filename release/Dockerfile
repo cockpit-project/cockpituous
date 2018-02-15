@@ -9,6 +9,7 @@ bind-utils \
 bodhi-client \
 bzip2 \
 debian-keyring \
+devscripts \
 dpkg \
 dpkg-dev \
 expect \
@@ -21,7 +22,6 @@ hardlink \
 krb5-workstation \
 nc \
 npm tar \
-pbuilder \
 psmisc \
 python \
 python-irclib \
@@ -61,19 +61,9 @@ yauzl \
 RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
 ADD * /usr/local/bin/
 
-RUN chown -R user /build /home/user && \
-    printf "user ALL=(root) NOPASSWD: /usr/sbin/pbuilder\n" > /etc/sudoers.d/allow-pbuilder
-
-# HACK remount devpts with newinstance in a hook so that the pbuilder chroot
-# can access it
-RUN mkdir -p /etc/pbuilder/hooks && \
-    echo -e \#\!"/bin/bash\n" \
-            "mount none \"\$BUILDPLACE/dev/pts\"" \
-            "-oremount,noexec,nosuid,gid=5,mode=620,newinstance,ptmxmode=0666" \
-            > /etc/pbuilder/hooks/D10remountdevpts && \
-    chmod +x /etc/pbuilder/hooks/D10remountdevpts
+RUN chown -R user /build /home/user
 
 VOLUME /home/user /build
 WORKDIR /build
 USER user
-CMD ["dummy-arg"]
+ENTRYPOINT ["/usr/local/bin/release-runner"]
