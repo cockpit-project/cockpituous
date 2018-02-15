@@ -49,7 +49,6 @@ RUN dnf -y update && \
         virt-install \
         xorg-x11-server-Xvfb \
         zanata-client && \
-    npm -g install phantomjs-prebuilt && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
