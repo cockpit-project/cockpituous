@@ -47,17 +47,9 @@ release-shell: docker-running
 		--entrypoint=/bin/bash docker.io/cockpit/release
 
 release-container: docker-running
-	docker build -t cockpit/release:staged release
-	docker rm -f cockpit-release-stage || true
-	docker run --privileged --name=cockpit-release-stage \
-		--entrypoint=/usr/local/bin/Dockerfile.sh cockpit/release:staged
-	docker commit --change='ENTRYPOINT ["/usr/local/bin/release-runner"]' \
-		cockpit-release-stage docker.io/cockpit/release:$(TAG)
+	docker build -t docker.io/cockpit/release:$(TAG) release
 	docker tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
 	docker tag docker.io/cockpit/release:$(TAG) cockpit/release:latest
-	docker rm -f cockpit-release-stage
-	docker rmi cockpit/release:staged
-	@true
 
 release-push: docker-running
 	base/push-container docker.io/cockpit/release
