@@ -30,29 +30,6 @@ rpm-build \
 which \
 yum-utils \
     && \
-    npm -g install \
-aws4 \
-aws-sign2 \
-bl \
-caseless \
-concat-stream \
-debug \
-extend \
-har-validator \
-isexe \
-is-stream \
-isstream \
-is-typedarray \
-jsonfile \
-klaw \
-mime-types \
-path-is-absolute \
-pinkie-promise \
-stringstream \
-throttleit \
-tough-cookie \
-yauzl \
-    && \
     dnf -y install --enablerepo=updates-testing fedpkg koji copr-cli && \
     dnf -y install 'dnf-command(builddep)' && \
     dnf -y builddep /tmp/cockpit.spec && \
