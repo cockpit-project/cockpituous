@@ -1,0 +1,15 @@
+[Unit]
+Description=GitHub WebHook release trigger
+Requires=releasetrigger.socket
+After=network.target
+
+[Service]
+ExecStart=/bin/sh -ec 'read method path _ <&3; \
+    project=$$(echo "$${path#/}" | grep '^[[:alnum:]]*$'); \
+    unit="$${project}-release.service"; \
+    if systemctl cat "$$unit" >/dev/null 2>&1; then \
+        status="200 OK"; systemctl start --no-block "$$unit"; \
+    else \
+        status="404 Not Found"; \
+    fi; \
+    printf "HTTP/1.0 $$status\\nContent-Type: text/plain\\nContent-Length: 2\\n\\nOK\\n" >&3; sleep 1'

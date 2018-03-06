@@ -54,10 +54,10 @@ release-container: docker-running
 release-push: docker-running
 	base/push-container docker.io/cockpit/release
 
-release-install: release-container
-	cp release/cockpit-release.service /etc/systemd/system/
+release-install:
+	cp release/releasetrigger.socket release/releasetrigger@.service release/cockpit-release.service /etc/systemd/system/
 	systemctl daemon-reload
-	systemctl enable cockpit-release
+	systemctl enable --now releasetrigger.socket
 
 tests-shell: docker-running
 	docker run -ti --rm \

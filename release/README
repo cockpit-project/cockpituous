@@ -15,13 +15,11 @@ been prepared.
 
 # Cockpit Release Runner
 
-This is the container for the Cockpit release runner.
+This is the container for the Cockpit release runner. It normally gets
+activated through a HTTP request: <http://host:8090/cockpit>. The "/cockpit"
+path specifies the systemd service name to start (<name>-release.service).
 
 ## How to deploy
-
-First get the container:
-
-    # docker pull cockpit/release
 
 Setup a 'cockpit' user:
 
@@ -45,27 +43,21 @@ update github status:
     /home/cockpit/.gitconfig
     /home/cockpit/.gnupg
 
-Get the service file. Edit it before installing it. Set the TEST_OS.
-Then install it and run it:
+Install the systemd services:
 
-    # wget https://raw.githubusercontent.com/cockpit-project/cockpituous/master/release/cockpit-release.service
-    # cp cockpit-release.service /etc/systemd/system/
-    # systemctl daemon-reload
-    # systemctl enable cockpit-release
-    # systemctl start cockpit-release
+    # git clone https://github.com/cockpit-project/cockpituous.git /tmp/cockpituous
+    # make -C /tmp/cockpituous release-install
+
+Add a webhook to your GitHub project that calls http://host:8090/cockpit on
+"create" events (and nothing else!); set this in "Let me select individual events".
 
 # Troubleshooting
 
-Some helpful commands:
+Follow the logs of a running release:
 
     # journalctl -fu cockpit-release
-    # systemctl stop cockpit-release
 
-# Updates
+Start the container manually (without a webhook):
 
-To update, just pull the new container and restart the cockpit-verify service.
-It will restart automatically when it finds a pause in the verification work.
-
-    # docker pull cockpit/release
-    # systemctl restart cockpit-release
+    # systemctl start cockpit-release
 
