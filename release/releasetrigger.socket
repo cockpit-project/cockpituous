@@ -1,0 +1,11 @@
+[Unit]
+Description=GitHub WebHook release trigger
+
+[Socket]
+ListenStream=8090
+Backlog=1
+MaxConnections=1
+Accept=yes
+
+[Install]
+WantedBy=sockets.target
