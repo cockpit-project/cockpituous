@@ -27,9 +27,6 @@ VERBOSE=${RELEASE_VERBOSE:-0}
 SRPM=${RELEASE_SRPM:-}
 COPR=${RELEASE_COPR:-}
 
-# Other globals
-URL=""
-
 usage()
 {
     echo "usage: release-copr [-qvxz] [-p SRPM] COPR" >&2
@@ -86,21 +83,12 @@ prepare()
     local spec tmpfile tarball ret
 
     check_config
-
-    trace "Uploading SRPM"
-
-    # HACK: Until copr-cli supports SRPM
-    srpm="$(readpath_or $SRPM)"
-    base="$(basename "$srpm")"
-
-    user=$(ssh fedorapeople.org -- "mkdir -p public_html && whoami")
-    scp $srpm fedorapeople.org:public_html/
-    URL="https://fedorapeople.org/~$user/$base"
+    SRPM="$(readpath_or $SRPM)"
 }
 
 commit()
 (
-    if ! copr-cli build $COPR "$URL"; then
+    if ! copr-cli build $COPR "$SRPM"; then
         if [ $CONTINUE -eq 0 ]; then
             exit 1
         fi
