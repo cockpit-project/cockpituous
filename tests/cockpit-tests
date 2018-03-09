@@ -16,21 +16,21 @@ if [ $loop = "yes" ]; then
 fi
 
 # Make sure directory is writable
-sudo mkdir -p /cache/github /cache/images
-sudo chown user:user /cache /cache/github /cache/images
+mkdir -p /cache/github /cache/images
 
 # HACK: /sys is read-only in containers. And libvirt tries
 # to write there, but only if a specific subtree exists here
-sudo -n mount -o bind /run /sys/devices/virtual/net/ || true
+if [ -d /sys/devices/virtual/net/lo ]; then
+    sudo -n mount -o bind /run /sys/devices/virtual/net/ || true
+fi
 
 # In case a network has leaked in from elsewhere
-if sudo -n ip address show dev cockpit1 >/dev/null 2>/dev/null; then
+if ip address show dev cockpit1 >/dev/null 2>/dev/null; then
 	sudo -n ip link set cockpit1 down || true
 	sudo -n brctl delbr cockpit1 || true
 fi
 
 if [ ! -d cockpit ]; then
-    sudo chown -R user .
     git clone https://github.com/cockpit-project/cockpit
 fi
 
@@ -63,7 +63,8 @@ function task() {
 }
 
 # Perform N tasks or waits, then restart
-for i in $(seq 1 30); do
+TASKS=300
+for i in $(seq 1 $TASKS); do
     git -C cockpit fetch origin
     git -C cockpit reset --hard origin/master
     git -C cockpit clean -dxff

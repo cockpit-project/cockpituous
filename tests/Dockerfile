@@ -74,7 +74,7 @@ RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/gith
     ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \
     git clone https://github.com/cockpit-project/cockpit /build/cockpit && \
     cd /build/cockpit && npm install && \
-    chown -R user /build /secrets /cache /home/user
+    chmod -R ugo+w /build /secrets /cache /home/user
 
 # Prevent us from screwing around with KVM settings in the container
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
@@ -87,7 +87,8 @@ ENV LIBGUESTFS_BACKEND=direct \
     TMPDIR=/tmp \
     TEMPDIR=/tmp \
     TEST_DATA=/build \
-    TEST_PUBLISH=
+    TEST_PUBLISH= \
+    HOME=/home/user
 
 VOLUME /secrets /cache /tmp
 

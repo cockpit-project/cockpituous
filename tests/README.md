@@ -83,7 +83,19 @@ The testing machines can run on Openshift cluster(s).
 
 Create a service account for use by the testing machines. Make sure to have the
 ```oci-kvm-hook``` package installed on all nodes.  This is because of the requirement
-to access ```/dev/kvm```. Further work is necessary to remove this requirement.
+to access ```/dev/kvm```.
+
+This creates all the remaining kubernetes objects. The secrets are created from the
+```/var/lib/cockpit-tests/secrets``` directory as described above.
+
+    $ sudo make tests-secrets | oc create -f -
+    $ oc create -f tests/cockpit-tasks-restricted.json
+
+## High Density Openshift Deployment
+
+In order to deploy on Openshift at high density, shared host mounts between pods
+are necessary. To do this we need to have additional privileges, and the Openshift
+setup is different:
 
     $ oc create -f tests/cockpituous-account.json
     $ oc adm policy add-scc-to-user anyuid -z cockpituous
