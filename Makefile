@@ -55,7 +55,7 @@ release-push: docker-running
 	base/push-container docker.io/cockpit/release
 
 release-install:
-	cp release/releasetrigger.socket release/releasetrigger@.service release/cockpit-release.service /etc/systemd/system/
+	cp release/releasetrigger.socket release/releasetrigger@.service release/cockpit-release.service release/welder-web-release.service /etc/systemd/system/
 	systemctl daemon-reload
 	systemctl enable --now releasetrigger.socket
 
