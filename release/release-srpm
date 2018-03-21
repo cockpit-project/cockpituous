@@ -84,6 +84,7 @@ changelog_lines()
     tagdate=
     tagbody=
     tagauthor=
+    tagemail=
 
     # Only use git information if not a revision > 1
     if [ -d .git -a "$2" -eq 1 ]; then
@@ -95,19 +96,21 @@ tagemail=%(taggeremail)' "refs/tags/$1")
         tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$1" | trim_tag | dash_bullets)"
     fi
 
-    if [ -z "$tagbody" -a -z "$tagauthor" ]; then
+    if [ -z "$tagdate" ]; then
         tagdate=$(LC_ALL=C date '+%a %b %d %Y')
+    fi
+
+    if [ -z "$tagauthor" -o -z "$tagemail" ]; then
         tagauthor=$(git config --global user.name)
         tagemail="<$(git config --global user.email)>"
+    fi
+
+    if [ -z "$tagbody" ]; then
         tagbody="- Update to upstream $TAG release"
     fi
 
     printf "* %s %s %s - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
-
-    # Only include the main body if not a revision > 1
-    if [ "$2" -eq 1 ]; then
-        printf "%s\n" "$tagbody"
-    fi
+    printf "%s\n" "$tagbody"
 
     # Code elsewhere includes lines from patches
 }
