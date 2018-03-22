@@ -78,7 +78,7 @@ prepare()
 commit()
 (
     local number fednvr
-    if test "$FEDORA" != "${FEDORA%el*}" ; then
+    if test "$FEDORA" != "${FEDORA%el*}" -o "$FEDORA" != "${FEDORA%*EL*}"; then
         number=$(echo $FEDORA | tr -d '[A-Z][a-z]')
         fednvr="${NVR/%fc*/el$number}"
     else
