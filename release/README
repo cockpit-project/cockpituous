@@ -13,6 +13,16 @@ The scripts can be run by the release-runner script in such a way that
 they all prepare their steps, and then commit them after everything has
 been prepared.
 
+# Spec file requirements
+
+For a spec file to work with the scripts, it should be setup like this:
+
+    Version: 0
+
+And not have any content after the following line:
+
+    %changelog
+
 # Cockpit Release Runner
 
 This is the container for the Cockpit release runner. It normally gets
