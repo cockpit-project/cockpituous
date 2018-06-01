@@ -35,6 +35,7 @@ yum-utils \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all && \
     mkdir -p /usr/local/bin /home/user /build/rpmbuild && \
+    chmod g=u /etc/passwd && \
     chown -R user /build /home/user
 
 ADD * /usr/local/bin/
