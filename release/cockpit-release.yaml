@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: List
+items:
+- kind: Pod
+  apiVersion: v1
+  metadata:
+    name: release
+    labels:
+      infra: cockpit-release
+  spec:
+    containers:
+      - name: release
+        image: cockpit/release
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+        command: [ "webhook" ]
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets/release
+          readOnly: true
+    volumes:
+    - name: secrets
+      secret:
+        secretName: cockpit-release-secrets
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: cockpit-release
+  spec:
+    clusterIP: None
+    selector:
+      infra: cockpit-release
+    ports:
+    - name: webhook
+      port: 8080
+      protocol: TCP
+
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: release
+  spec:
+    to:
+      kind: Service
+      name: cockpit-release
