@@ -1,5 +1,5 @@
 FROM fedora:27
-LABEL maintainer='"Stef Walter" <stefw@redhat.com>'
+LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 RUN dnf -y update && \
     dnf -y install \
