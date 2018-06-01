@@ -33,12 +33,11 @@ yum-utils \
     dnf -y install --enablerepo=updates-testing fedpkg koji copr-cli && \
     dnf -y install 'dnf-command(builddep)' && \
     dnf -y builddep /tmp/cockpit.spec && \
-    dnf clean all
+    dnf clean all && \
+    mkdir -p /usr/local/bin /home/user /build/rpmbuild && \
+    chown -R user /build /home/user
 
-RUN mkdir -p /usr/local/bin /home/user /build/rpmbuild
 ADD * /usr/local/bin/
-
-RUN chown -R user /build /home/user
 
 VOLUME /home/user /build
 WORKDIR /build
