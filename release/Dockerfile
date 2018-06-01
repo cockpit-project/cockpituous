@@ -1,5 +1,5 @@
 FROM cockpit/infra-base
-LABEL maintainer="'Stef Walter' <stefw@redhat.com>"
+LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 
