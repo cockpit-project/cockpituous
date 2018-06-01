@@ -21,12 +21,14 @@ gnupg \
 hardlink \
 krb5-workstation \
 nc \
-npm tar \
+npm \
+origin-clients \
 psmisc \
 python \
 python-irclib \
 reprepro \
 rpm-build \
+tar \
 which \
 yum-utils \
     && \

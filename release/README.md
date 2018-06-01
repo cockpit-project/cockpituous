@@ -29,7 +29,7 @@ This is the container for the Cockpit release runner. It normally gets
 activated through a HTTP request: <http://host:8090/cockpit>. The "/cockpit"
 path specifies the systemd service name to start (<name>-release.service).
 
-## How to deploy
+## Deploying on a host
 
 Setup a 'cockpit' user:
 
@@ -70,4 +70,36 @@ Follow the logs of a running release:
 Start the container manually (without a webhook):
 
     # systemctl start cockpit-release
+
+# Deploying on OpenShift
+
+On some host `$SECRETHOST`, set up all necessary credentials as above, plus an
+extra `~/.config/github-webhook-token` with a shared secret.
+
+Then build a Kubernetes secret volume definition on that host, copy that to a
+machine that administers your OpenShift cluster, and deploy that secret volume:
+
+    ssh $SECRETHOST release/build-secrets | oc create -f -
+
+Then deploy the other objects:
+
+    oc create -f release/cockpit-release.yaml
+
+This will create a POD that runs a simple HTTP server that acts as a
+[GitHub webhook](https://developer.github.com/webhooks/). Set this up as a
+webhook in GitHub, using an URL like
+
+   http://release-cockpit.apps.ci.centos.org/bots/major-cockpit-release
+
+using the path to the release script of the corresponding project's git tree
+(the git repository URL will be taken from the POST data that GitHub sends).
+Use the same secret as in `~/.config/github-webhook-token` above. Make sure to
+change the Content Type to `application/json`.
+
+To remove the deployment:
+
+    oc delete service cockpit-release
+    oc delete route release
+    oc delete pod release
+    oc delete secrets cockpit-release-secrets
 
