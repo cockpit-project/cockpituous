@@ -15,16 +15,22 @@ if [ $loop = "yes" ]; then
     set -x
 fi
 
-# Make sure directory is writable
-sudo mkdir -p /cache/github /cache/images
-sudo chown user:user /cache /cache/github /cache/images
+# ensure symlinks from /build/ are valid even when mounting /cache
+mkdir -p /cache/github /cache/images
 
 # HACK: /sys is read-only in containers. And libvirt tries
 # to write there, but only if a specific subtree exists here
-sudo -n mount -o bind /run /sys/devices/virtual/net/ || true
+if [ -d /sys/devices/virtual/net/lo ]; then
+    sudo -n mount -o bind /run /sys/devices/virtual/net/ || true
+fi
+
+# ensure we have a passwd entry for random UIDs
+# https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
+if ! whoami && [ -w /etc/passwd ]; then
+    echo "user:x:$(id -u):0:random uid:${HOME:-/home/user}:/sbin/nologin" >> /etc/passwd
+fi
 
 if [ ! -d cockpit ]; then
-    sudo chown -R user .
     git clone https://github.com/cockpit-project/cockpit
 fi
 
