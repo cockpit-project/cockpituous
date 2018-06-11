@@ -79,9 +79,6 @@ RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/gith
 # Prevent us from screwing around with KVM settings in the container
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 
-# Continue to work with a host defined cockpit1 network if necessary
-RUN chmod -v u+s /usr/libexec/qemu-bridge-helper && echo 'allow cockpit1' >> /etc/qemu/bridge.conf
-
 ENV LIBGUESTFS_BACKEND=direct \
     XDG_CACHE_HOME=/build \
     TMPDIR=/tmp \
