@@ -616,6 +616,7 @@ def main():
         ret = tar.wait()
         if ret:
             raise subprocess.CalledProcessError(ret, "tar")
+        subprocess.check_call(["chmod", "--recursive", "ugo+r", "."])
 
 if __name__ == "__main__":
     main()
