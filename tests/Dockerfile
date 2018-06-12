@@ -62,7 +62,6 @@ RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/gith
     printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
-    ln -s /cache/images /build/libvirt/qemu/log && \
     ln -s /cache/github /build/github && \
     ln -s /tmp /build/tmp && \
     mkdir -p /home/user/.config /home/user/.ssh /home/user/.rhel && \
