@@ -42,6 +42,11 @@ yum-utils \
 
 ADD * /usr/local/bin/
 
+# HACK: Working around Node.js screwing around with stdio
+ENV NODE_PATH /usr/bin/node.real
+RUN mv /usr/bin/node /usr/bin/node.real
+ADD node-stdio-wrapper /usr/bin/node
+
 VOLUME /home/user /build
 WORKDIR /build
 USER user
