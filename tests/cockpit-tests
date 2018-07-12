@@ -65,8 +65,9 @@ function task() {
 # Perform N tasks or waits, then restart
 for i in $(seq 1 30); do
     git -C cockpit fetch origin
-    git -C cockpit reset --hard origin/master
+    git -C cockpit reset --hard
     git -C cockpit clean -dxff
+    git -C cockpit checkout origin/master
 
     line="$(task)"
     if [ -n "$line" ]; then
