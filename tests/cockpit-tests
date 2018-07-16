@@ -2,6 +2,8 @@
 
 set -e
 
+GITHUB_REPO=https://github.com/cockpit-project/cockpit
+
 # If first argument starts with a path no loop
 loop=yes
 case ${1-} in
@@ -31,7 +33,7 @@ if ! whoami && [ -w /etc/passwd ]; then
 fi
 
 if [ ! -d cockpit ]; then
-    git clone https://github.com/cockpit-project/cockpit
+    git clone "$GITHUB_REPO" cockpit
 fi
 
 # If interactive arguments then just exec
@@ -64,10 +66,19 @@ function task() {
 
 # Perform N tasks or waits, then restart
 for i in $(seq 1 30); do
-    git -C cockpit fetch origin
-    git -C cockpit reset --hard
-    git -C cockpit clean -dxff
-    git -C cockpit checkout origin/master
+    if [ -f cockpit/.git/shallow ]; then
+        # if we ended up with a shallow clone from a previous test, start from
+        # scratch, as this is brittle to clean up afterwards
+        echo "cockpit-tests: Shallow commits exist, cannot reset; re-cloning"
+        rm -rf cockpit
+        git clone "$GITHUB_REPO" cockpit
+    else
+        # avoid re-cloning in most cases to save GitHub bandwidth
+        git -C cockpit fetch origin
+        git -C cockpit reset --hard
+        git -C cockpit clean -dxff
+        git -C cockpit checkout origin/master
+    fi
 
     line="$(task)"
     if [ -n "$line" ]; then
