@@ -61,16 +61,8 @@ Then deploy the other objects:
 
     oc create -f release/cockpit-release.yaml
 
-This will create a POD that runs a simple HTTP server that acts as a
-[GitHub webhook](https://developer.github.com/webhooks/). Set this up as a
-webhook in GitHub, using an URL like
-
-   http://release-cockpit.apps.ci.centos.org/bots/major-cockpit-release
-
-using the path to the release script of the corresponding project's git tree
-(the git repository URL will be taken from the POST data that GitHub sends).
-Use the same secret as in `~/.config/github-webhook-token` above. Make sure to
-change the Content Type to `application/json`.
+This will create a POD that runs a simple HTTP server that acts as a GitHub
+webhook, see below.
 
 To remove the deployment:
 
@@ -94,3 +86,26 @@ release container with
 Note that both of these will publish logs to fedorapeople.org by default. If
 you want to disable this, or publish somewhere else, unset or change the
 `$TEST_PUBLISH` environment variable instead.
+
+## Automatic releases through a GitHub webhook
+
+The intention is that the release runner automatically starts whenever a new
+release tag gets pushed to a project. This can be done with a
+[GitHub webhook](https://developer.github.com/webhooks/).
+
+Add a webhook to your GitHub project on the Settings → Webhooks page of your project:
+
+ * Set a Payload URL like
+
+       http://release-cockpit.apps.ci.centos.org/bots/major-cockpit-release
+
+   using the URL of the deployed route, and the path to the release script of
+   the corresponding project's git tree (the git repository URL will be taken
+   from the POST data that GitHub sends).
+
+ * Use the same secret as in `~/.config/github-webhook-token` above.
+
+ * Change the Content Type to `application/json`.
+
+ * Select "Let me select individual events" and let the hook run on "Branch or
+   tag creation", and nothing else.
