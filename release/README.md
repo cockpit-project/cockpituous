@@ -13,7 +13,7 @@ The scripts can be run by the release-runner script in such a way that
 they all prepare their steps, and then commit them after everything has
 been prepared.
 
-# Spec file requirements
+## Spec file requirements
 
 For a spec file to work with the scripts, it should be setup like this:
 
@@ -23,13 +23,7 @@ And not have any content after the following line:
 
     %changelog
 
-# Cockpit Release Runner
-
-This is the container for the Cockpit release runner. It normally gets
-activated through a HTTP request: <http://host:8090/cockpit>. The "/cockpit"
-path specifies the systemd service name to start (<name>-release.service).
-
-## Deploying on a host
+## Preparing secrets
 
 Setup a 'cockpit' user:
 
@@ -53,25 +47,7 @@ update github status:
     /home/cockpit/.gitconfig
     /home/cockpit/.gnupg
 
-Install the systemd services:
-
-    # git clone https://github.com/cockpit-project/cockpituous.git /tmp/cockpituous
-    # make -C /tmp/cockpituous release-install
-
-Add a webhook to your GitHub project that calls http://host:8090/cockpit on
-"create" events (and nothing else!); set this in "Let me select individual events".
-
-# Troubleshooting
-
-Follow the logs of a running release:
-
-    # journalctl -fu cockpit-release
-
-Start the container manually (without a webhook):
-
-    # systemctl start cockpit-release
-
-# Deploying on OpenShift
+## Deploying on OpenShift
 
 On some host `$SECRETHOST`, set up all necessary credentials as above, plus an
 extra `~/.config/github-webhook-token` with a shared secret.
@@ -103,3 +79,20 @@ To remove the deployment:
     oc delete pod release
     oc delete secrets cockpit-release-secrets
 
+## Manual operation and Troubleshooting
+
+In cases where the Kubernetes/OpenShift deployment is not available, the
+release container can also be started manually, on a host which has the above
+secrets for user `cockpit`. A Cockpit release can be run with
+
+    sudo make release-cockpit
+
+For releasing a different project or manually running the release script of
+cockpit (or possibly parts of it), you can get an interactive shell to a
+release container with
+
+    sudo make release-shell
+
+Note that both of these will publish logs to fedorapeople.org by default. If
+you want to disable this, or publish somewhere else, unset or change the
+`$TEST_PUBLISH` environment variable instead.

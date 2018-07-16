@@ -1,6 +1,7 @@
 all:
 	@echo "usage: make containers" >&2
 	@echo "       make release-shell" >&2
+	@echo "       make release-cockpit" >&2
 	@echo "       make release-container" >&2
 	@echo "       make release-install" >&2
 
@@ -42,9 +43,24 @@ release-shell: docker-running
 	chown -R cockpit:cockpit /home/cockpit/release
 	docker run -ti --rm -v /home/cockpit:/home/user:rw \
 		--privileged \
+		--env=RELEASE_SINK=fedorapeople.org \
+		--volume=/home/cockpit:/home/user:rw \
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
 		--entrypoint=/bin/bash docker.io/cockpit/release
+
+# run release container for a Cockpit release
+release-cockpit: docker-running
+	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
+	chown -R cockpit:cockpit /home/cockpit/release
+	docker run -ti --rm -v /home/cockpit:/home/user:rw \
+		--privileged \
+		--env=RELEASE_SINK=fedorapeople.org \
+		--volume=/home/cockpit:/home/user:rw \
+		--volume=/home/cockpit/release:/build:rw \
+		--volume=$(CURDIR)/release:/usr/local/bin \
+		docker.io/cockpit/release \
+		-r https://github.com/cockpit-project/cockpit /build/bots/major-cockpit-release
 
 release-container: docker-running
 	docker build -t docker.io/cockpit/release:$(TAG) release
@@ -53,11 +69,6 @@ release-container: docker-running
 
 release-push: docker-running
 	base/push-container docker.io/cockpit/release
-
-release-install:
-	cp release/releasetrigger.socket release/releasetrigger@.service release/cockpit-release.service release/welder-web-release.service /etc/systemd/system/
-	systemctl daemon-reload
-	systemctl enable --now releasetrigger.socket
 
 tests-shell: docker-running
 	docker run -ti --rm \
