@@ -74,9 +74,7 @@ change the Content Type to `application/json`.
 
 To remove the deployment:
 
-    oc delete service cockpit-release
-    oc delete route release
-    oc delete pod release
+    oc delete -f release/cockpit-release.yaml
     oc delete secrets cockpit-release-secrets
 
 ## Manual operation and Troubleshooting
