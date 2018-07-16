@@ -142,14 +142,32 @@ prepare()
     # Find archives in the source directory
     archive="$(find_and_extract_tarballs $TAG $SOURCE $repodir)"
 
+    if [ -x ./autogen.sh ] || [ -x ./configure ]; then
+        is_autotools=1
+    else
+        is_autotools=
+    fi
+
     # If it is missing rebuild the tarball from latest tag and copy into place
     if [ -z "$archive" ]; then
         trace "Creating first tarball"
 
-        autogen_or_configure $repodir
-        $MAKE -C $repodir/_build dist
-
-        archive="$(output_tarballs $repodir/_build $SOURCE)"
+        if [ -n "$is_autotools" ]; then
+            # autotools based projects
+            autogen_or_configure $repodir
+            $MAKE -C $repodir/_build dist
+            archive="$(output_tarballs $repodir/_build $SOURCE)"
+        else
+            # plain Makefile projects
+            $MAKE -C $repodir dist || $MAKE -C $repodir dist-gzip
+            archive=$(find $repodir -maxdepth 1 -name "*-${TAG}.tar.*")
+            if [ "$(echo "$archive" | wc -l)" != 1 ]; then
+                echo "ERROR: Expecting exactly one *-${TAG}.tar.*" >&2
+                exit 1
+            fi
+            find "$SOURCE" -maxdepth 1 -name "*-*.tar.*" -delete
+            cp "$archive" "$SOURCE"
+        fi
     fi
 
     trace "Committing first tarball"
@@ -170,7 +188,8 @@ prepare()
     git -C $stagedir tag -a initial --message="initial"
 
     # If there are commits since $TAG, apply and generate patch for build-system changes
-    if [ "$(git -C $repodir rev-parse HEAD)" != "$head" ]; then
+    # This is only supported for autotools projects, as plain Makefile ones often don't support out-of-tree builds
+    if [ -n "$is_autotools" ] && [ "$(git -C $repodir rev-parse HEAD)" != "$head" ]; then
         trace "Committing patches"
         git format-patch --stdout $TAG.. | git -C $stagedir am -
 
