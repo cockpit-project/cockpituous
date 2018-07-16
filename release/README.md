@@ -1,4 +1,25 @@
-# Release Scripts
+# Cockpituous Project Release Automation
+
+Cockpituous release aims to fully automate project releases to GitHub, Fedora,
+Ubuntu, COPR, Docker Hub, and other places. The intention is that the *only*
+manual step for releasing a project is to create a signed tag for the version
+number:
+
+    git tag -s 123
+
+With the tag description being a list of highlights/changes in the new release
+in this format:
+
+    123
+
+    - Add this cool new feature
+    - Support Python 3
+    - Fix wrong color on the bikeshed
+
+Pushing the tag (`git push origin --tags`) triggers a set of release scripts
+that do the rest.
+
+## Release Scripts
 
 The various release scripts are present in this directory. They are mostly
 meant to be reusable in standalone fashion, with as little logical input
@@ -7,11 +28,22 @@ and interdependency as possible.
 Some notable scripts:
 
  * release-source: Builds a tarball and patches from a git repository
- * release-srpm: Builds a source rpm from a tarball, patches and spec file
+ * release-srpm: Builds a source rpm from a tarball, patches and spec file,
+   using the tag description as `%changelog`
+ * release-github: Puts the tarball on the GitHub project releases page, using
+   the tag description as release notes
 
-The scripts can be run by the release-runner script in such a way that
-they all prepare their steps, and then commit them after everything has
-been prepared.
+These are used in project specific "delivery scripts", which lists which steps
+should be taken to release a particular project, i. e. to which places (GitHub,
+Fedora, COPR, Ubuntu PPA, etc.) the release should be done.
+
+These delivery scripts are run by [release-runner](./release-runner) in such a
+way that they all prepare their steps, and then commit them after everything
+has been prepared. See the delivery scripts of
+[cockpit](https://github.com/cockpit-project/cockpit/blob/master/bots/major-cockpit-release)
+and
+[welder-web](https://github.com/weldr/welder-web/blob/master/utils/cockpituous-release)
+as examples.
 
 ## Spec file requirements
 
