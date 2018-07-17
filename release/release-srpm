@@ -20,6 +20,7 @@
 # -q         RELEASE_QUIET=1        Make output more quiet
 # -s spec    RELEASE_SPEC=spec      Path to spec file
 # -t tag     RELEASE_TAG=tag        Tag to use for SRPM version and log
+# -V         RELEASE_SPECVER=1      Spec file already has released Version: instead of 0
 # -v         RELEASE_VERBOSE=1      Make output more verbose
 #
 
@@ -30,6 +31,7 @@ QUIET=${RELEASE_QUIET:-0}
 VERBOSE=${RELEASE_VERBOSE:-0}
 SOURCE=${RELEASE_SOURCE:-}
 SPEC=${RELEASE_SPEC:-}
+SPECVER=${RELEASE_SPECVER:-0}
 SRPM=${RELEASE_SRPM:-}
 TAG=${RELEASE_TAG:-}
 TARBALL=${RELEASE_TARBALL:-}
@@ -130,7 +132,7 @@ calc_release()
 {
     # Asks rpm to print out the Release line of a spec file, without its 'dist' part
     rpm -q --specfile --queryformat '%{VERSION} %{RELEASE}\n' --undefine dist "$2" | while read ver rel; do
-        if [ "$ver" = "$1" -a "$rel" -gt 0 ]; then
+        if [ "$SPECVER" = 0 ] && [ "$ver" = "$1" -a "$rel" -gt 0 ]; then
             expr "$rel" \+ 1
         else
             echo "1" # different version restart release
@@ -261,7 +263,7 @@ prepare()
     rm -rf $workdir
 }
 
-while getopts "f:qs:t:vp" opt; do
+while getopts "f:qs:t:vVp" opt; do
     case "$opt" in
     f)
         TARBALL="$OPTARG"
@@ -275,6 +277,9 @@ while getopts "f:qs:t:vp" opt; do
         ;;
     s)
         SPEC="$OPTARG"
+        ;;
+    V)
+        SPECVER=1
         ;;
     t)
         TAG="$OPTARG"

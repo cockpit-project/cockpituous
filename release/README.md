@@ -72,13 +72,13 @@ this:
 
 ## Spec file requirements
 
-For a spec file to work with the scripts, it should be setup like this:
+For a spec file to work with `release-srpm`, it should have `Version: 0`.
+If your build system already puts the target release version into `Version:`,
+call `release-srpm` with the `-V` option instead, otherwise it will assume that
+this version was already released in a previous srpm and bump the `Release:`.
 
-    Version: 0
-
-And not have any content after the following line:
-
-    %changelog
+The spec file must not have any content after `%changelog`. It will generate a
+changelog from the git tag description.
 
 ## Preparing secrets
 
