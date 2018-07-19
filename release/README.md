@@ -45,6 +45,31 @@ and
 [welder-web](https://github.com/weldr/welder-web/blob/master/utils/cockpituous-release)
 as examples.
 
+You can test your script locally (possibly in a
+[cockpit/tests container](https://hub.docker.com/r/cockpit/tests/)) like
+this:
+
+ * Run `git clean -ffdx` to make sure you are testing a clean tree.
+
+ * If you don't already have a release tag, create a temporary "fake" release
+   with e. g.
+
+       git tag -s 999 -m "$(printf '999\n\n- test release\n')"
+
+ * Start the release runner:
+
+       /path/to/cockpituous/release/release-runner -t 999 -n ./cockpituous-release
+
+   where `./cockpituous-release` is the path to the release script within your
+   project. The `-n` will do a "dry run" where the "commit" parts of the script
+   (i. e. "really" release to GitHub, COPR, bodhi, etc.) are skipped, but the
+   "prepare" parts (`make dist`, koji scratch build, etc.) are run.
+
+ * Finally, don't forget to  delete your fake release tag, if you created one
+   above:
+
+       git tag -d 999
+
 ## Spec file requirements
 
 For a spec file to work with the scripts, it should be setup like this:
