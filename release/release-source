@@ -68,10 +68,10 @@ message()
 autogen_or_configure()
 {
     mkdir -p $1/_build
-    if [ -f $1/configure ]; then
-        ( cd $1/_build && ../configure )
-    else
+    if [ -x $1/autogen.sh ]; then
         ( cd $1 && NOCONFIGURE=1 ./autogen.sh && cd _build && ../configure )
+    else
+        ( cd $1/_build && ../configure )
     fi
 }
 
