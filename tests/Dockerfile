@@ -14,11 +14,14 @@ RUN dnf -y update && \
         fedpkg \
         fontconfig \
         freetype \
+        gcc \
+        gcc-c++ \
         gettext \
         git \
         gnupg \
         grubby \
         hardlink \
+        jq \
         kernel \
         koji \
         krb5-workstation \
