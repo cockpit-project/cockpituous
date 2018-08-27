@@ -60,7 +60,7 @@ release-cockpit: docker-running
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
 		docker.io/cockpit/release \
-		-r https://github.com/cockpit-project/cockpit /build/bots/major-cockpit-release
+		-r https://github.com/cockpit-project/cockpit /build/tools/cockpituous-release
 
 release-container: docker-running
 	docker build -t docker.io/cockpit/release:$(TAG) release
