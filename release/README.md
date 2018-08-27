@@ -40,7 +40,7 @@ Fedora, COPR, Ubuntu PPA, etc.) the release should be done.
 These delivery scripts are run by [release-runner](./release-runner) in such a
 way that they all prepare their steps, and then commit them after everything
 has been prepared. See the delivery scripts of
-[cockpit](https://github.com/cockpit-project/cockpit/blob/master/bots/major-cockpit-release)
+[cockpit](https://github.com/cockpit-project/cockpit/blob/master/tools/cockpituous-release)
 and
 [welder-web](https://github.com/weldr/welder-web/blob/master/utils/cockpituous-release)
 as examples.
@@ -154,7 +154,7 @@ Add a webhook to your GitHub project on the Settings → Webhooks page of your p
 
  * Set a Payload URL like
 
-       http://release-cockpit.apps.ci.centos.org/bots/major-cockpit-release
+       http://release-cockpit.apps.ci.centos.org/tools/cockpituous-release
 
    using the URL of the deployed route, and the path to the release script of
    the corresponding project's git tree (the git repository URL will be taken

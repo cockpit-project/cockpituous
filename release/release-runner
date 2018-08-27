@@ -17,7 +17,7 @@
 #
 # -n                                Dry run, stop before publishing changes
 # -q         RELEASE_QUIET=1        Make output more quiet
-# -r                                Do major release from this repo. Clone it
+# -r                                Do release from this repo. Clone it,
 #                                   lookup latest tag, and run script
 #                                   checking out of tag
 # -v         RELEASE_VERBOSE=1      Make output more verbose
