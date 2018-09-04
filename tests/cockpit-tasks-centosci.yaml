@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: centosci-tasks
+  spec:
+    replicas: 1
+    selector:
+      infra: cockpit-tasks
+    template:
+      metadata:
+        labels:
+          infra: cockpit-tasks
+      spec:
+        containers:
+        - name: cockpit-tasks
+          image: docker.io/cockpit/tests
+          env:
+          - name: TEST_JOBS
+            value: '8'
+          - name: TEST_PUBLISH
+            value: sink
+          volumeMounts:
+          - name: secrets
+            mountPath: "/secrets"
+            readOnly: true
+          - name: cache
+            mountPath: "/cache"
+          - name: images
+            mountPath: "/cache/images"
+          - name: shm
+            mountPath: "/dev/shm"
+          resources:
+            limits:
+              memory: 16G
+        volumes:
+        - name: secrets
+          secret:
+            secretName: cockpit-tests-secrets
+        - name: cache
+          emptyDir: {}
+        - name: images
+          persistentVolumeClaim:
+            claimName: cockpit-images
+        - name: shm
+          emptyDir:
+            medium: Memory
+        - name: tmp
+          emptyDir: {}
