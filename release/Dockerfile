@@ -34,6 +34,7 @@ yum-utils \
     && \
     dnf -y install --enablerepo=updates-testing fedpkg koji copr-cli && \
     dnf -y install 'dnf-command(builddep)' && \
+    sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all && \
     mkdir -p /usr/local/bin /home/user /build/rpmbuild && \
