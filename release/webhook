@@ -9,6 +9,7 @@ import shutil
 import http.server
 
 project = None
+release_tag = None
 release_script = None
 
 HOME_DIR = '/tmp/home'
@@ -84,7 +85,7 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(b'OK\n')
 
     def do_POST(self):
-        global project, release_script
+        global project, release_tag, release_script
 
         content_length = int(self.headers.get('Content-Length', 0))
         request = self.rfile.read(content_length)
@@ -119,6 +120,12 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
             self.fail('Ignoring ref_type %s, only doing releases on tags' % ref_type, code=501)
             return
 
+        try:
+            release_tag = request['ref']
+        except KeyError:
+            self.fail('Request is missing tag name in "ref" field')
+            return
+
         if self.path[0] != '/':
             self.fail('Invalid path, should start with /: ' + self.path)
             return
@@ -127,14 +134,14 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
         self.success()
 
 
-def release(project, script):
-    logging.info('Releasing project %s, script %s', project, script)
+def release(project, tag, script):
+    logging.info('Releasing project %s, tag %s, script %s', project, tag, script)
     shutil.rmtree(BUILD_DIR, ignore_errors=True)
     subprocess.check_call(['git', 'clone', project, BUILD_DIR])
     e = os.environ.copy()
     e['HOME'] = HOME_DIR
     e['RELEASE_SINK'] = SINK
-    subprocess.check_call(['/usr/local/bin/release-runner', '-r', project, os.path.join(BUILD_DIR, script)],
+    subprocess.check_call(['/usr/local/bin/release-runner', '-r', project, '-t', tag, os.path.join(BUILD_DIR, script)],
                           cwd=BUILD_DIR, env=e)
 
 
@@ -151,7 +158,7 @@ httpd = http.server.HTTPServer(('', 8080), GithubHandler)
 # run a loop, as kubernetes does not seem to have on-demand pod launching from a service
 while True:
     httpd.handle_request()
-    if project and release_script:
-        release(project, release_script)
+    if project and release_tag and release_script:
+        release(project, release_tag, release_script)
     else:
         logging.error('Did not get project and script')
