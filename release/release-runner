@@ -23,7 +23,6 @@
 # -v         RELEASE_VERBOSE=1      Make output more verbose
 # -z         RELEASE_CHECK=1        Check access and configuration
 # -l         RELEASE_SINK=1         Host to sink logs to
-# -b         RELEASE_BRANCH=stable  Branch to release (default: master)
 # -t         RELEASE_TAG=0.X        Tag to release
 #
 
@@ -35,7 +34,6 @@ set -m
 
 SINK=${RELEASE_SINK:-}
 RELEASE_TAG=${RELEASE_TAG:-}
-RELEASE_BRANCH=${RELEASE_BRANCH:-master}
 RELEASE_VERBOSE=0
 RELEASE_TRANSACTION=1
 
@@ -46,7 +44,7 @@ REPO=""
 
 usage()
 {
-    echo "usage: release-runner [-nqvz] [-r REPO] [-b BRANCH ] [-t TAG] SCRIPT" >&2
+    echo "usage: release-runner [-nqvz] [-r REPO] [-t TAG] SCRIPT" >&2
     exit ${1:-2}
 }
 
@@ -136,7 +134,7 @@ runner()
     fi
 }
 
-while getopts "l:nqr:b:t:vxz" opt; do
+while getopts "l:nqr:t:vxz" opt; do
     case "$opt" in
     l)
         SINK="$OPTARG"
@@ -150,9 +148,6 @@ while getopts "l:nqr:b:t:vxz" opt; do
         ;;
     r)
         REPO="$OPTARG"
-        ;;
-    b)
-        RELEASE_BRANCH="$OPTARG"
         ;;
     t)
         RELEASE_TAG="$OPTARG"
@@ -185,12 +180,12 @@ fi
 # Initialize the work directory
 if [ -n "$REPO" ]; then
     if [ -d ".git" ]; then
-        git fetch origin "$RELEASE_BRANCH"
+        git fetch origin
     else
-        git clone --branch "$RELEASE_BRANCH" "$REPO" .
+        git clone "$REPO" .
     fi
     if [ -z "$RELEASE_TAG" -a -d ".git" ]; then
-        RELEASE_TAG=$(git describe --match='[0-9]*' --abbrev=0 "origin/$RELEASE_BRANCH" || true)
+        RELEASE_TAG=$(git describe --match='[0-9]*' --abbrev=0 origin/master || true)
     fi
 fi
 
