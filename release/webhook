@@ -114,6 +114,11 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
             self.fail('unsupported event ' + event)
             return
 
+        ref_type = request.get('ref_type', '')
+        if ref_type != 'tag':
+            self.fail('Ignoring ref_type %s, only doing releases on tags' % ref_type, code=501)
+            return
+
         if self.path[0] != '/':
             self.fail('Invalid path, should start with /: ' + self.path)
             return
