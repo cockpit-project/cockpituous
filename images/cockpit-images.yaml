@@ -2,50 +2,56 @@
 apiVersion: v1
 kind: List
 items:
-- kind: Pod
+- kind: ReplicationController
   apiVersion: v1
   metadata:
     name: images
-    labels:
-      infra: cockpit-images
   spec:
-    containers:
-      - name: images
-        image: cockpit/images
-        ports:
-          - containerPort: 8080
-            protocol: TCP
-        ports:
-          - containerPort: 8443
-            protocol: TCP
-        volumeMounts:
-        - name: secrets
-          mountPath: /secrets
-          readOnly: true
+    replicas: 1
+    selector:
+      infra: cockpit-images
+    template:
+      metadata:
+        labels:
+          infra: cockpit-images
+      spec:
+        containers:
+          - name: images
+            image: cockpit/images
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+            ports:
+              - containerPort: 8443
+                protocol: TCP
+            volumeMounts:
+            - name: secrets
+              mountPath: /secrets
+              readOnly: true
+            - name: images
+              mountPath: /cache/images
+            - name: httpd-log
+              mountPath: /var/log/nginx
+            - name: httpd-state
+              mountPath: /var/lib/nginx
+            - name: httpd-state-tmp
+              mountPath: /var/lib/nginx/tmp
+        volumes:
         - name: images
-          mountPath: /cache/images
+          persistentVolumeClaim:
+            claimName: cockpit-images
+        - name: secrets
+          secret:
+            secretName: cockpit-tests-secrets
         - name: httpd-log
-          mountPath: /var/log/nginx
+          emptyDir:
+            medium: Memory
         - name: httpd-state
-          mountPath: /var/lib/nginx
+          emptyDir:
+            medium: Memory
         - name: httpd-state-tmp
-          mountPath: /var/lib/nginx/tmp
-    volumes:
-    - name: images
-      persistentVolumeClaim:
-        claimName: cockpit-images
-    - name: secrets
-      secret:
-        secretName: cockpit-tests-secrets
-    - name: httpd-log
-      emptyDir:
-        medium: Memory
-    - name: httpd-state
-      emptyDir:
-        medium: Memory
-    - name: httpd-state-tmp
-      emptyDir:
-        medium: Memory
+          emptyDir:
+            medium: Memory
 
 - kind: Service
   apiVersion: v1
