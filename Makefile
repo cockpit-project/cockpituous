@@ -89,3 +89,19 @@ tests-push: docker-running
 
 tests-secrets:
 	@cd tests && ./build-secrets $(TEST_SECRETS)
+
+learn-shell: docker-running
+	docker run -ti --rm \
+		--privileged \
+		--publish=8080:8080 \
+		--volume=$(CURDIR)/learn:/learn \
+		--entrypoint=/bin/bash \
+        docker.io/cockpit/learn -i
+
+learn-container: docker-running
+	docker build -t docker.io/cockpit/learn:$(TAG) learn
+	docker tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
+	docker tag docker.io/cockpit/learn:$(TAG) cockpit/learn:latest
+
+learn-push: docker-running
+	base/push-container docker.io/cockpit/learn
