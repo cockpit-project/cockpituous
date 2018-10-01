@@ -50,3 +50,5 @@ items:
             medium: Memory
         - name: tmp
           emptyDir: {}
+        nodeSelector:
+          oci_kvm_hook: allowed
