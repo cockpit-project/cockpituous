@@ -3,3 +3,6 @@
 *.txt
 sink/logs
 sink/sinkc
+learn/active
+learn/training-*/
+__pycache__
