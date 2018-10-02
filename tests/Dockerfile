@@ -7,7 +7,7 @@ RUN dnf -y update && \
         bind-utils \
         bodhi-client \
         bzip2 \
-        chromium \
+        chromium-headless \
         copr-cli \
         curl \
         expect \
@@ -50,7 +50,6 @@ RUN dnf -y update && \
         sudo \
         tar \
         virt-install \
-        xorg-x11-server-Xvfb \
         zanata-client && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
