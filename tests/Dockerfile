@@ -71,6 +71,7 @@ RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/gith
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/github-token /home/user/.config/github-token && \
     ln -snf /secrets/image-stores /home/user/.config/image-stores && \
+    ln -snf /secrets/codecov-token /home/user/.config/codecov-token && \
     ln -snf /secrets/rhel-login /home/user/.rhel/login && \
     ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
     ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \
