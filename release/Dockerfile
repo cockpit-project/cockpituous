@@ -48,7 +48,7 @@ ENV NODE_PATH /usr/bin/node.real
 RUN mv /usr/bin/node /usr/bin/node.real
 ADD node-stdio-wrapper /usr/bin/node
 
-VOLUME /home/user /build
+VOLUME /home/user /build /run/secrets/release /run/secrets/webhook
 WORKDIR /build
 USER user
 ENTRYPOINT ["/usr/local/bin/release-runner"]
