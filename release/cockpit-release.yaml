@@ -2,34 +2,41 @@
 apiVersion: v1
 kind: List
 items:
-- kind: Pod
+- kind: ReplicationController
   apiVersion: v1
   metadata:
     name: release
-    labels:
-      infra: cockpit-release
   spec:
-    containers:
-      - name: release
-        image: cockpit/release
-        ports:
-          - containerPort: 8080
-            protocol: TCP
-        command: [ "webhook" ]
-        volumeMounts:
+    replicas: 1
+    selector:
+      infra: cockpit-release
+    template:
+      metadata:
+        name: release
+        labels:
+          infra: cockpit-release
+      spec:
+        containers:
+          - name: release
+            image: cockpit/release
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+            command: [ "webhook" ]
+            volumeMounts:
+            - name: release-secrets
+              mountPath: /run/secrets/release
+              readOnly: true
+            - name: webhook-secrets
+              mountPath: /run/secrets/webhook
+              readOnly: true
+        volumes:
         - name: release-secrets
-          mountPath: /run/secrets/release
-          readOnly: true
+          secret:
+            secretName: cockpit-release-secrets
         - name: webhook-secrets
-          mountPath: /run/secrets/webhook
-          readOnly: true
-    volumes:
-    - name: release-secrets
-      secret:
-        secretName: cockpit-release-secrets
-    - name: webhook-secrets
-      secret:
-        secretName: cockpit-release-webhook-secrets
+          secret:
+            secretName: cockpit-release-webhook-secrets
 
 - kind: Service
   apiVersion: v1
