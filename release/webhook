@@ -8,51 +8,63 @@ import http.server
 
 import github_handler
 
-project = None
-release_tag = None
-release_script = None
-
 HOME_DIR = '/tmp/home'
-BUILD_DIR = os.path.join(HOME_DIR, 'build')
+WEBHOOK_SECRETS = '/run/secrets/webhook'
 # FIXME: make this a request parameter
 SINK = 'fedorapeople.org'
-RELEASE_SECRETS = '/run/secrets/release'
-WEBHOOK_SECRETS = '/run/secrets/webhook'
 
+# Kubernetes Job template for actually running a release
+JOB = '''---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: %(jobname)s
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    spec:
+      containers:
+        - name: release
+          image: cockpit/release
+          workingDir: /build
+          args: [ "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
+          volumeMounts:
+          - name: secrets
+            mountPath: /run/secrets/release
+            readOnly: true
+          env:
+          - name: RELEASE_SINK
+            value: %(sink)s
+      volumes:
+      - name: secrets
+        secret:
+          secretName: cockpit-release-secrets
+      restartPolicy: Never
+'''
 
 def setup():
-    '''Prepare container for running release scripts'''
+    '''Prepare temporary home directory from secrets'''
 
     if os.path.isdir(HOME_DIR):
         return
     logging.debug('Initializing %s', HOME_DIR)
     os.makedirs(HOME_DIR)
 
-    # ensure we have a passwd entry for random UIDs
-    # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
-    subprocess.check_call('''
-if ! whoami &> /dev/null && [ -w /etc/passwd ]; then
-    echo "randuser:x:$(id -u):0:random uid:%s:/sbin/nologin" >> /etc/passwd
-fi''' % HOME_DIR, shell=True)
-
     # install credentials from secrets volume; copy to avoid world-readable files
     # (which e. g. ssh complains about), and to make them owned by our random UID.
     old_umask = os.umask(0o77)
-    for volume in [RELEASE_SECRETS, WEBHOOK_SECRETS]:
-        for f in os.listdir(volume):
-            if f.startswith('..'):
-                continue  # secrets volume internal files
-            src = os.path.join(volume, f)
-            dest = os.path.join(HOME_DIR, f.replace('--', '/'))
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            shutil.copyfile(src, dest)
+    for f in os.listdir(WEBHOOK_SECRETS):
+        if f.startswith('..'):
+            continue  # secrets volume internal files
+        src = os.path.join(WEBHOOK_SECRETS, f)
+        dest = os.path.join(HOME_DIR, f.replace('--', '/'))
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copyfile(src, dest)
     os.umask(old_umask)
 
 
 class ReleaseHandler(github_handler.GithubHandler):
     def handle_event(self, event, request):
-        global project, release_tag, release_script
-
         if event != 'create':
             return (501, 'unsupported event ' + event)
 
@@ -61,25 +73,30 @@ class ReleaseHandler(github_handler.GithubHandler):
             return (501, 'Ignoring ref_type %s, only doing releases on tags' % ref_type)
 
         try:
-            release_tag = request['ref']
+            tag = request['ref']
         except KeyError:
             return (400, 'Request is missing tag name in "ref" field')
 
         if self.path[0] != '/':
             return (400, 'Invalid path, should start with /: ' + self.path)
 
-        project = request['repository']['clone_url']
-        release_script = self.path[1:]
+        # turn path into a relative one in the build dir
+        return self.release(request['repository']['clone_url'], tag, '.' + self.path)
 
-
-def release(project, tag, script):
-    logging.info('Releasing project %s, tag %s, script %s', project, tag, script)
-    shutil.rmtree(BUILD_DIR, ignore_errors=True)
-    subprocess.check_call(['git', 'clone', project, BUILD_DIR])
-    e = os.environ.copy()
-    e['RELEASE_SINK'] = SINK
-    subprocess.check_call(['/usr/local/bin/release-runner', '-r', project, '-t', tag, os.path.join(BUILD_DIR, script)],
-                          cwd=BUILD_DIR, env=e)
+    @classmethod
+    def release(klass, project, tag, script):
+        logging.info('Releasing project %s, tag %s, script %s', project, tag, script)
+        jobname = 'release-job-%s-%s' % (os.path.splitext(os.path.basename(project))[0], tag)
+        job = JOB % {'jobname': jobname, 'git_repo': project, 'tag': tag, 'script': script, 'sink': SINK}
+        try:
+            oc = subprocess.Popen(['oc', 'create', '-f', '-'], stdin=subprocess.PIPE)
+            oc.communicate(job.encode('UTF-8'), timeout=60)
+            if oc.wait(timeout=60) != 0:
+                raise RuntimeError('creating release job failed with exit code %i' % oc.returncode)
+        except (RuntimeError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            logging.error(str(e))
+            return (400, str(e))
+        return None
 
 
 #
@@ -89,14 +106,6 @@ def release(project, tag, script):
 logging.basicConfig(level=logging.DEBUG)  # INFO
 
 os.environ['HOME'] = HOME_DIR
-setup()
-httpd = http.server.HTTPServer(('', 8080), ReleaseHandler)
 
-# we can't do the long-running release() within the request, that blocks the client
-# run a loop, as kubernetes does not seem to have on-demand pod launching from a service
-while True:
-    httpd.handle_request()
-    if project and release_tag and release_script:
-        release(project, release_tag, release_script)
-    else:
-        logging.error('Did not get project and script')
+setup()
+http.server.HTTPServer(('', 8080), ReleaseHandler).serve_forever()

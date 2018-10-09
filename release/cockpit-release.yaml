@@ -24,19 +24,14 @@ items:
                 protocol: TCP
             command: [ "webhook" ]
             volumeMounts:
-            - name: release-secrets
-              mountPath: /run/secrets/release
-              readOnly: true
             - name: webhook-secrets
               mountPath: /run/secrets/webhook
               readOnly: true
         volumes:
-        - name: release-secrets
-          secret:
-            secretName: cockpit-release-secrets
         - name: webhook-secrets
           secret:
             secretName: cockpit-release-webhook-secrets
+        serviceAccountName: create-job
 
 - kind: Service
   apiVersion: v1
