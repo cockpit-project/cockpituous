@@ -16,7 +16,8 @@ HOME_DIR = '/tmp/home'
 BUILD_DIR = os.path.join(HOME_DIR, 'build')
 # FIXME: make this a request parameter
 SINK = 'fedorapeople.org'
-SECRETS = '/run/secrets/release'
+RELEASE_SECRETS = '/run/secrets/release'
+WEBHOOK_SECRETS = '/run/secrets/webhook'
 
 
 def setup():
@@ -37,13 +38,14 @@ fi''' % HOME_DIR, shell=True)
     # install credentials from secrets volume; copy to avoid world-readable files
     # (which e. g. ssh complains about), and to make them owned by our random UID.
     old_umask = os.umask(0o77)
-    for f in os.listdir(SECRETS):
-        if f.startswith('..'):
-            continue  # secrets volume internal files
-        src = os.path.join(SECRETS, f)
-        dest = os.path.join(HOME_DIR, f.replace('--', '/'))
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        shutil.copyfile(src, dest)
+    for volume in [RELEASE_SECRETS, WEBHOOK_SECRETS]:
+        for f in os.listdir(volume):
+            if f.startswith('..'):
+                continue  # secrets volume internal files
+            src = os.path.join(volume, f)
+            dest = os.path.join(HOME_DIR, f.replace('--', '/'))
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(src, dest)
     os.umask(old_umask)
 
 

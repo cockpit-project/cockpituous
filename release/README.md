@@ -124,7 +124,7 @@ webhook, see below.
 To remove the deployment:
 
     oc delete -f release/cockpit-release.yaml
-    oc delete secrets cockpit-release-secrets
+    oc delete secrets cockpit-release-secrets cockpit-release-webhook-secrets
 
 ## Manual operation and Troubleshooting
 
