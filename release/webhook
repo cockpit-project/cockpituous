@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
 import os
-import hmac
 import logging
-import json
 import subprocess
 import shutil
 import http.server
+
+import github_handler
 
 project = None
 release_tag = None
@@ -47,91 +47,27 @@ fi''' % HOME_DIR, shell=True)
     os.umask(old_umask)
 
 
-class GithubHandler(http.server.BaseHTTPRequestHandler):
-    def check_sig(self, request):
-        '''Validate github signature of request.
-
-        See https://developer.github.com/webhooks/securing/
-        '''
-        # load key
-        keyfile = os.path.join(HOME_DIR, '.config/github-webhook-token')
-        try:
-            with open(keyfile, 'rb') as f:
-                key = f.read().strip()
-        except IOError as e:
-            logging.error('Failed to load GitHub key: %s', e)
-            return False
-
-        sig_sha1 = self.headers.get('X-Hub-Signature', '')
-        payload_sha1 = 'sha1=' + hmac.new(key, request, 'sha1').hexdigest()
-        if hmac.compare_digest(sig_sha1, payload_sha1):
-            return True
-        logging.error('GitHub signature mismatch! received: %s calculated: %s',
-                      sig_sha1, payload_sha1)
-        return False
-
-    def fail(self, reason, code=404):
-        logging.error(reason)
-        self.send_response(code)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        self.wfile.write(reason.encode())
-        self.wfile.write(b'\n')
-
-    def success(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        self.wfile.write(b'OK\n')
-
-    def do_POST(self):
+class ReleaseHandler(github_handler.GithubHandler):
+    def handle_event(self, event, request):
         global project, release_tag, release_script
 
-        content_length = int(self.headers.get('Content-Length', 0))
-        request = self.rfile.read(content_length)
-
-        if not self.check_sig(request):
-            self.send_response(403)
-            self.end_headers()
-            return
-
-        event = self.headers.get('X-GitHub-Event')
-
-        logging.debug('event: %s, path: %s', event, self.path)
-        logging.debug(request.decode())
-
-        request = json.loads(request)
-
-        try:
-            project = request['repository']['clone_url']
-        except KeyError:
-            self.fail('Request misses repository clone_url')
-            return
-
-        if event == 'ping':
-            self.success()
-            return
-        elif event != 'create':
-            self.fail('unsupported event ' + event)
-            return
+        if event != 'create':
+            return (501, 'unsupported event ' + event)
 
         ref_type = request.get('ref_type', '')
         if ref_type != 'tag':
-            self.fail('Ignoring ref_type %s, only doing releases on tags' % ref_type, code=501)
-            return
+            return (501, 'Ignoring ref_type %s, only doing releases on tags' % ref_type)
 
         try:
             release_tag = request['ref']
         except KeyError:
-            self.fail('Request is missing tag name in "ref" field')
-            return
+            return (400, 'Request is missing tag name in "ref" field')
 
         if self.path[0] != '/':
-            self.fail('Invalid path, should start with /: ' + self.path)
-            return
+            return (400, 'Invalid path, should start with /: ' + self.path)
 
+        project = request['repository']['clone_url']
         release_script = self.path[1:]
-        self.success()
 
 
 def release(project, tag, script):
@@ -139,7 +75,6 @@ def release(project, tag, script):
     shutil.rmtree(BUILD_DIR, ignore_errors=True)
     subprocess.check_call(['git', 'clone', project, BUILD_DIR])
     e = os.environ.copy()
-    e['HOME'] = HOME_DIR
     e['RELEASE_SINK'] = SINK
     subprocess.check_call(['/usr/local/bin/release-runner', '-r', project, '-t', tag, os.path.join(BUILD_DIR, script)],
                           cwd=BUILD_DIR, env=e)
@@ -151,8 +86,9 @@ def release(project, tag, script):
 
 logging.basicConfig(level=logging.DEBUG)  # INFO
 
+os.environ['HOME'] = HOME_DIR
 setup()
-httpd = http.server.HTTPServer(('', 8080), GithubHandler)
+httpd = http.server.HTTPServer(('', 8080), ReleaseHandler)
 
 # we can't do the long-running release() within the request, that blocks the client
 # run a loop, as kubernetes does not seem to have on-demand pod launching from a service
