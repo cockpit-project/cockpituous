@@ -60,6 +60,39 @@ message()
     echo "release-runner: $@" >&2
 }
 
+# check if we have a secrets volume mounted and the /home/user directory
+# from the cockpit/release container; if so, initialize HOME=/home/user
+init_container_home()
+{
+    local secrets_dir=/run/secrets/release
+    local home_dir='/home/user'
+
+    [ -d "$secrets_dir" ] && [ -d "$home_dir" ] || return 0
+    export HOME=$home_dir
+
+    trace "Initializing $HOME"
+
+    # ensure we have a passwd entry for random UIDs
+    # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
+    if ! whoami &> /dev/null && [ -w /etc/passwd ]; then
+       echo "randuser:x:$(id -u):0:random uid:${HOME}:/sbin/nologin" >> /etc/passwd
+    fi
+
+     # install credentials from secrets volume; copy to avoid world-readable files
+     # (which e. g. ssh complains about), and to make them owned by our random UID.
+     local old_umask=$(umask -p)
+     umask 077
+     # ignore files starting with .., these are secrets volume internal files
+     find "$secrets_dir" -mindepth 1 ! -path '*/..*' | while read f; do
+        name=$(basename $f)
+        # secrets volume files encode / as --, replace them back
+        dest="$HOME/${name//--//}"
+        mkdir -p "$(dirname "$dest")"
+        cp "$f" "$dest"
+     done
+     $old_umask
+}
+
 export_all()
 {
     # Export all RELEASE_XXXX variables
@@ -176,6 +209,8 @@ shift $(expr $OPTIND - 1)
 if [ $# -lt 1 ]; then
     usage
 fi
+
+init_container_home
 
 # Initialize the work directory
 if [ -n "$REPO" ]; then
