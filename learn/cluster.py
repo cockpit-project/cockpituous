@@ -184,7 +184,7 @@ class Model():
         self.features = None
 
     # Perform the unsupervised clustering
-    def train(self, items):
+    def train(self, items, limit=None):
         self.clusters = { }
         self.noise = [ ]
 
@@ -192,10 +192,10 @@ class Model():
 
         # Extract the features we want to use for clustering from the items
         self.extractor = extractor.Extractor()
-        self.features = self.extractor.fit_transform(items)
+        self.features = self.extractor.fit_transform(items, limit=limit)
 
         if self.verbose:
-            sys.stderr.write("{0}: Items to train\n".format(len(self.features)))
+            sys.stderr.write("{0}: Items to cluster\n".format(len(self.features)))
 
         jobs = os.cpu_count() or -1
         start = time.perf_counter()

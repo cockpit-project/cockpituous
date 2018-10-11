@@ -131,7 +131,7 @@ class Extractor():
         tokenized = tokenized or map(Extractor.tokenize, items)
         self.extract.fit(tokenized)
 
-    def transform(self, items, tokenized=None):
+    def transform(self, items, tokenized=None, limit=None):
         tokenized = list(tokenized or map(Extractor.tokenize, items))
         results = [ ]
         for index, item in enumerate(items):
@@ -158,12 +158,14 @@ class Extractor():
                 merged,                   # FEATURE_MERGED
                 timestamp                 # FEATURE_TIMESTAMP
             ))
+        if limit:
+            results = results[-limit:]
         return results
 
-    def fit_transform(self, items):
+    def fit_transform(self, items, limit=None):
         tokenized = list(map(Extractor.tokenize, items))
         self.fit(items, tokenized)
-        return self.transform(items, tokenized)
+        return self.transform(items, tokenized, limit=limit)
 
     def stop_tokens(self):
         return self.extract.stop_words_
