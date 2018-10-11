@@ -42,6 +42,7 @@ class Tee():
         self.std = std
     def write(self, *args):
         self.log.write(*args)
+        self.log.flush()
         self.std.write(*args)
     def flush(self, *args):
         self.log.flush(*args)
@@ -60,10 +61,15 @@ def run(filename_or_fp, directory=".", limit=None, verbose=False, name="input", 
         if verbose:
             sys.stderr.write("{0}\n".format(name))
 
+        # Atomically place a log at /log
+        link = os.path.join(base, "link")
+        os.symlink(os.path.join(os.path.basename(base), "log"), link)
+        os.rename(link, os.path.join(directory, "log"))
+
         items = data.load(filename_or_fp, only=data.failures, verbose=verbose)
         train(items, base, limit, verbose)
 
-        # Atomically replace the data
+        # Atomically replace the model into /active
         active = os.path.join(directory, "active")
         try:
             previous = os.readlink(active)
@@ -73,7 +79,7 @@ def run(filename_or_fp, directory=".", limit=None, verbose=False, name="input", 
         os.symlink(os.path.basename(base), link)
         os.rename(link, active)
 
-        # Now clean up any previous data
+        # Now clean up any previous active data
         if previous:
             shutil.rmtree(os.path.join(directory, previous))
 

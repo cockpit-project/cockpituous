@@ -71,6 +71,10 @@ it when training is complete:
 
     $ curl http://$COCKPIT_LEARN_SERVICE_HOST:$COCKPIT_LEARN_SERVICE_PORT/ | grep '<td'
 
+Or you can look for the log of the latest training here:
+
+    $ curl http://$COCKPIT_LEARN_SERVICE_HOST:$COCKPIT_LEARN_SERVICE_PORT/log
+
 Now post some data to predict like this:
 
     $ curl -d '@learn/test-predict.jsonl' \
