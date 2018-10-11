@@ -60,6 +60,17 @@ with curl should work:
 
     $ kubectl run -it test --image=docker.io/cockpit/learn --restart=Never -- sh
 
+Alternatively you can expose the service temporarily. By doing the following:
+
+    $ kubectl create -f learn/cockpit-expose.yaml
+    $ kubectl describe route cockpit-expose
+    $ COCKPIT_LEARN_SERVICE_HOST=...
+    $ COCKPIT_LEARN_SERVICE_PORT=80
+
+    ... commands below ...
+
+    $ kubectl delete route cockpit-expose
+
 One uploads the data to the service by placing it in the `/train/` HTTP path:
 
     $ curl --progress-bar --fail --upload-file learn/test-example.jsonl.gz \
