@@ -28,6 +28,28 @@ The following additional fields are useful, and may be `null` or missing if unkn
  * "url": Full URL to the complete test suite log and/or testing system log
  * "date": The ISO 8601 date/time when the test was run
 
+Example record:
+
+    {
+        "test": "testTeamActive",
+        "pull": "https://api.github.com/repos/cockpit-project/cockpit/pulls/9230",
+        "revision": "2e4fd7d309b7f1c591c099e4041f8db20459c5ae",
+        "status": "failure",
+        "context": "fedora-27",
+        "date": "2018-05-24T15:48:53Z",
+        "merged": true,
+        "url": "http://fedorapeople.org/groups/cockpit/logs/pull-9230-fedora-27/log",
+        "tracker": "https://api.github.com/repos/cockpit-project/cockpit/issues/8905",
+        "log": "...Error: timeout\nwait_js_cond(ph_in_text(\"#network-interface .panel:contains('tteam')"
+    }
+
+Note that the data above is expanded, but each JSON record should be on a single line.
+So in reality it'll look more like:
+
+    { "test": "testTeamActive", "pull": "https://api.github.com/repos/cockpit-project/cockpit/pulls/9230", "revision": "2e4fd7d309b7f1c591c099e4041f8db20459c5ae", "status": "failure", "context": "fedora-27", "date": "2018-05-24T15:48:53Z", "merged": true, "url": "http://fedorapeople.org/groups/cockpit/logs/pull-9230-fedora-27/log", "tracker": "https://api.github.com/repos/cockpit-project/cockpit/issues/8905", "log": "...Error: timeout\nwait_js_cond(ph_in_text(\"#network-interface .panel:contains('tteam')\"" }
+    { "test": "testTeamActive", "pull": "https://api.github.com/repos/cockpit-project/cockpit/pulls/9230", "revision": "2e4fd7d309b7f1c591c099e4041f8db20459c5ae", "status": "failure", "context": "fedora-28", "date": "2018-05-24T15:52:00Z", "merged": false, "url": "http://fedorapeople.org/groups/cockpit/logs/pull-9230-verify-fedora-28/log", "tracker": null, "log": "...Error: timeout\nwait_js_cond(ph_in_text(\"#network-interface .panel:contains('tteam')\"" }
+    ...
+
 ## How to train
 
 Run the `train-tests` script with an input jsonl.gz file like this:
@@ -44,7 +66,40 @@ Predict what a test result would do by passing a jsonl file like this:
 
     $ predict-tests -v test-predict.jsonl
 
-This will output JSON data on stdout with the prediction.
+This will output JSONL data on stdout with information about the cluster of similar
+tests. Each field has a spread recorded of the values that field has in the cluster
+and the number of times it is present. The ```"date"``` field will have the bounds
+of start and end. An example cluster might look like this:
+
+    {
+        "test": [
+            [ "testTeamActive", 2 ],
+            [ "testTeamBond", 5 ]
+        ],
+        "status": [
+            [ "failure", 7 ]
+        ],
+        "context": [
+            [ "verify/fedora-27", 3 ],
+            [ "verify/fedora-27", 4 ]
+        ],
+        "date": [
+            "2018-05-24T15:48:53Z",
+            "2018-05-30T01:01:30Z"
+        ],
+        "merged": [
+            [ true, 5 ],
+            [ true, 1 ],
+            [ null, 1 ],
+        ],
+        "tracker": [
+            [ "https://api.github.com/repos/cockpit-project/cockpit/issues/8905", 3 ]
+            [ null, 4 ]
+        ]
+    }
+
+Once again, this is an expanded record. The real output will be in JSONL format and
+on a single line.
 
 ## How to use the Kubernetes Pod
 
