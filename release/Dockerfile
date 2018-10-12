@@ -37,9 +37,9 @@ yum-utils \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all && \
-    mkdir -p /usr/local/bin /home/user /build/rpmbuild && \
+    mkdir -p /usr/local/bin /home/user /build/ && \
     chmod g=u /etc/passwd && \
-    chown -R user /build /home/user
+    chmod -R ugo+w /build /home/user
 
 ADD * /usr/local/bin/
 
