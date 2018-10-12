@@ -217,5 +217,5 @@ else
         else
             printf '\n{ "message": "Release failed: %s", "irc": { "channel": "#cockpit" } }' "$RELEASE_TAG"
         fi
-    ) | stdbuf -oL -eL ssh "$SINK" -- python sink release-$RELEASE_TAG
+    ) | stdbuf -oL -eL ssh "$SINK" -- python sink "release-$(basename $REPO .git)-$RELEASE_TAG"
 fi
