@@ -51,9 +51,10 @@ import sklearn.neighbors
 BASE = os.path.dirname(__file__)
 sys.path.insert(1, os.path.join(BASE, ".."))
 
-from learn import data
-from learn import ncd
-from learn import extractor
+import analyze
+import data
+import extractor
+import ncd
 
 # The name and version of the learning data
 FILENAME = "tests-learn-{0}-{1}.model".format(VERSION, extractor.VERSION)
@@ -92,50 +93,32 @@ class Cluster():
     # the cluster. The points should be indexes into the
     # items array.
     def analyze(self, features):
-        num_merged = 0
+        group = analyze.Group()
 
         for point in self.points:
             merged = features[point][extractor.FEATURE_MERGED]
-            if merged == 1:
-                num_merged += 1
-
-        total = len(self.points)
-
-        # Calculate the merged probabilities
-        if total:
-            merged = (float(num_merged) / float(total))
-            if merged > 1:
-                merged = 1
-
-        # Probability that this cluster represents the given name
-        return {
-            "label": str(self.label),
-            "total": total,
-            "merged": merged,
-            "trackers": self.group_by(features, extractor.FEATURE_TRACKER, factor=extractor.TRACKER_SPARSE),
-            "names": self.group_by(features, extractor.FEATURE_NAME),
-            "contexts": self.group_by(features, extractor.FEATURE_CONTEXT)
-        }
-
-    # Figure out how often given values of a feature show up in a cluster
-    def group_by(self, features, feature, limit=5, factor=1):
-        values = { }
-        total = 0
-        for point in self.points:
-            value = features[point][feature]
-            if value:
-                # If we have a factor, some of the features may be sparse
-                # So account for the spareness in our probability estimates
-                values[value] = values.get(value, 0) + factor
-                total += factor
+            if merged < 0:
+                merged = None
+            elif merged == 0:
+                merged = False
             else:
-                total += 1
-        listing = [ ]
-        for value, count in values.items():
-            probability = float(count) / float(total or 1)
-            listing.append((value, min(probability, 1)))
-        listing.sort(key=operator.itemgetter(1), reverse=True)
-        return listing[0:limit]
+                merged = True
+            group.count("merged", merged)
+            tracker = features[point][extractor.FEATURE_TRACKER]
+            group.count("tracker", tracker or None)
+            group.count("test", features[point][extractor.FEATURE_NAME])
+            group.count("context", features[point][extractor.FEATURE_CONTEXT])
+            group.count("status", "failure")
+            timestamp = features[point][extractor.FEATURE_TIMESTAMP]
+            if timestamp < 0:
+                timestamp = None
+            else:
+                timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(timestamp))
+            group.bound("date", timestamp)
+
+        group.finalize()
+        group["label"] = str(self.label)
+        return group
 
     # Dump the selected cluster to disk. The features are the inputs
     # from the model that were used to build the cluster.

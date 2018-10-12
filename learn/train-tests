@@ -29,6 +29,7 @@ import traceback
 
 sys.dont_write_bytecode = True
 
+import analyze
 import cluster
 import data
 import tempfile
@@ -61,13 +62,35 @@ def run(filename_or_fp, directory=".", limit=None, verbose=False, name="input", 
         if verbose:
             sys.stderr.write("{0}\n".format(name))
 
+        # This function tells us which items to keep around for modeling into
+        # clusters, however we also do some global analysis as we see each item
+        groups = analyze.Groups("statistics")
+        def analyze_and_load(item):
+            test = item.get("test")
+            if test:
+                key = (test, item.get("status"), item.get("tracker"), item.get("context"))
+                groups.count(key, item, "test")
+                groups.count(key, item, "status")
+                groups.count(key, item, "tracker")
+                groups.count(key, item, "context")
+                groups.count(key, item, "merged")
+                groups.bound(key, item, "date")
+            # In the end only load failures
+            return data.failures(item)
+
         # Atomically place a log at /log
         link = os.path.join(base, "link")
         os.symlink(os.path.join(os.path.basename(base), "log"), link)
         os.rename(link, os.path.join(directory, "log"))
 
-        items = data.load(filename_or_fp, only=data.failures, verbose=verbose)
+        # Load the data, and pass through above analysis on the way in
+        items = data.load(filename_or_fp, only=analyze_and_load, verbose=verbose)
+
+        # Next run the training of the cluster
         train(items, base, limit, verbose)
+
+        # Dump out the test analysis. Note the train actually loads the items
+        groups.dump(base)
 
         # Atomically replace the model into /active
         active = os.path.join(directory, "active")
@@ -109,7 +132,7 @@ def main(function):
     parser.add_argument("-v", "--verbose", action="store_true",
             help="Verbose output")
     parser.add_argument("-l", "--limit", default=os.environ.get("TEST_LIMIT", DEFAULT_LIMIT), type=int,
-            help="Number of failures to learn from")
+            help="Number of test failures to learn from")
     parser.add_argument("-d", "--directory", default=os.environ.get("TEST_DATA", DEFAULT_DIRECTORY),
             help="Directory to store cluster data in")
     parser.add_argument("-b", "--batch", action="store_true",
