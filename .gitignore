@@ -5,4 +5,5 @@ sink/logs
 sink/sinkc
 learn/active
 learn/training-*/
+learn/.*
 __pycache__
