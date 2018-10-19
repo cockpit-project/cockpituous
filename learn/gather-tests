@@ -1,0 +1,92 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+# This file is part of Cockpit.
+#
+# Copyright (C) 2017 Red Hat, Inc.
+#
+# Cockpit is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or
+# (at your option) any later version.
+#
+# Cockpit is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Cockpit; If not, see <http://www.gnu.org/licenses/>.
+
+import gzip
+import json
+import os
+import re
+import socket
+import ssl
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.parse
+import urllib.request, urllib.error, urllib.parse
+import zlib
+
+sys.dont_write_bytecode = True
+
+# The number of days of previous closed pull requests to learn from
+GATHER_DAYS = 120
+
+def run(repository, filename, verbose=False, dry=False, **kwargs):
+
+    args = [ ]
+    if verbose:
+        args.append("--verbose")
+
+    # Seed with our input data
+    (outfd, outname) = tempfile.mkstemp(prefix=os.path.basename(filename), dir=os.path.dirname(filename))
+    os.close(outfd)
+
+    stdin = subprocess.DEVNULL
+    seed = None
+
+    if os.path.exists(filename):
+        if verbose:
+            sys.stderr.write("{0}\n".format(os.path.basename(filename)))
+        seed = subprocess.Popen(["zcat", filename], stdout=subprocess.PIPE)
+        stdin = seed.stdout
+
+    base = os.path.abspath(os.path.dirname(__file__))
+    github = subprocess.Popen([
+            os.path.join(base, "data-github"),
+            "--since={0}".format(SINCE_DAYS]),
+            repository
+        ] + args, stdin=stdin, stdout=PIPE)
+    expand = subprocess.Popen([os.path.join(base, "data-expand")] + args,
+            stdin=github.stdout, stdout=PIPE)
+
+    # Write all the output here
+    with gzip.open(outname, 'wb') as fp:
+        shutil.copyfileobj(expand.stdout, fp)
+
+    ret = 0
+    if seed:
+        ret |= seed.wait()
+    ret |= github.wait()
+    ret |= expand.wait()
+
+    if not ret:
+        os.rename(outname, filename)
+
+    return ret
+
+def main():
+    parser = argparse.ArgumentParser(description="Gather test data")
+    parser.add_argument('filename', help='The file name to write and read from')
+    parser.add_argument('commands', nargs='+', help='The command line to run')
+    opts = parser.parse_args()
+
+    
+
+if __name__ == '__main__':
+    task.main(function=run, title="Pull out test data for pull requests", verbose=True)

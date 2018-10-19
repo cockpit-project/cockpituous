@@ -1,0 +1,189 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+# This file is part of Cockpit.
+#
+# Copyright (C) 2017 Red Hat, Inc.
+#
+# Cockpit is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or
+# (at your option) any later version.
+#
+# Cockpit is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Cockpit; If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import json
+import socket
+import ssl
+import sys
+import urllib
+import urllib.request
+
+# Merge two dicts in a way compatible with Python 3.4 or eariler
+def combine(x, y):
+    """Given two dicts, merge them into a new dict as a shallow copy."""
+    z = x.copy()
+    z.update(y)
+    return z
+
+# Retrieves the content of the given URL
+def retrieve(url):
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    req = urllib.request.urlopen(url, context=ctx)
+    return req.read().decode('utf-8', 'replace')
+
+# Pull out all status (context, created, log) for a given revision. This includes multiple
+# test runs for a given revision, and all the various status contexts
+def parse(item, verbose=False):
+    # If the item already has a log or doesn't have a URL, just return it directly
+    log = item.get("log")
+    if log is not None:
+        yield item
+        return
+
+    # Stuff we don't know how to parse (yet?) ...
+    # These just returns fancy Javascripty/HTML and not real test logs
+    target = item.get("url")
+    if not target or \
+       "semaphoreci.com/" in target or \
+       "travis-ci.org/" in target or \
+       "lgtm.com/" in target or \
+       "circleci.com/" in target or \
+       False:
+        yield item
+        return
+
+    # This is Cockpit specific log.html wrapping of results
+    if target.endswith("/log.html"):
+        target = target[:-5]
+
+    # A base for resolving issues or pull GitHub URLs
+    base = item.get("pull")
+    if base:
+        base = urllib.parse.urljoin("base", "../")
+
+    log = ""
+    try:
+        log = retrieve(target)
+    except urllib.error.HTTPError as ex:
+        if ex.code != 404:
+            sys.stderr.write("{0}: {1}\n".format(target, ex))
+        elif verbose:
+            sys.stderr.write("x {0}\n".format(target))
+    except (ConnectionResetError, urllib.error.URLError, socket.gaierror) as ex:
+        sys.stderr.write("{0}: {1}\n".format(target, ex))
+    else:
+        if verbose:
+            sys.stderr.write("> {0}\n".format(target))
+
+    logged = False
+    for partial in tap_cockpit(log, base):
+        logged = True
+        yield combine(item, partial)
+
+    if not logged:
+        yield combine(item, { "log": log })
+
+# Generate (status, name, body, tracker) for each Test Anything Protocol test
+# in the content.
+#
+# status: possible values "success", "failure", "skip"
+# name: the name of the test
+# body: full log of the test
+# tracker: url tracking the failure, or None
+def tap_cockpit(content, base):
+    name = status = tracker = None
+    prefix = None
+    body = [ ]
+    blocks = False
+    for line in content.split('\n'):
+        # The test intro, everything before here is fluff
+        if not prefix and line.startswith("1.."):
+            prefix = line
+            body = [ ]
+            name = status = tracker = None
+
+        # A TAP test status line
+        elif line.startswith("ok ") or line.startswith("not ok "):
+            body.append(line)
+            # Parse out the status
+            if line.startswith("not ok "):
+                status = "failure"
+                line = line[7:]
+            else:
+                line = line[3:]
+                if "# SKIP KNOWN ISSUE" in line.upper():
+                    status = "failure"
+                    (unused, delim, issue) = line.partition("#")
+                    if base:
+                        tracker = urllib.parse.urljoin(base, "../issues/{0}".format(issue))
+                    else:
+                        tracker = issue
+                if "# SKIP" in line.upper():
+                    status = "skip"
+                else:
+                    status = "success"
+            # Parse out the name
+            while line[0].isspace() or line[0].isdigit():
+                line = line[1:]
+            (name, delim, directive) = line.partition("#")
+            (name, delim, directive) = name.partition("duration")
+            name = name.strip()
+            # Old Cockpit tests had strange blocks
+            if not blocks:
+                yield {
+                    "status": status,
+                    "test": name,
+                    "log": "\n".join(body),
+                    "tracker": tracker
+                }
+                status = name = tracker = None
+                body = [ ]
+        else:
+            # Old Cockpit tests didn't separate bound their stuff properly
+            if line.startswith("# --------------------"):
+                blocks = True
+                if status:
+                    yield {
+                        "status": status,
+                        "test": name,
+                        "log": "\n".join(body),
+                        "tracker": tracker
+                    }
+                name = status = tracker = None
+                body = [ ]
+            body.append(line)
+
+def main():
+    parser = argparse.ArgumentParser(description='Parse and expand Cockpit TAP test data')
+    parser.add_argument('--verbose', action='store_true', help='Print verbose retrieval data')
+    opts = parser.parse_args()
+
+    input = sys.stdin.buffer
+    output = sys.stdout.buffer
+
+    while True:
+        line = input.readline()
+        if not line:
+            break
+        try:
+            item = json.loads(line.decode('utf-8'))
+        except ValueError as ex:
+            sys.stderr.write("tests-data: {0}\n".format(str(ex)))
+            continue
+
+        for parsed in parse(item, verbose=opts.verbose):
+            line = json.dumps(parsed).encode('utf-8') + b"\n"
+            output.write(line)
+
+if __name__ == '__main__':
+    sys.exit(main())
