@@ -13,8 +13,9 @@ RUN mkdir -p /cache/train \
 
 COPY * /learn/
 WORKDIR /
-ENV TEST_DATA=/cache
-ENV PATH=$PATH:/learn
+ENV TEST_DATA=/cache \
+    PATH=$PATH:/learn \
+    HOME=/home/user
 
 EXPOSE 8080
 VOLUME /cache
