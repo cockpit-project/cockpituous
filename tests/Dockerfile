@@ -16,10 +16,12 @@ RUN dnf -y update && \
         freetype \
         gcc \
         gcc-c++ \
+        GConf2 \
         gettext \
         git \
         gnupg \
         grubby \
+        gtk2 \
         hardlink \
         jq \
         kernel-headers \
@@ -31,6 +33,7 @@ RUN dnf -y update && \
         libvirt-client \
         libvirt-python \
         libvirt-python3 \
+        libXScrnSaver \
         mock \
         nc \
         net-tools \
@@ -50,6 +53,7 @@ RUN dnf -y update && \
         sudo \
         tar \
         virt-install \
+        xorg-x11-server-Xvfb \
         zanata-client && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
