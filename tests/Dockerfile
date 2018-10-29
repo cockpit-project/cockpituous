@@ -22,7 +22,7 @@ RUN dnf -y update && \
         grubby \
         hardlink \
         jq \
-        kernel \
+        kernel-headers \
         koji \
         krb5-workstation \
         libguestfs-tools \
