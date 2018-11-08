@@ -2,8 +2,6 @@
 
 set -e
 
-GITHUB_REPO=https://github.com/cockpit-project/cockpit
-
 # If first argument starts with a path no loop
 loop=yes
 case ${1-} in
@@ -32,12 +30,11 @@ if ! whoami && [ -w /etc/passwd ]; then
     echo "user:x:$(id -u):0:random uid:${HOME:-/home/user}:/sbin/nologin" >> /etc/passwd
 fi
 
-if [ ! -d cockpit ]; then
-    git clone "$GITHUB_REPO" cockpit
-fi
-
 # If interactive arguments then just exec
 if [ $loop != "yes" ]; then
+    if [ ! -d cockpit ]; then
+        git clone https://github.com/cockpit-project/cockpit cockpit
+    fi
     cd cockpit/
     exec "$@"
 fi
@@ -45,18 +42,20 @@ fi
 echo "Starting testing"
 
 function task() {
+    dir=$1
+
     (
         # If the tasks file is executable, run it
-        if [ -x cockpit/.tasks ]; then
-            cd cockpit/ && ./.tasks
+        if [ -x "$dir"/.tasks ]; then
+            cd "$dir/" && ./.tasks
 
         # If it exists then cat it
-        elif [ -e cockpit/.tasks ]; then
-            cat cockpit/.tasks
+        elif [ -e "$dir/.tasks" ]; then
+            cat "$dir/.tasks"
 
         # No tasks found
         else
-            echo "echo 'No tasks found in cockpit repo' >&2; exit 1"
+            echo "echo 'No tasks found in $dir repo' >&2; exit 1"
         fi
 
     # Remove empty lines, comments, and reverse sort.
@@ -64,31 +63,44 @@ function task() {
     ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | head -n 1
 }
 
-# Perform N tasks or waits, then restart
-for i in $(seq 1 30); do
-    if [ -f cockpit/.git/shallow ]; then
+function run_one_task() {
+    dir=$1
+    repo_url=$2
+
+    # Get us a clean checkout of origin/master
+
+    if [ ! -d "$dir" ]; then
+        git clone "$repo_url" "$dir"
+    elif [ -f "$dir/.git/shallow" ]; then
         # if we ended up with a shallow clone from a previous test, start from
         # scratch, as this is brittle to clean up afterwards
-        echo "cockpit-tests: Shallow commits exist, cannot reset; re-cloning"
-        rm -rf cockpit
-        git clone "$GITHUB_REPO" cockpit
+        echo "cockpit-tests: Shallow commits exist in $dir, cannot reset; re-cloning"
+        rm -rf "$dir"
+        git clone "$repo_url" "$dir"
     else
         # avoid re-cloning in most cases to save GitHub bandwidth
-        git -C cockpit fetch origin
-        git -C cockpit reset --hard
-        git -C cockpit clean -dxff
-        git -C cockpit checkout origin/master
+        git -C "$dir" fetch origin
+        git -C "$dir" reset --hard
+        git -C "$dir" clean -dxff
+        git -C "$dir" checkout origin/master
     fi
 
-    line="$(task)"
-    if [ -n "$line" ]; then
+    if [ ! -d "$dir/bots" ]; then
+        cp -drl cockpit/bots "$dir/"
+    fi
 
-        # Execute the task in question: 12 hours max
-        if /usr/bin/timeout 12h /bin/sh -c "cd cockpit/; set -ex; $line"; then
-            continue
-        fi
+    # Get a task and execute it, 12 hours max
+    line=$(task "$dir")
+    if [ -n "$line" ] && /usr/bin/timeout 12h /bin/sh -c "cd '$dir/'; set -ex; $line"; then
+       return
     fi
 
     # Nothing to do, or failure, wait between 1 and 10 minutes
     sleep $(shuf -i 60-600 -n 1)
+}
+
+# Perform a couple of tasks or waits, then restart
+for i in $(seq 1 30); do
+    run_one_task cockpit     https://github.com/cockpit-project/cockpit
+    run_one_task starter-kit https://github.com/cockpit-project/starter-kit
 done
