@@ -41,6 +41,27 @@ fi
 
 echo "Starting testing"
 
+function update_repo() {
+    dir=$1
+    repo_url=$2
+
+    if [ ! -d "$dir" ]; then
+        git clone "$repo_url" "$dir"
+    elif [ -f "$dir/.git/shallow" ]; then
+        # if we ended up with a shallow clone from a previous test, start from
+        # scratch, as this is brittle to clean up afterwards
+        echo "cockpit-tests: Shallow commits exist in $dir, cannot reset; re-cloning"
+        rm -rf "$dir"
+        git clone "$repo_url" "$dir"
+    else
+        # avoid re-cloning in most cases to save GitHub bandwidth
+        git -C "$dir" fetch origin
+        git -C "$dir" reset --hard
+        git -C "$dir" clean -dxff
+        git -C "$dir" checkout origin/master
+    fi
+}
+
 function task() {
     dir=$1
 
@@ -67,26 +88,10 @@ function run_one_task() {
     dir=$1
     repo_url=$2
 
-    # Get us a clean checkout of origin/master
-
-    if [ ! -d "$dir" ]; then
-        git clone "$repo_url" "$dir"
-    elif [ -f "$dir/.git/shallow" ]; then
-        # if we ended up with a shallow clone from a previous test, start from
-        # scratch, as this is brittle to clean up afterwards
-        echo "cockpit-tests: Shallow commits exist in $dir, cannot reset; re-cloning"
-        rm -rf "$dir"
-        git clone "$repo_url" "$dir"
-    else
-        # avoid re-cloning in most cases to save GitHub bandwidth
-        git -C "$dir" fetch origin
-        git -C "$dir" reset --hard
-        git -C "$dir" clean -dxff
-        git -C "$dir" checkout origin/master
-    fi
+    update_repo "$1" "$2"
 
     if [ ! -d "$dir/bots" ]; then
-        cp -drl cockpit/bots "$dir/"
+        cp -drl bots/bots "$dir/"
     fi
 
     # Get a task and execute it, 12 hours max
@@ -101,6 +106,7 @@ function run_one_task() {
 
 # Perform a couple of tasks or waits, then restart
 for i in $(seq 1 30); do
+    update_repo  bots        https://github.com/cockpit-project/cockpit
     run_one_task cockpit     https://github.com/cockpit-project/cockpit
     run_one_task starter-kit https://github.com/cockpit-project/starter-kit
 done
