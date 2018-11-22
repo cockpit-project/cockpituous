@@ -50,7 +50,7 @@ function update_repo() {
     elif [ -f "$dir/.git/shallow" ]; then
         # if we ended up with a shallow clone from a previous test, start from
         # scratch, as this is brittle to clean up afterwards
-        echo "cockpit-tests: Shallow commits exist in $dir, cannot reset; re-cloning"
+        echo "cockpit-tasks: Shallow commits exist in $dir, cannot reset; re-cloning"
         rm -rf "$dir"
         git clone "$repo_url" "$dir"
     else

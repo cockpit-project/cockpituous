@@ -24,5 +24,5 @@ CMD /usr/sbin/nginx -g "daemon off;"
 # We execute the script in the host, but it doesn't exist on the host. So pipe it in
 LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --user=root IMAGE /bin/bash -c \"/usr/sbin/chroot /host /bin/sh -s < /usr/local/bin/install-service\"
 
-# Run a simple interactive instance of the tests container
-LABEL RUN /usr/bin/docker run -ti --rm --publish=80:8080 --publish=8493:8443 --volume=/var/lib/cockpit-tests/secrets:/secrets:ro --volume=/var/cache/cockpit-tests:/cache:rw IMAGE /bin/bash -i
+# Run a simple interactive instance of the tasks container
+LABEL RUN /usr/bin/docker run -ti --rm --publish=80:8080 --publish=8493:8443 --volume=/var/lib/cockpit-tasks/secrets:/secrets:ro --volume=/var/cache/cockpit-tasks:/cache:rw IMAGE /bin/bash -i

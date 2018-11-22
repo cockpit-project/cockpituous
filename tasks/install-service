@@ -2,13 +2,13 @@
 
 set -eufx
 
-SECRETS=/var/lib/cockpit-tests/secrets
-CACHE=/var/cache/cockpit-tests
+SECRETS=/var/lib/cockpit-tasks/secrets
+CACHE=/var/cache/cockpit-tasks
 
 mkdir -p $SECRETS $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
 
-cat <<EOF > /etc/systemd/system/cockpit-tests.service
+cat <<EOF > /etc/systemd/system/cockpit-tasks.service
 [Unit]
 Description=Cockpit Verify
 Requires=docker.service
@@ -21,9 +21,9 @@ Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_PUBLISH=sink"
 Restart=always
 RestartSec=60
-ExecStartPre=-/usr/bin/docker rm -f cockpit-tests
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tests --volume=\$TEST_CACHE:/cache:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --shm-size=500m --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PUBLISH=\"\$TEST_PUBLISH\" cockpit/tests"
-ExecStop=/usr/bin/docker rm -f cockpit-tests
+ExecStartPre=-/usr/bin/docker rm -f cockpit-tasks
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tasks --volume=\$TEST_CACHE:/cache:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --shm-size=500m --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PUBLISH=\"\$TEST_PUBLISH\" cockpit/tasks"
+ExecStop=/usr/bin/docker rm -f cockpit-tasks
 
 [Install]
 WantedBy=multi-user.target

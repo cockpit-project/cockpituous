@@ -21,7 +21,6 @@ items:
             ports:
               - containerPort: 8080
                 protocol: TCP
-            ports:
               - containerPort: 8443
                 protocol: TCP
             volumeMounts:
@@ -42,7 +41,7 @@ items:
             claimName: cockpit-images
         - name: secrets
           secret:
-            secretName: cockpit-tests-secrets
+            secretName: cockpit-tasks-secrets
         - name: httpd-log
           emptyDir:
             medium: Memory
