@@ -4,11 +4,11 @@ This is the staging container and configuration for the Cockpit
 integration tests. This documentation is for deployment on Fedora 22+
 or RHEL 7+.
 
-Use the following commands to run the tests container as a one off:
+Use the following commands to run the tasks container as a one off:
 
     $ sudo yum -y install docker atomic oci-kvm-hook
     $ sudo systemctl start docker
-    $ sudo atomic run cockpit/tests
+    $ sudo atomic run cockpit/tasks
 
 You can run the tests in the resulting container shell like this.
 Or see tests/HACKING in the cockpit repo for more info.
@@ -25,13 +25,13 @@ The container has optional mounts:
    * ```rhel-password```: Red Hat subscription credential password (optional)
  * ```/cache```: A directory for reusable cached data such as downloaded image files
 
-The mounts normally default to ```/var/lib/cockpit-tests/secrets``` and
-```/var/cache/cockpit-tests``` on the host.
+The mounts normally default to ```/var/lib/cockpit-tasks/secrets``` and
+```/var/cache/cockpit-tasks``` on the host.
 
 # Deploying on a host
 
 For testing machines that publish back results create a file called
-```/var/lib/cockpit-tests/secrets/ssh-config``` as follows, and place ```id_rsa```
+```/var/lib/cockpit-tasks/secrets/ssh-config``` as follows, and place ```id_rsa```
 ```id_rsa.pub``` ```authorized_keys``` and a ```github-token``` in the same directory.
 
     UserKnownHostsFile /secrets/authorized_keys
@@ -44,38 +44,38 @@ To transfer secrets from one host to another, you would do something like:
 
     $ SRC=user@source.example.com
     $ DEST=user@source.example.com
-    $ ssh $SRC sudo tar -czf - /var/lib/cockpit-tests/secrets/ | ssh $DEST sudo tar -C / -xzvf -
+    $ ssh $SRC sudo tar -czf - /var/lib/cockpit-tasks/secrets/ | ssh $DEST sudo tar -C / -xzvf -
 
 Make sure docker and atomic are installed and running:
 
     $ sudo systemctl enable docker
-    $ sudo atomic install cockpit/tests
+    $ sudo atomic install cockpit/tasks
 
 You may want to customize things like the operating system to test or number of jobs:
 
-    $ sudo mkdir -p /etc/systemd/system/cockpit-tests.service.d
-    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_JOBS=8\n" > /etc/systemd/system/cockpit-tests.service.d/jobs.conf'
-    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_CACHE=/mnt/nfs/share/cache\n" > /etc/systemd/system/cockpit-tests.service.d/cache.conf'
+    $ sudo mkdir -p /etc/systemd/system/cockpit-tasks.service.d
+    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_JOBS=8\n" > /etc/systemd/system/cockpit-tasks.service.d/jobs.conf'
+    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_CACHE=/mnt/nfs/share/cache\n" > /etc/systemd/system/cockpit-tasks.service.d/cache.conf'
     $ sudo systemctl daemon-reload
 
 And now you can start the service:
 
-    $ sudo systemctl start cockpit-tests
-    $ sudo systemctl enable cockpit-tests
+    $ sudo systemctl start cockpit-tasks
+    $ sudo systemctl enable cockpit-tasks
 
 ## Troubleshooting
 
 Some helpful commands:
 
-    # journalctl -fu cockpit-tests
-    # systemctl stop cockpit-tests
+    # journalctl -fu cockpit-tasks
+    # systemctl stop cockpit-tasks
 
 ## Updates
 
-To update, just pull the new container and restart the cockpit-tests service.
+To update, just pull the new container and restart the cockpit-tasks service.
 It will restart automatically when it finds a pause in the verification work.
 
-    # docker pull cockpit/tests
+    # docker pull cockpit/tasks
 
 ## Deploying on Openshift
 
@@ -85,15 +85,15 @@ Create a service account for use by the testing machines. Make sure to have the
 ```oci-kvm-hook``` package installed on all nodes.  This is because of the requirement
 to access ```/dev/kvm```. Further work is necessary to remove this requirement.
 
-    $ oc create -f tests/cockpituous-account.json
+    $ oc create -f tasks/cockpituous-account.json
     $ oc adm policy add-scc-to-user anyuid -z cockpituous
     $ oc adm policy add-scc-to-user hostmount-anyuid -z cockpituous
 
 Now create all the remaining kubernetes objects. The secrets are created from the
-```/var/lib/cockpit-tests/secrets``` directory as described above.
+```/var/lib/cockpit-tasks/secrets``` directory as described above.
 
-    $ sudo make tests-secrets | oc create -f -
-    $ oc create -f tests/cockpit-tasks.json
+    $ sudo make tasks-secrets | oc create -f -
+    $ oc create -f tasks/cockpit-tasks.json
 
 ## Troubleshooting
 
@@ -101,7 +101,7 @@ Some helpful commands:
 
     $ oc describe rc
     $ oc describe pods
-    $ oc log -f cockpit-tests-xxxx
+    $ oc log -f cockpit-tasks-xxxx
 
 The tests need ```/dev/kvm``` to be accessible to non-root users on each node:
 
@@ -124,9 +124,9 @@ Some tests need nested virtualization enabled:
 
 SELinux needs to know about the caching directories:
 
-    # chcon -Rt svirt_sandbox_file_t /var/cache/cockpit-tests/
+    # chcon -Rt svirt_sandbox_file_t /var/cache/cockpit-tasks/
 
-Service affinity currently wants all the cockpit-tests pods to be in the same region.
+Service affinity currently wants all the cockpit-tasks pods to be in the same region.
 If you have your own cluster make sure all the nodes are in the same region:
 
     $ oc patch node node.example.com -p '{"metadata":{"labels": {"region": "infra"}}}'
@@ -136,4 +136,4 @@ If you have your own cluster make sure all the nodes are in the same region:
 We can scale the number of testing machines in the openshift cluster with this
 command:
 
-    $ oc scale rc cockpit-tests --replicas=3
+    $ oc scale rc cockpit-tasks --replicas=3

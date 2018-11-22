@@ -2,8 +2,8 @@
 
 set -eufx
 
-CACHE=/var/cache/cockpit-tests
-SECRETS=/var/lib/cockpit-tests/secrets
+CACHE=/var/cache/cockpit-tasks
+SECRETS=/var/lib/cockpit-tasks/secrets
 
 mkdir -p $CACHE $SECRETS
 chown -R 1111:1111 $CACHE $SECRETS
@@ -15,12 +15,12 @@ Requires=docker.service
 After=docker.service
 
 [Service]
-Environment="TEST_CACHE=$CACHE"
-Environment="TEST_SECRETS=$SECRETS"
+Environment="TASK_CACHE=$CACHE"
+Environment="TASK_SECRETS=$SECRETS"
 Restart=always
 RestartSec=60
 ExecStartPre=-/usr/bin/docker rm -f cockpit-images
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-images --publish=8090:8080 --publish=8493:8443 --volume=\$TEST_SECRETS:/secrets:ro --volume=\$TEST_CACHE:/cache:rw cockpit/images"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-images --publish=8090:8080 --publish=8493:8443 --volume=\$TASK_SECRETS:/secrets:ro --volume=\$TASK_CACHE:/cache:rw cockpit/images"
 ExecStop=/usr/bin/docker rm -f cockpit-images
 
 [Install]

@@ -17,7 +17,7 @@ items:
       spec:
         containers:
         - name: cockpit-tasks
-          image: docker.io/cockpit/tests
+          image: docker.io/cockpit/tasks
           env:
           - name: TEST_JOBS
             value: '8'
@@ -39,7 +39,7 @@ items:
         volumes:
         - name: secrets
           secret:
-            secretName: cockpit-tests-secrets
+            secretName: cockpit-tasks-secrets
         - name: cache
           emptyDir: {}
         - name: images

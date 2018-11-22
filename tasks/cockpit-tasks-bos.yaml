@@ -17,7 +17,7 @@ items:
       spec:
         containers:
         - name: cockpit-tasks
-          image: docker.io/cockpit/tests
+          image: docker.io/cockpit/tasks
           securityContext:
             runAsUser: 1111
             hostNetwork: false
@@ -52,10 +52,10 @@ items:
         volumes:
         - name: secrets
           secret:
-            secretName: cockpit-tests-secrets
+            secretName: cockpit-tasks-secrets
         - name: cache
           hostPath:
-            path: "/var/cache/cockpit-tests"
+            path: "/var/cache/cockpit-tasks"
         - name: shm
           emptyDir:
             medium: Memory

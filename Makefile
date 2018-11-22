@@ -9,8 +9,8 @@ docker-running:
 	systemctl start docker
 
 TAG := $(shell date --iso-8601)
-TEST_SECRETS := /var/lib/cockpit-tests/secrets
-TEST_CACHE := /var/cache/cockpit-tests
+TASK_SECRETS := /var/lib/cockpit-tasks/secrets
+TASK_CACHE := /var/cache/cockpit-tasks
 
 base-container: docker-running
 	docker build -t docker.io/cockpit/infra-base:$(TAG) base
@@ -25,8 +25,8 @@ containers: images-container release-container tests-container
 
 images-shell: docker-running
 	docker run -ti --rm --publish=8493:443 \
-		--volume=$(TEST_SECRETS):/secrets:ro \
-		--volume=$(TEST_CACHE):/cache:rw \
+		--volume=$(TASK_SECRETS):/secrets:ro \
+		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
         cockpit/images -i
 
@@ -70,25 +70,25 @@ release-container: docker-running
 release-push: docker-running
 	base/push-container docker.io/cockpit/release
 
-tests-shell: docker-running
+tasks-shell: docker-running
 	docker run -ti --rm \
 		--privileged --uts=host \
-		--volume=$(CURDIR)/tests:/usr/local/bin \
-		--volume=$(TEST_SECRETS):/secrets:ro \
-		--volume=$(TEST_CACHE):/cache:rw \
+		--volume=$(CURDIR)/tasks:/usr/local/bin \
+		--volume=$(TASK_SECRETS):/secrets:ro \
+		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
-        docker.io/cockpit/tests -i
+        docker.io/cockpit/tasks -i
 
-tests-container: docker-running
-	docker build -t docker.io/cockpit/tests:$(TAG) tests
-	docker tag docker.io/cockpit/tests:$(TAG) docker.io/cockpit/tests:latest
-	docker tag docker.io/cockpit/tests:$(TAG) cockpit/tests:latest
+tasks-container: docker-running
+	docker build -t docker.io/cockpit/tasks:$(TAG) tasks
+	docker tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
+	docker tag docker.io/cockpit/tasks:$(TAG) cockpit/tasks:latest
 
-tests-push: docker-running
-	base/push-container docker.io/cockpit/tests
+tasks-push: docker-running
+	base/push-container docker.io/cockpit/tasks
 
-tests-secrets:
-	@cd tests && ./build-secrets $(TEST_SECRETS)
+tasks-secrets:
+	@cd tasks && ./build-secrets $(TASK_SECRETS)
 
 learn-shell: docker-running
 	docker run -ti --rm \

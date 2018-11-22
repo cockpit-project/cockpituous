@@ -60,7 +60,7 @@ RUN dnf -y update && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
-COPY cockpit-tests install-service /usr/local/bin/
+COPY cockpit-tasks install-service /usr/local/bin/
 
 RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
     usermod -a -G mock user && \
@@ -99,7 +99,7 @@ VOLUME /secrets /cache /tmp
 
 USER user
 WORKDIR /build
-CMD ["/usr/local/bin/cockpit-tests", "--publish", "$TEST_PUBLISH", "--verbose"]
+CMD ["/usr/local/bin/cockpit-tasks", "--publish", "$TEST_PUBLISH", "--verbose"]
 
 # We execute the script in the host, but it doesn't exist on the host. So pipe it in
 LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --user=root IMAGE /bin/bash -c \"/usr/sbin/chroot /host /bin/sh -s < /usr/local/bin/install-service\"
