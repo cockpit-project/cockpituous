@@ -89,8 +89,10 @@ to access ```/dev/kvm```. Further work is necessary to remove this requirement.
     $ oc adm policy add-scc-to-user anyuid -z cockpituous
     $ oc adm policy add-scc-to-user hostmount-anyuid -z cockpituous
 
-Now create all the remaining kubernetes objects. The secrets are created from the
-```/var/lib/cockpit-tasks/secrets``` directory as described above.
+Now create all the remaining kubernetes objects. The secrets are created from
+the ```/var/lib/cockpit-tasks/secrets``` directory as described above. For the
+webhook secrets a github token `~/.config/github-webhook-token` should be
+present.
 
     $ sudo make tasks-secrets | oc create -f -
     $ oc create -f tasks/cockpit-tasks.json
@@ -137,3 +139,26 @@ We can scale the number of testing machines in the openshift cluster with this
 command:
 
     $ oc scale rc cockpit-tasks --replicas=3
+
+## Let GitHub webhook trigger actions
+
+The intention is that the webhook pod automatically starts a release runner
+whenever a new release tag gets pushed to a project. This can be done with a
+[GitHub webhook](https://developer.github.com/webhooks/).
+
+Add a webhook to your GitHub project on the Settings → Webhooks page of your project:
+
+ * Set a Payload URL like
+
+       http://webhook-cockpit.apps.ci.centos.org/tools/cockpituous
+
+   using the URL of the deployed route, and the path to the release script of
+   the corresponding project's git tree (the git repository URL will be taken
+   from the POST data that GitHub sends).
+
+ * Use the same secret as in `~/.config/github-webhook-token` above.
+
+ * Change the Content Type to `application/json`.
+
+ * Select "Let me select individual events" and let the hook run on "Branch or
+   tag creation", and nothing else.
