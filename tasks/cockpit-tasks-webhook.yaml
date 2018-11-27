@@ -5,20 +5,20 @@ items:
 - kind: ReplicationController
   apiVersion: v1
   metadata:
-    name: release
+    name: webhook
   spec:
     replicas: 1
     selector:
-      infra: cockpit-release
+      infra: webhook
     template:
       metadata:
-        name: release
+        name: webhook
         labels:
-          infra: cockpit-release
+          infra: webhook
       spec:
         containers:
-          - name: release
-            image: cockpit/release
+          - name: webhook
+            image: cockpit/tasks
             ports:
               - containerPort: 8080
                 protocol: TCP
@@ -30,27 +30,30 @@ items:
         volumes:
         - name: webhook-secrets
           secret:
-            secretName: cockpit-release-webhook-secrets
+            secretName: webhook-secrets
         serviceAccountName: create-job
 
 - kind: Service
   apiVersion: v1
   metadata:
-    name: cockpit-release
+    name: webhook
   spec:
     clusterIP: None
     selector:
-      infra: cockpit-release
+      infra: webhook
     ports:
     - name: webhook
-      port: 8080
+      port: 80
+      targetPort: 8080
       protocol: TCP
 
 - kind: Route
   apiVersion: v1
   metadata:
-    name: release
+    name: webhook
   spec:
     to:
       kind: Service
-      name: cockpit-release
+      name: webhook
+    port:
+      targetPort: 8080
