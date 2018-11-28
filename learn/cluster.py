@@ -242,7 +242,8 @@ class Model():
         features = self.extractor.transform(items)
         Y = ncd.prepare(map(lambda x: x[0], self.features))
         X = ncd.prepare(map(lambda x: x[0], features))
-        matrix = sklearn.metrics.pairwise.pairwise_distances(X, Y, metric=ncd.metric, state=ncd.state, n_jobs=-1)
+        jobs = os.cpu_count() or -1
+        matrix = sklearn.metrics.pairwise.pairwise_distances(X, Y, metric=ncd.metric, state=ncd.state, n_jobs=jobs)
         result = [ ]
 
         # TODO: The probability is currently bogus, we could use distance measurements to fill it in
