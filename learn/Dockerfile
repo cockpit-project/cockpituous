@@ -6,6 +6,7 @@ RUN dnf -y update \
         lighttpd \
         python3 \
         python3-scikit-learn \
+        python3-matplotlib \
  && dnf clean all
 
 RUN mkdir -p /cache/train \
