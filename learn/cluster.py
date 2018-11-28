@@ -195,7 +195,7 @@ class Model():
         # There is significant room for improvement both here, and in the following
         # DBSCAN usage and implementation. Techniques such as feature/item selection
         # BIRCH, ball trees, or many other things could make this better/faster
-        matrix = sklearn.metrics.pairwise.pairwise_distances(X, metric=ncd.metric, n_jobs=jobs)
+        matrix = sklearn.metrics.pairwise.pairwise_distances(X, metric=ncd.metric, state=ncd.state, n_jobs=jobs)
 
         if self.verbose:
             sys.stderr.write("{0}: Computed distances in {1} seconds on {2} cores\n".format(
@@ -242,7 +242,7 @@ class Model():
         features = self.extractor.transform(items)
         Y = ncd.prepare(map(lambda x: x[0], self.features))
         X = ncd.prepare(map(lambda x: x[0], features))
-        matrix = sklearn.metrics.pairwise.pairwise_distances(X, Y, metric=ncd.metric, n_jobs=-1)
+        matrix = sklearn.metrics.pairwise.pairwise_distances(X, Y, metric=ncd.metric, state=ncd.state, n_jobs=-1)
         result = [ ]
 
         # TODO: The probability is currently bogus, we could use distance measurements to fill it in
