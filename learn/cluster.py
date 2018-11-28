@@ -45,8 +45,12 @@ import sys
 import time
 import tempfile
 
+import numpy
+
 import sklearn.cluster
 import sklearn.neighbors
+import sklearn.manifold
+import sklearn.utils
 
 BASE = os.path.dirname(__file__)
 sys.path.insert(1, os.path.join(BASE, ".."))
@@ -77,6 +81,7 @@ def save(directory, model):
     (outfd, outname) = tempfile.mkstemp(prefix=FILENAME, dir=directory)
     os.close(outfd)
     with gzip.open(outname, 'wb') as fp:
+        model.clean()
         pickle.dump(model, fp, protocol=4)
     os.rename(outname, path)
     return path
@@ -165,6 +170,7 @@ class Model():
         self.verbose = verbose
         self.extractor = None
         self.features = None
+        self.squashed = None
 
     # Perform the unsupervised clustering
     def train(self, items, limit=None):
@@ -236,6 +242,14 @@ class Model():
         self.neighbors = sklearn.neighbors.KNeighborsClassifier(metric='precomputed', weights='distance')
         self.neighbors.fit(matrix, labels)
 
+        # Collapse the high dimensionality of the matrix data
+        #
+        # HACK: scikit-learn has a parallelization bug where pairwise_distances
+        # returns a non-symmetric array for certain floats when using loky (default)
+        # parallelization. The MDS call requires a symmetric array up to E-10
+        matrix = sklearn.utils.validation.check_symmetric(matrix)
+        self.squashed = sklearn.manifold.MDS(n_components=2, dissimilarity='precomputed').fit_transform(matrix)
+
     # Predict which clusters these items are a part of
     # The cluster labels are returned for each item, along with a probability
     def predict(self, items):
@@ -255,6 +269,10 @@ class Model():
                 result.append((label, 0.5))
         return result
 
+    # Discard debugging data to reduce memory usage
+    def clean(self):
+        self.squashed = None
+
     # Dump the cluster's models and noise to a directory
     def dump(self, directory):
         if not os.path.exists(directory):
@@ -262,6 +280,45 @@ class Model():
         for label, cluster in self.clusters.items():
             cluster.dump(os.path.join(directory, str(label)), self.features)
         self.noise.dump(directory, self.features)
+        self.render(directory)
+
+    def render(self, directory):
+        try:
+            import matplotlib.figure
+            import matplotlib.cm
+        except ImportError as ex:
+            sys.stderr.write("not writing out image: {}".format(ex))
+            return
+
+        squashed = self.squashed
+        if squashed is None:
+            return
+
+        name = 'clusters.png'
+        labels = set(self.clusters.keys())
+        colors = [matplotlib.cm.Spectral(each) for each in numpy.linspace(0, 1, len(labels))]
+
+        figure = matplotlib.figure.Figure(figsize=(16, 12))
+        axes = figure.gca()
+
+        def plot(cluster, color, marker):
+            first = True
+            for point in cluster.points:
+                (x, y) = squashed[point]
+                if first and cluster.label: # The first point gets a label
+                    axes.annotate(str(cluster.label), (x + 0.01, y))
+                first = False
+                axes.scatter(x, y, color=color, marker=marker, alpha=0.4)
+
+        # Plot all the clusters with colors and labels
+        for label, cluster in self.clusters.items():
+            plot(cluster, color=colors[label], marker='o')
+
+        # Plot the background noise as grey
+        plot(self.noise, color=(0.6, 0.6, 0.6), marker='x')
+
+        figure.tight_layout()
+        figure.savefig(os.path.join(directory, "clusters.png"), dpi=200)
 
 # This is a helpful debugger to help diagnose data, and figure out if we're
 # getting the above threshold and regular expressions right
