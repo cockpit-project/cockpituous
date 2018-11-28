@@ -28,7 +28,7 @@ import zlib
 
 import numpy
 
-__all__ = [ "calculate", "prepare", "metric" ]
+__all__ = [ "calculate", "prepare", "metric", "state" ]
 
 def K(val):
     result = len(zlib.compress(val.encode('utf-8'), 6))
@@ -36,18 +36,21 @@ def K(val):
 
 # We use a cache to accelelerate NCD calculations and avoid
 # same of the re-compression of identical data
-cache = { }
-vectors = [ ]
+class State:
+    def __init__(self):
+        self.cache = { }
+        self.vectors = [ ]
+state = State()
 
-def calculate(a, b):
+def calculate(a, b, state=state):
     # Zero distance between identical pairs
     if a == b:
         return 0
     # Compression length for individual parts are cached
-    Ka = cache.get(a)
+    Ka = state.cache.get(a)
     if Ka is None:
         Ka = K(a)
-    Kb = cache.get(b)
+    Kb = state.cache.get(b)
     if Kb is None:
         Kb = K(b)
     # The compression distance for combined
@@ -55,18 +58,18 @@ def calculate(a, b):
     return (Kab - min(Ka, Kb)) / max(Ka, Kb)
 
 # Precompute all individual hashes to cache and convert to vector array
-def prepare(values):
+def prepare(values, state=state):
     values = list(values)
     array = numpy.zeros((len(values), 1))
     for i, value in enumerate(values):
-        index = len(vectors)
+        index = len(state.vectors)
         array[i][0] = index
-        vectors.append(value)
-        cache[value] = K(value)
+        state.vectors.append(value)
+        state.cache[value] = K(value)
     return array
 
 # A function usable as a metric in scikit-learn
 # Make sure to call prepare() first on the actual values
-def metric(x, y, values=vectors):
+def metric(x, y, state=state):
     i, j = int(x[0]), int(y[0])
-    return calculate(values[i], values[j])
+    return calculate(state.vectors[i], state.vectors[j], state=state)
