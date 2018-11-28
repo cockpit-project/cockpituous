@@ -292,17 +292,12 @@ if __name__ == '__main__':
             else:
                 b.append(item)
         return a, b
-    train, predict = split(items, 0.6)
 
     # Write to the current directory
-    directory = "."
+    directory = "./trained"
 
     model = Model(verbose=opts.verbose)
-    model.train(train)
-
-    results = model.predict(predict)
+    model.train(items)
 
     # Dump our clusters and predicted results, using fake clusters
     model.dump(directory)
-    for point, result in enumerate(results):
-        Cluster(result[0], [ 0 ]).dump(directory, [ (predict[point]["log"], ) ], detail="predict")
