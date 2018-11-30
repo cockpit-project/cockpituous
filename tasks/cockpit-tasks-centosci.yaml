@@ -23,6 +23,8 @@ items:
             value: '8'
           - name: TEST_PUBLISH
             value: sink
+          - name: AMQP_SERVER
+            value: 'amqp.cockpit.svc.cluster.local:5671'
           volumeMounts:
           - name: secrets
             mountPath: "/secrets"

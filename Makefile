@@ -6,7 +6,8 @@ all:
 	@echo "       make release-install" >&2
 
 TAG := $(shell date --iso-8601)
-TASK_SECRETS := /var/lib/cockpit-tasks/secrets
+TASK_SECRETS := /var/lib/cockpit-secrets/tasks
+WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
 TASK_CACHE := /var/cache/cockpit-tasks
 DOCKER := $(shell which podman docker 2>/dev/null)
 
@@ -73,6 +74,7 @@ tasks-shell:
 		--privileged --uts=host \
 		--volume=$(CURDIR)/tasks:/usr/local/bin \
 		--volume=$(TASK_SECRETS):/secrets:ro \
+		--volume=$(WEBHOOK_SECRETS):/run/webhook/secrets:ro \
 		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
         docker.io/cockpit/tasks -i

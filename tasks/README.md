@@ -63,6 +63,11 @@ And now you can start the service:
     $ sudo systemctl start cockpit-tasks
     $ sudo systemctl enable cockpit-tasks
 
+To generate the certificates needed for cross-cluster amqp auth follow this
+guide:
+
+    https://www.rabbitmq.com/ssl.html
+
 ## Troubleshooting
 
 Some helpful commands:
@@ -142,10 +147,6 @@ command:
 
 ## Let GitHub webhook trigger actions
 
-The intention is that the webhook pod automatically starts a release runner
-whenever a new release tag gets pushed to a project. This can be done with a
-[GitHub webhook](https://developer.github.com/webhooks/).
-
 Add a webhook to your GitHub project on the Settings → Webhooks page of your project:
 
  * Set a Payload URL like
@@ -161,4 +162,24 @@ Add a webhook to your GitHub project on the Settings → Webhooks page of your p
  * Change the Content Type to `application/json`.
 
  * Select "Let me select individual events" and let the hook run on "Branch or
-   tag creation", and nothing else.
+   tag creation", "Pull requests", and "Statuses".
+
+See [GitHub development documentation](https://developer.github.com/webhooks/)
+for more information.
+
+### Automated releases
+
+Whenever a new release tag gets pushed to a project a "create" event is received
+by the webhook which automatically starts a release runner.
+
+### Automated testing
+
+When a pull request event is received, the webhook will scan the pull request
+for tests that need to be run. These will be put in a distributed queue to later
+be consumed by other task bots. If "[no-test]" is in the title of the pull
+request, it won't be scanned.
+
+When a status event is received where the description ends with
+"(direct trigger)", the webhook will scan the pull request with the revision
+equal to the sha1 associated with the status for a specific test to run. The
+test will be put in a distributed queue to later be consumed by other task bots.
