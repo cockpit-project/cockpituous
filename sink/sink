@@ -109,7 +109,8 @@ def contains(expect, result, debug=True):
                     found += 1
             if found == 0:
                 if debug:
-                    sys.stderr.write("Expected " + json.dumps(exp) + " but not present\n")
+                    sys.stderr.write("Expected " + json.dumps(exp) + " but not present in " +
+                                     json.dumps(result) + "\n")
                 return False
             elif found > 1:
                 if debug:
