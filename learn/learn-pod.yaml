@@ -5,9 +5,9 @@ items:
 - kind: Pod
   apiVersion: v1
   metadata:
-    name: cockpit-learn-v2
+    name: learn-tests-v2
     labels:
-      infra: cockpit-learn-v2
+      infra: learn-tests-v2
   spec:
     containers:
       - name: predict
@@ -15,6 +15,8 @@ items:
         command: [ "lighttpd", "-D", "-f", "/learn/lighttpd.conf" ]
         ports:
           - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8090
             protocol: TCP
         volumeMounts:
          - name: cache
@@ -37,12 +39,12 @@ items:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: cockpit-learn
+    name: learn-tests-v2
   spec:
     selector:
       infra: cockpit-learn
     ports:
     - name: http
       port: 80
-      targetPort: 8080
+      targetPort: 8090
       protocol: TCP

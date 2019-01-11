@@ -18,75 +18,89 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Cockpit; If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
 import gzip
-import json
 import os
-import re
-import socket
-import ssl
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
-import time
-import urllib.parse
-import urllib.request, urllib.error, urllib.parse
-import zlib
+import urllib.request
 
 sys.dont_write_bytecode = True
 
-# The number of days of previous closed pull requests to learn from
-GATHER_DAYS = 120
+def upload(dest, outname):
+    sys.stderr.write("upload {}\n".format(dest))
+    if "://" in dest:
+        cmd = ["curl", "--fail", "--upload-file", outname, dest ]
+        curl = subprocess.Popen(cmd)
+        ret = curl.wait()
+        if ret == 0:
+            os.unlink(outname)
+        else:
+            sys.stderr.write("image-upload: unable to upload image: {0}\n".format(dest))
+        return ret
+    else:
+        os.rename(outname, dest)
+        return 0
 
-def run(repository, filename, verbose=False, dry=False, **kwargs):
-
-    args = [ ]
-    if verbose:
-        args.append("--verbose")
+def run(filename, pipeline, verbose=False):
+    if "://" in filename:
+        directory = os.getcwd()
+    else:
+        directory = os.path.dirname(filename)
 
     # Seed with our input data
-    (outfd, outname) = tempfile.mkstemp(prefix=os.path.basename(filename), dir=os.path.dirname(filename))
+    (outfd, outname) = tempfile.mkstemp(prefix=os.path.basename(filename), dir=directory)
     os.close(outfd)
 
-    stdin = subprocess.DEVNULL
-    seed = None
-
-    if os.path.exists(filename):
-        if verbose:
-            sys.stderr.write("{0}\n".format(os.path.basename(filename)))
-        seed = subprocess.Popen(["zcat", filename], stdout=subprocess.PIPE)
-        stdin = seed.stdout
-
+    env = os.environ.copy()
     base = os.path.abspath(os.path.dirname(__file__))
-    github = subprocess.Popen([
-            os.path.join(base, "data-github"),
-            "--since={0}".format(SINCE_DAYS]),
-            repository
-        ] + args, stdin=stdin, stdout=PIPE)
-    expand = subprocess.Popen([os.path.join(base, "data-expand")] + args,
-            stdin=github.stdout, stdout=PIPE)
+    env["PATH"] = "{0}:{1}".format(os.environ.get("PATH", ""), base)
+    env["TEST_VERBOSE"] = "1"
 
-    # Write all the output here
-    with gzip.open(outname, 'wb') as fp:
-        shutil.copyfileobj(expand.stdout, fp)
+    if filename.endswith(".gz"):
+        pipeline = "gunzip -f | " + pipeline + " | gzip"
 
-    ret = 0
-    if seed:
-        ret |= seed.wait()
-    ret |= github.wait()
-    ret |= expand.wait()
+    with open(outname, 'wb') as fp:
+        pipe = subprocess.Popen([ "/bin/sh", "-c", pipeline ], env=env, stdin=subprocess.PIPE, stdout=fp)
+        seed = None
+        try:
+            if "://" in filename:
+                seed = urllib.request.urlopen(filename)
+            elif os.path.exists(filename):
+                seed = open(filename, 'rb')
+            if seed:
+                shutil.copyfileobj(seed, pipe.stdin)
+        except urllib.error.HTTPError as ex:
+            if ex.code != 404:
+                raise
+        finally:
+            if seed:
+                seed.close()
+            if pipe:
+                pipe.stdin.close()
+                ret = pipe.wait()
 
-    if not ret:
-        os.rename(outname, filename)
+    sys.stderr.write("done {}\n".format(ret))
+    if ret == 0:
+        ret = upload(filename, outname)
 
     return ret
 
 def main():
     parser = argparse.ArgumentParser(description="Gather test data")
+    parser.add_argument('--verbose', action='store_true', help='Print verbose retrieval data')
     parser.add_argument('filename', help='The file name to write and read from')
-    parser.add_argument('commands', nargs='+', help='The command line to run')
+    parser.add_argument('pipeline', nargs='+', help='The command or commands to use as a pipe')
     opts = parser.parse_args()
 
-    
+    pipeline = " ".join(opts.pipeline)
+    return run(opts.filename, pipeline, opts.verbose)
 
 if __name__ == '__main__':
-    task.main(function=run, title="Pull out test data for pull requests", verbose=True)
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(128 + signal.SIGINT)

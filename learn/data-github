@@ -22,6 +22,7 @@ import argparse
 import itertools
 import json
 import os
+import signal
 import sys
 import time
 import subprocess
@@ -31,6 +32,9 @@ import zlib
 import github
 
 SEEDED = set()
+
+# The number of days of previous closed pull requests to learn from
+GATHER_DAYS = 120
 
 # Merge two dicts in a way compatible with Python 3.4 or eariler
 def combine(x, y):
@@ -313,8 +317,9 @@ def main():
         help="A branch to gather test data from (defaults to 'master')")
     parser.add_argument('--only', type=str, nargs="?",
         help="A specific commit id, pull request to gather data from")
-    parser.add_argument('--since', type=int, default=120, help='Number of days which to retrieve')
-    parser.add_argument('--verbose', action='store_true', help='Print verbose retrieval data')
+    parser.add_argument('--since', type=int, default=GATHER_DAYS, help='Number of days which to retrieve')
+    parser.add_argument('--verbose', action='store_true', default='TEST_VERBOSE' in os.environ,
+            help='Print verbose retrieval data')
     parser.add_argument('repo', help='The github repository to retrieve from')
     opts = parser.parse_args()
 
@@ -363,4 +368,7 @@ def main():
             write(combine(item, { "status": None }))
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(128 + signal.SIGINT)

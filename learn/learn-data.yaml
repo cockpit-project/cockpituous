@@ -1,0 +1,16 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: learn-tests-data
+spec:
+  schedule: "20 20 * * 0"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: docker.io/cockpit/learn:v2
+            entrypoint: [ "learn/gather-tests", "--verbose", "http://tests-learn-v2/train/tests-train-2.jsonl.gz" ]
+            command: [ "data-github cockpit-project/cockpit | data-expand" ]
+          restartPolicy: OnFailure

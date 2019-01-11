@@ -20,6 +20,8 @@
 
 import argparse
 import json
+import os
+import signal
 import socket
 import ssl
 import sys
@@ -165,7 +167,8 @@ def tap_cockpit(content, base):
 
 def main():
     parser = argparse.ArgumentParser(description='Parse and expand Cockpit TAP test data')
-    parser.add_argument('--verbose', action='store_true', help='Print verbose retrieval data')
+    parser.add_argument('--verbose', action='store_true', default='TEST_VERBOSE' in os.environ,
+            help='Print verbose retrieval data')
     opts = parser.parse_args()
 
     input = sys.stdin.buffer
@@ -186,4 +189,7 @@ def main():
             output.write(line)
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(128 + signal.SIGINT)

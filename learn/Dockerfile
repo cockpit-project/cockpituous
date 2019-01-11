@@ -7,6 +7,8 @@ RUN dnf -y update \
         python3 \
         python3-scikit-learn \
         python3-matplotlib \
+        python3-pip \
+ && pip3 install hdbscan \
  && dnf clean all
 
 RUN mkdir -p /cache/train \
@@ -18,7 +20,7 @@ ENV TEST_DATA=/cache \
     PATH=$PATH:/learn \
     HOME=/home/user
 
-EXPOSE 8080
+EXPOSE 8080 8090
 VOLUME /cache
 VOLUME /cache/train
 STOPSIGNAL SIGQUIT
