@@ -5,10 +5,6 @@ DOCKER=$(which podman docker 2>/dev/null || true)
 ID=$($DOCKER images -q $IMAGE:latest | head -n1)
 
 TAGS=$($DOCKER images --format "table {{.Tag}}\t{{.ID}}" $IMAGE | grep $ID | awk '{print $1}')
-if [ $(echo "$TAGS" | wc -w) -ne "2" ]; then
-	echo "Expected exactly two tags for the image to push: latest and one other"
-	exit 1
-fi
 for PUSHTAG in $TAGS; do
     $DOCKER push "$IMAGE:$PUSHTAG"
 done

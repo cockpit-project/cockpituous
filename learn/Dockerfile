@@ -1,4 +1,4 @@
-FROM cockpit/infra-base
+FROM docker.io/cockpit/infra-base
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 RUN dnf -y update \
