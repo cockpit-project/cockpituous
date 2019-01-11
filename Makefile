@@ -5,43 +5,41 @@ all:
 	@echo "       make release-container" >&2
 	@echo "       make release-install" >&2
 
-docker-running:
-	systemctl start docker
-
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-tasks/secrets
 TASK_CACHE := /var/cache/cockpit-tasks
+DOCKER := $(shell which podman docker 2>/dev/null)
 
-base-container: docker-running
-	docker build -t docker.io/cockpit/infra-base:$(TAG) base
-	docker tag docker.io/cockpit/infra-base:$(TAG) docker.io/cockpit/infra-base:latest
-	docker tag cockpit/infra-base:$(TAG) cockpit/infra-base:latest
+base-container:
+	$(DOCKER) build -t docker.io/cockpit/infra-base:$(TAG) base
+	$(DOCKER) tag docker.io/cockpit/infra-base:$(TAG) docker.io/cockpit/infra-base:latest
+	$(DOCKER) tag cockpit/infra-base:$(TAG) cockpit/infra-base:latest
 
-base-push: docker-running
+base-push:
 	base/push-container docker.io/cockpit/infra-base
 
 containers: images-container release-container tests-container
 	@true
 
-images-shell: docker-running
-	docker run -ti --rm --publish=8493:443 \
+images-shell:
+	$(DOCKER) run -ti --rm --publish=8493:443 \
 		--volume=$(TASK_SECRETS):/secrets:ro \
 		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
         cockpit/images -i
 
-images-container: docker-running
-	docker build -t docker.io/cockpit/images:$(TAG) images
-	docker tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
-	docker tag docker.io/cockpit/images:$(TAG) cockpit/images:latest
+images-container:
+	$(DOCKER) build -t docker.io/cockpit/images:$(TAG) images
+	$(DOCKER) tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
+	$(DOCKER) tag docker.io/cockpit/images:$(TAG) cockpit/images:latest
 
-images-push: docker-running
+images-push:
 	base/push-container docker.io/cockpit/images
 
-release-shell: docker-running
+release-shell:
 	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
 	chown -R cockpit:cockpit /home/cockpit/release
-	docker run -ti --rm -v /home/cockpit:/home/user:rw \
+	$(DOCKER) run -ti --rm -v /home/cockpit:/home/user:rw \
 		--privileged \
 		--env=RELEASE_SINK=fedorapeople.org \
 		--volume=/home/cockpit:/home/user:rw \
@@ -50,10 +48,10 @@ release-shell: docker-running
 		--entrypoint=/bin/bash docker.io/cockpit/release
 
 # run release container for a Cockpit release
-release-cockpit: docker-running
+release-cockpit:
 	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
 	chown -R cockpit:cockpit /home/cockpit/release
-	docker run -ti --rm -v /home/cockpit:/home/user:rw \
+	$(DOCKER) run -ti --rm -v /home/cockpit:/home/user:rw \
 		--privileged \
 		--env=RELEASE_SINK=fedorapeople.org \
 		--volume=/home/cockpit:/home/user:rw \
@@ -62,16 +60,16 @@ release-cockpit: docker-running
 		docker.io/cockpit/release \
 		-r https://github.com/cockpit-project/cockpit /build/tools/cockpituous-release
 
-release-container: docker-running
-	docker build -t docker.io/cockpit/release:$(TAG) release
-	docker tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
-	docker tag docker.io/cockpit/release:$(TAG) cockpit/release:latest
+release-container:
+	$(DOCKER) build -t docker.io/cockpit/release:$(TAG) release
+	$(DOCKER) tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
+	$(DOCKER) tag docker.io/cockpit/release:$(TAG) cockpit/release:latest
 
-release-push: docker-running
+release-push:
 	base/push-container docker.io/cockpit/release
 
-tasks-shell: docker-running
-	docker run -ti --rm \
+tasks-shell:
+	$(DOCKER) run -ti --rm \
 		--privileged --uts=host \
 		--volume=$(CURDIR)/tasks:/usr/local/bin \
 		--volume=$(TASK_SECRETS):/secrets:ro \
@@ -79,29 +77,29 @@ tasks-shell: docker-running
 		--entrypoint=/bin/bash \
         docker.io/cockpit/tasks -i
 
-tasks-container: docker-running
-	docker build -t docker.io/cockpit/tasks:$(TAG) tasks
-	docker tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
-	docker tag docker.io/cockpit/tasks:$(TAG) cockpit/tasks:latest
+tasks-container:
+	$(DOCKER) build -t docker.io/cockpit/tasks:$(TAG) tasks
+	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
+	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) cockpit/tasks:latest
 
-tasks-push: docker-running
+tasks-push:
 	base/push-container docker.io/cockpit/tasks
 
 tasks-secrets:
 	@cd tasks && ./build-secrets $(TASK_SECRETS)
 
-learn-shell: docker-running
-	docker run -ti --rm \
+learn-shell:
+	$(DOCKER) run -ti --rm \
 		--privileged \
 		--publish=8080:8080 \
 		--volume=$(CURDIR)/learn:/learn \
 		--entrypoint=/bin/bash \
         docker.io/cockpit/learn -i
 
-learn-container: docker-running
-	docker build -t docker.io/cockpit/learn:$(TAG) learn
-	docker tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
-	docker tag docker.io/cockpit/learn:$(TAG) cockpit/learn:latest
+learn-container:
+	$(DOCKER) build -t docker.io/cockpit/learn:$(TAG) learn
+	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
+	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) cockpit/learn:latest
 
-learn-push: docker-running
+learn-push:
 	base/push-container docker.io/cockpit/learn
