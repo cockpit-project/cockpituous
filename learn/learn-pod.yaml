@@ -42,7 +42,7 @@ items:
     name: learn-tests-v2
   spec:
     selector:
-      infra: cockpit-learn
+      infra: learn-tests-v2
     ports:
     - name: http
       port: 80

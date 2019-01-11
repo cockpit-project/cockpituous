@@ -117,8 +117,8 @@ with curl should work:
 
 Alternatively you can expose the service temporarily. By doing the following:
 
-    $ kubectl create -f learn/cockpit-expose.yaml
-    $ kubectl describe route cockpit-expose
+    $ kubectl create -f learn/learn-exmpose.yaml
+    $ kubectl describe route learn-expose
     $ COCKPIT_LEARN_SERVICE_HOST=...
     $ COCKPIT_LEARN_SERVICE_PORT=80
 
