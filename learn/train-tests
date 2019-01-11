@@ -26,13 +26,13 @@ import sys
 import tempfile
 import time
 import traceback
+import warnings
 
 sys.dont_write_bytecode = True
 
 import analyze
 import cluster
 import data
-import tempfile
 
 DEFAULT_LIMIT = 15000
 DEFAULT_DIRECTORY = "."
@@ -73,10 +73,10 @@ def load(filenames, groups, verbose=False):
     for filename in filenames:
         if verbose:
             sys.stderr.write("{0}\n".format(os.path.basename(filename)))
-        yield from data.load(filename, only=analyze_an_load, verbose=verbose)
+        yield from data.load(filename, only=analyze_and_load, verbose=verbose)
 
 
-def run(filenames, directory=".", limit=None, verbose=False, **kwargs):
+def run(filenames, active, directory=".", limit=None, verbose=False, **kwargs):
     base = tempfile.mkdtemp(prefix='model-', dir=directory)
     log = open(os.path.join(base, "log"), "w")
 
@@ -147,25 +147,26 @@ def main(function):
             help="Input JSONL GZ file, or glob of files to wait for")
     opts = parser.parse_args()
 
+    active = os.path.join(opts.directory, "active")
     task = {
         "verbose": opts.verbose,
         "limit": opts.limit,
         "directory": opts.directory,
         "batch": opts.batch,
+        "active": active,
     }
 
-    stamp = os.path.join(opts.directory, "stamp"))
     result = 0
+
+    # The mtime of the stamp file helps us to know if we should process
+    try:
+        mtime = os.path.getmtime(active)
+    except IOError:
+        mtime = 0
 
     while True:
         filenames = []
-        updated = False
-
-        # The mtime of the stamp file helps us to know if we should process
-        try:
-            mtime = os.path.getmtime(stamp)
-        except IOError:
-            mtime = 0
+        changed = not opts.batch
 
         # Get the list of files to process
         for path in opts.inputs:
@@ -175,16 +176,13 @@ def main(function):
                     filenames.append(filename)
                     if modified > mtime:
                         mtime = modified
-                        updated = True
+                        changed = True
 
         # Now process the files
-        if updated or not opts.batch:
-            result &= run(filenames, **task)
+        if changed:
+            result = run(filenames, **task)
 
         # Place a stamp at /stamp
-        with open(stamp, 'a') as f:
-            os.utime(stamp, (mtime, mtime))
-
         if opts.batch:
             time.sleep(5)
         else:

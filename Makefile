@@ -99,7 +99,9 @@ learn-shell:
 learn-container:
 	$(DOCKER) build -t docker.io/cockpit/learn:$(TAG) learn
 	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
+	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:v2
 	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) cockpit/learn:latest
+	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) cockpit/learn:v2
 
 learn-push:
 	base/push-container docker.io/cockpit/learn
