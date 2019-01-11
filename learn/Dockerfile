@@ -11,8 +11,9 @@ RUN dnf -y update \
  && pip3 install hdbscan \
  && dnf clean all
 
-RUN mkdir -p /cache/train \
- && chown -R user /home/user /cache/train
+RUN mkdir -p /cache/train /home/user/.config \
+ && chown -R user /home/user /cache/train \
+ && ln -snf /secrets/github-token /home/user/.config/github-token
 
 COPY * /learn/
 WORKDIR /
@@ -23,6 +24,7 @@ ENV TEST_DATA=/cache \
 EXPOSE 8080 8090
 VOLUME /cache
 VOLUME /cache/train
+VOLUME /secrets
 STOPSIGNAL SIGQUIT
 CMD [ "/bin/bash" ]
 

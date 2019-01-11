@@ -46,14 +46,10 @@ def upload(dest, outname):
         return 0
 
 def run(filename, pipeline, verbose=False):
-    if "://" in filename:
+    if filename == '-' or "://" in filename:
         directory = os.getcwd()
     else:
         directory = os.path.dirname(filename)
-
-    # Seed with our input data
-    (outfd, outname) = tempfile.mkstemp(prefix=os.path.basename(filename), dir=directory)
-    os.close(outfd)
 
     env = os.environ.copy()
     base = os.path.abspath(os.path.dirname(__file__))
@@ -61,27 +57,56 @@ def run(filename, pipeline, verbose=False):
     env["TEST_VERBOSE"] = "1"
 
     if filename.endswith(".gz"):
-        pipeline = "gunzip -f | " + pipeline + " | gzip"
+        pipeline = list(pipeline)
+        pipeline.insert(0, "gunzip -f")
+        pipeline.append("gzip")
 
-    with open(outname, 'wb') as fp:
-        pipe = subprocess.Popen([ "/bin/sh", "-c", pipeline ], env=env, stdin=subprocess.PIPE, stdout=fp)
+    ret = 0
+    outfd = -1
+
+    try:
+        # A tempporary output filename if we're dealing with files
+        if filename != '-':
+            (outfd, outname) = tempfile.mkstemp(prefix=os.path.basename(filename), dir=directory)
+
+        # Start the pipeline
+        input = subprocess.PIPE
+        output = subprocess.PIPE
+        procs = []
+        for i, command in enumerate(pipeline):
+            # If the last command in the pipeline output to the file
+            if i == len(pipeline) - 1:
+                output = outfd
+            pipe = subprocess.Popen([ "/bin/sh", "-c", command ], env=env, stdin=input, stdout=output)
+            procs.append(pipe)
+            input = pipe.stdout
+
+        # Open the input for the pipeline
         seed = None
-        try:
-            if "://" in filename:
-                seed = urllib.request.urlopen(filename)
-            elif os.path.exists(filename):
-                seed = open(filename, 'rb')
-            if seed:
-                shutil.copyfileobj(seed, pipe.stdin)
-        except urllib.error.HTTPError as ex:
-            if ex.code != 404:
-                raise
-        finally:
-            if seed:
-                seed.close()
-            if pipe:
-                pipe.stdin.close()
-                ret = pipe.wait()
+        if filename == '-':
+            seed = sys.stdin
+        elif "://" in filename:
+            seed = urllib.request.urlopen(filename)
+        elif os.path.exists(filename):
+            seed = open(filename, 'rb')
+        if seed:
+            shutil.copyfileobj(seed, procs[0].stdin)
+
+    # Ignore 404 errors
+    except urllib.error.HTTPError as ex:
+        if ex.code != 404:
+            raise
+
+    # Let the pipeline finish
+    finally:
+        if seed:
+            seed.close()
+        if procs:
+            procs[0].stdin.close()
+        for proc in procs:
+            ret &= proc.wait()
+        if outfd >= 0:
+            os.close(outfd)
 
     sys.stderr.write("done {}\n".format(ret))
     if ret == 0:
@@ -96,8 +121,7 @@ def main():
     parser.add_argument('pipeline', nargs='+', help='The command or commands to use as a pipe')
     opts = parser.parse_args()
 
-    pipeline = " ".join(opts.pipeline)
-    return run(opts.filename, pipeline, opts.verbose)
+    return run(opts.filename, opts.pipeline, opts.verbose)
 
 if __name__ == '__main__':
     try:
