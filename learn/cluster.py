@@ -49,7 +49,7 @@ import numpy
 
 import sklearn.cluster
 import sklearn.neighbors
-import sklearn.manifold
+import sklearn.decomposition
 import sklearn.utils
 
 BASE = os.path.dirname(__file__)
@@ -243,12 +243,9 @@ class Model():
         self.neighbors.fit(matrix, labels)
 
         # Collapse the high dimensionality of the matrix data
-        #
-        # HACK: scikit-learn has a parallelization bug where pairwise_distances
-        # returns a non-symmetric array for certain floats when using loky (default)
-        # parallelization. The MDS call requires a symmetric array up to E-10
-        matrix = sklearn.utils.validation.check_symmetric(matrix)
-        self.squashed = sklearn.manifold.MDS(n_components=2, dissimilarity='precomputed').fit_transform(matrix)
+        # Treat each row of distance matrix as a multidimensional vector and
+        # use PCA to squash them down for 2D projection
+        self.squashed = sklearn.decomposition.PCA(n_components=2).fit_transform(matrix)
 
     # Predict which clusters these items are a part of
     # The cluster labels are returned for each item, along with a probability
