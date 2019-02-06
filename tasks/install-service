@@ -2,7 +2,7 @@
 
 set -eufx
 
-SECRETS=/var/lib/cockpit-tasks/secrets
+SECRETS=/var/lib/cockpit-secrets/tasks
 CACHE=/var/cache/cockpit-tasks
 
 mkdir -p $SECRETS $CACHE

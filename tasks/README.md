@@ -25,13 +25,13 @@ The container has optional mounts:
    * ```rhel-password```: Red Hat subscription credential password (optional)
  * ```/cache```: A directory for reusable cached data such as downloaded image files
 
-The mounts normally default to ```/var/lib/cockpit-tasks/secrets``` and
+The mounts normally default to ```/var/lib/cockpit-secrets/tasks``` and
 ```/var/cache/cockpit-tasks``` on the host.
 
 # Deploying on a host
 
 For testing machines that publish back results create a file called
-```/var/lib/cockpit-tasks/secrets/ssh-config``` as follows, and place ```id_rsa```
+```/var/lib/cockpit-secrets/tasks/ssh-config``` as follows, and place ```id_rsa```
 ```id_rsa.pub``` ```authorized_keys``` and a ```github-token``` in the same directory.
 
     UserKnownHostsFile /secrets/authorized_keys
@@ -44,7 +44,7 @@ To transfer secrets from one host to another, you would do something like:
 
     $ SRC=user@source.example.com
     $ DEST=user@source.example.com
-    $ ssh $SRC sudo tar -czf - /var/lib/cockpit-tasks/secrets/ | ssh $DEST sudo tar -C / -xzvf -
+    $ ssh $SRC sudo tar -czf - /var/lib/cockpit-secrets/tasks/ | ssh $DEST sudo tar -C / -xzvf -
 
 Make sure docker and atomic are installed and running:
 
@@ -90,7 +90,7 @@ to access ```/dev/kvm```. Further work is necessary to remove this requirement.
     $ oc adm policy add-scc-to-user hostmount-anyuid -z cockpituous
 
 Now create all the remaining kubernetes objects. The secrets are created from
-the ```/var/lib/cockpit-tasks/secrets``` directory as described above. For the
+the ```/var/lib/cockpit-secrets/tasks``` directory as described above. For the
 webhook secrets a github token `~/.config/github-webhook-token` should be
 present.
 
