@@ -87,6 +87,10 @@ class ReleaseHandler(github_handler.GithubHandler):
     def release(klass, project, tag, script):
         logging.info('Releasing project %s, tag %s, script %s', project, tag, script)
         jobname = 'release-job-%s-%s' % (os.path.splitext(os.path.basename(project))[0], tag)
+
+        # in case we want to restart a release, clean up the old job
+        subprocess.call(['oc', 'delete', 'job', jobname])
+
         job = JOB % {'jobname': jobname, 'git_repo': project, 'tag': tag, 'script': script, 'sink': SINK}
         try:
             oc = subprocess.Popen(['oc', 'create', '-f', '-'], stdin=subprocess.PIPE)
