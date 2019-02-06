@@ -3,7 +3,7 @@
 set -eufx
 
 CACHE=/var/cache/cockpit-tasks
-SECRETS=/var/lib/cockpit-tasks/secrets
+SECRETS=/var/lib/cockpit-secrets/tasks
 
 mkdir -p $CACHE $SECRETS
 chown -R 1111:1111 $CACHE $SECRETS
