@@ -10,8 +10,15 @@ and server SSL certificates and the `htpasswd` file for authenticating users
 that are allowed to upload.
 
     $ sudo docker pull cockpit/images
-    $ sudo atomic install cockpit/tasks
-    $ sudo systemctl start cockpit-tasks
+    $ sudo atomic install cockpit/images
+
+Or, if the `atomic` command is not available, run
+
+    $ sudo docker inspect --format '{{ index .Config.Labels "INSTALL"}}' cockpit/images  | sed 's_IMAGE_cockpit/images_'
+
+and execute that command.
+
+    $ sudo systemctl start cockpit-images
 
 # Deploying on OpenShift
 
