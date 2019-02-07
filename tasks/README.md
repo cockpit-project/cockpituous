@@ -44,7 +44,7 @@ To transfer secrets from one host to another, you would do something like:
 
     $ SRC=user@source.example.com
     $ DEST=user@source.example.com
-    $ ssh $SRC sudo tar -czf - /var/lib/cockpit-secrets/tasks/ | ssh $DEST sudo tar -C / -xzvf -
+    $ ssh $SRC sudo tar -czhf - /var/lib/cockpit-secrets/tasks/ | ssh $DEST sudo tar -C / -xzvf -
 
 Make sure docker and atomic are installed and running:
 
