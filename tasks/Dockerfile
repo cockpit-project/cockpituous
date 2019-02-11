@@ -27,6 +27,7 @@ RUN dnf -y update && \
         kernel-headers \
         koji \
         krb5-workstation \
+        libappstream-glib \
         libguestfs-tools \
         libguestfs-xfs \
         libvirt \
