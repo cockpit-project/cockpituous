@@ -30,6 +30,9 @@ items:
           - name: secrets
             mountPath: "/secrets"
             readOnly: true
+          - name: webhook-secrets
+            mountPath: /run/secrets/webhook
+            readOnly: true
           - name: cache
             mountPath: "/cache"
           - name: shm
@@ -53,6 +56,9 @@ items:
         - name: secrets
           secret:
             secretName: cockpit-tasks-secrets
+        - name: webhook-secrets
+          secret:
+            secretName: webhook-secrets
         - name: cache
           hostPath:
             path: "/var/cache/cockpit-tasks"

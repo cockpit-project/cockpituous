@@ -27,6 +27,9 @@ items:
           - name: secrets
             mountPath: "/secrets"
             readOnly: true
+          - name: webhook-secrets
+            mountPath: /run/secrets/webhook
+            readOnly: true
           - name: cache
             mountPath: "/cache"
           - name: images
@@ -40,6 +43,9 @@ items:
         - name: secrets
           secret:
             secretName: cockpit-tasks-secrets
+        - name: webhook-secrets
+          secret:
+            secretName: webhook-secrets
         - name: cache
           emptyDir: {}
         - name: images
