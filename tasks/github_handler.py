@@ -58,9 +58,9 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
 
         request = request.decode('UTF-8')
         logging.debug('event: %s, path: %s', event, self.path)
-        logging.debug(request)
 
         request = json.loads(request)
+        logging.debug('repository: %s', request['repository']['full_name'])
 
         try:
             request['repository']['clone_url']

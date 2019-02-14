@@ -26,6 +26,8 @@ items:
             value: '8'
           - name: TEST_PUBLISH
             value: sink
+          - name: AMQP_SERVER
+            value: 'amqp-cockpit.apps.ci.centos.org:443'
           volumeMounts:
           - name: secrets
             mountPath: "/secrets"

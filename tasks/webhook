@@ -5,6 +5,7 @@ import logging
 import subprocess
 import shutil
 import http.server
+import pipes
 
 import github_handler
 
@@ -12,6 +13,7 @@ HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
 # FIXME: make this a request parameter
 SINK = 'fedorapeople.org'
+COCKPIT_CHECKOUT = HOME_DIR + '/cockpit'
 
 # Kubernetes Job template for actually running a release
 JOB = '''---
@@ -42,6 +44,13 @@ spec:
       restartPolicy: Never
 '''
 
+PASSWD_ENTRY_SCRIPT = '''
+set -ex
+if ! whoami && [ -w /etc/passwd ]; then
+    echo "user:x:$(id -u):0:random uid:${HOME:-/home/user}:/sbin/nologin" >> /etc/passwd
+fi
+'''
+
 def setup():
     '''Prepare temporary home directory from secrets'''
 
@@ -62,12 +71,78 @@ def setup():
         shutil.copyfile(src, dest)
     os.umask(old_umask)
 
+    ensure_cockpit_checkout()
+    subprocess.check_call(['bots/tests-scan', '--amqp', 'amqp.cockpit.svc.cluster.local:5671'], cwd=COCKPIT_CHECKOUT)
+
+def ensure_cockpit_checkout():
+    if not os.path.isdir(COCKPIT_CHECKOUT):
+        url = 'https://github.com/cockpit-project/cockpit/'
+        subprocess.check_call(['git', 'clone', url, COCKPIT_CHECKOUT])
+    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'fetch', 'origin'])
+    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'reset', '--hard'])
+    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'clean', '-dxff'])
+    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'checkout', 'origin/master'])
+
 
 class ReleaseHandler(github_handler.GithubHandler):
     def handle_event(self, event, request):
-        if event != 'create':
-            return (501, 'unsupported event ' + event)
+        logging.info('Handling %s event', event)
+        if event == 'create':
+            return self.handle_create_event(event, request)
+        elif event == 'pull_request':
+            return self.handle_pull_request_event(event, request)
+        elif event == 'status':
+            return self.handle_status_event(event, request)
+        return (501, 'unsupported event ' + event)
 
+    def handle_pull_request_event(self, event, request):
+        repo = request['pull_request']['base']['repo']['full_name']
+        title = request['pull_request']['title']
+        number = int(request['number'])
+        action = request['action']
+
+        logging.info('repo: %s; title: %s; number: %d; action: %s', repo, title, number, action)
+        if '[no-test]' in title:
+            logging.info("Found '[no-test]' in pull request title, skipping testing")
+            return None
+        # see https://developer.github.com/v3/activity/events/types/#pullrequestevent for all actions
+        if action not in ['opened', 'synchronize']:
+            logging.info("action not in ['opened', 'synchronize'], skipping testing")
+            return None
+
+        ensure_cockpit_checkout()
+        cmd = ['bots/tests-scan', '--pull-number', str(number), '--amqp', 'amqp.cockpit.svc.cluster.local:5671']
+        # the cockpit repo itself is treated as a special case in tests-scan, in
+        # order to avoid complexity avoid supplying the repo option for now
+        if repo != 'cockpit-project/cockpit':
+            cmd += ['--repo', repo]
+        subprocess.check_call(cmd, cwd=COCKPIT_CHECKOUT)
+        return None
+
+    def handle_status_event(self, event, request):
+        repo = request['repository']['full_name']
+        sha = request['sha']
+        state = request['state']
+        context = pipes.quote(request['context'])
+        description = request.get('description', '')
+        if state != 'pending':
+            return None
+        # only allow manually triggered tests
+        logging.info('repo: %s; sha: %s; state: %s; description: %s', repo, sha, state, description)
+        if not description.rstrip().endswith('(direct trigger)'):
+            logging.info("Status description doesn't end with '(direct trigger)', skipping testing")
+            return None
+
+        ensure_cockpit_checkout()
+        cmd = ['bots/tests-scan', '--sha', sha, '--amqp', 'amqp.cockpit.svc.cluster.local:5671', '--context', context]
+        # the cockpit repo itself is treated as a special case in tests-scan, in
+        # order to avoid complexity avoid supplying the repo option for now
+        if repo != 'cockpit-project/cockpit':
+            cmd += ['--repo', repo]
+        subprocess.check_call(cmd, cwd=COCKPIT_CHECKOUT)
+        return None
+
+    def handle_create_event(self, event, request):
         ref_type = request.get('ref_type', '')
         if ref_type != 'tag':
             return (501, 'Ignoring ref_type %s, only doing releases on tags' % ref_type)
@@ -108,6 +183,10 @@ class ReleaseHandler(github_handler.GithubHandler):
 #
 
 logging.basicConfig(level=logging.DEBUG)  # INFO
+
+# ensure we have a passwd entry for random UIDs
+# https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
+subprocess.check_call(PASSWD_ENTRY_SCRIPT, shell=True)
 
 os.environ['HOME'] = HOME_DIR
 
