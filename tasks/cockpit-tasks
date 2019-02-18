@@ -84,6 +84,13 @@ function task() {
     ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | head -n 1
 }
 
+# wait between 1 and 10 minutes
+function slumber() {
+    sleep $(shuf -i 60-600 -n 1)
+}
+
+work_done=
+
 function run_one_task() {
     dir=$1
     repo_url=$2
@@ -97,17 +104,22 @@ function run_one_task() {
     # Get a task and execute it, 12 hours max
     line=$(task "$dir")
     if [ -n "$line" ] && /usr/bin/timeout 12h /bin/sh -c "cd '$dir/'; set -ex; $line"; then
-       return
+        work_done=1
     fi
-
-    # Nothing to do, or failure, wait between 1 and 10 minutes
-    sleep $(shuf -i 60-600 -n 1)
 }
+
+# on mass deployment, avoid GitHub stampede
+slumber
 
 # Perform a couple of tasks or waits, then restart
 for i in $(seq 1 30); do
+    work_done=
+
     update_repo  bots        https://github.com/cockpit-project/cockpit
     run_one_task cockpit     https://github.com/cockpit-project/cockpit
     run_one_task starter-kit https://github.com/cockpit-project/starter-kit
     run_one_task welder-web  https://github.com/weldr/welder-web
+
+    # Nothing to do, or failure
+    [ -n "$work_done" ] || slumber
 done
