@@ -149,4 +149,3 @@ items:
         auth_mechanisms.1 = EXTERNAL
         ssl_cert_login_from = common_name
         management.load_definitions = /etc/rabbitmq/definitions.json
-        heartbeat = 360
