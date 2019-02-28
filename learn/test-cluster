@@ -61,29 +61,74 @@ class TestCluster(unittest.TestCase):
             None, 4, 4, 4, None, None, None, 4, None, None, 4, None, None, None,
             4, 4, 4])
 
-    def testCluster(self):
+    def testAnalyze(self):
         clus = cluster.Cluster(0, list(range(0, len(self.items))))
         features = extractor.Extractor().fit_transform(self.items)
         analysis = clus.analyze(features)
         self.assertEqual(analysis, {
-            'label': '0',
-            'total': 100,
-            'merged': 0.5,
-            'trackers': [],
-            'names': [
-                ('testInternal (check_metrics.TestMetrics)', 0.1),
-                ('testTeam (check_networking_team.TestNetworking)', 0.08),
-                ('testBondMac (check_networking_mac.TestNetworking)', 0.07),
-                ('testNoConnectionSettings (check_networking_settings.TestNetworking)', 0.06),
-                ('testNegotiate (check_realms.TestKerberos)', 0.04)
+            'merged': [
+                (True, 50),
+                (False, 50)],
+            'tracker': [(None, 100)],
+            'test': [
+                ('testInternal (check_metrics.TestMetrics)', 10),
+                ('testTeam (check_networking_team.TestNetworking)', 8),
+                ('testBondMac (check_networking_mac.TestNetworking)', 7),
+                ('testNoConnectionSettings (check_networking_settings.TestNetworking)', 6),
+                ('testNegotiate (check_realms.TestKerberos)', 4),
+                ('testAmbiguousSlave (check_networking_bond.TestNetworking)', 4),
+                ('testFormatTypes (check_storage_format.TestStorage)', 4),
+                ('testBasic (check_networking_basic.TestNetworking)', 4),
+                ('testVlan (check_networking_vlan.TestNetworking)', 4),
+                ('testUnmanaged (check_networking_unmanaged.TestNetworking)', 4),
+                ('testSuper (check_reauthorize.TestReauthorize)', 3),
+                ('testRaid (check_storage_mdraid.TestStorage)', 3),
+                ('testMtu (check_networking_mtu.TestNetworking)', 3),
+                ('testBond (check_networking_bond.TestNetworking)', 3),
+                ('testFrameNavigation (check_multi_machine.TestMultiMachine)', 2),
+                ('testNotRemovingDisks (check_storage_mdraid.TestStorage)', 2),
+                ('testLvm (check_storage_lvm2.TestStorage)', 2),
+                ('testBasic (check_multi_machine_key.TestMultiMachineKeyAuth)', 2),
+                ('testFedora23Direct (check_multi_os.TestMultiOSDirect)', 2),
+                ('testDevmapper (check_docker_storage.TestDockerStorage)', 2),
+                ('testBasic (check_connection.TestConnection)', 2),
+                ('testBasic (check_journal.TestJournal)', 1),
+                ('testCheckpointSlowRollback (check_networking_checkpoints.TestNetworking)', 1),
+                ('testConnect (check_openshift.TestOpenshift)', 1),
+                ('testCreateTimer (check_services.TestServices)', 1),
+                ('testFedora22 (check_multi_os.TestMultiOS)', 1),
+                ('testImages (check_openshift.TestRegistry)', 1),
+                ('testNoPackageKit (check_packagekit.TestUpdates)', 1),
+                ('testBasic (check_session.TestSession)', 1),
+                ('testMac (check_networking_mac.TestNetworking)', 1),
+                ('testUsed (check_storage_used.TestStorage)', 1),
+                ('testImagestreamImport (check_openshift.TestRegistry)', 1),
+                ('testBasic (check_shutdown_restart.TestShutdownRestart)', 1),
+                ('testAbrtReport (check_journal.TestJournal)', 1),
+                ('testBridge (check_networking_bridge.TestNetworking)', 1),
+                ('testBasic (check_dashboard.TestBasicDashboard)', 1),
+                ('testProjectGroups (check_openshift.TestRegistry)', 1),
+                ('testBasic (check_services.TestServices)', 1),
+                ('testBasic (check_multi_machine.TestMultiMachineAdd)', 1),
+                ('testBasic (check_loopback.TestLoopback)', 1)
             ],
-            'contexts': [
-                ('verify/rhel-atomic', 0.16),
-                ('verify/ubuntu-stable', 0.15),
-                ('verify/ubuntu-1604', 0.13),
-                ('verify/rhel-7-4', 0.11),
-                ('verify/debian-testing', 0.1),
-            ]
+            'context': [
+                ('verify/rhel-atomic', 16),
+                ('verify/ubuntu-stable', 15),
+                ('verify/ubuntu-1604', 13),
+                ('verify/rhel-7-4', 11),
+                ('verify/debian-testing', 10),
+                ('verify/rhel-7', 9),
+                ('verify/fedora-i386', 8),
+                ('verify/fedora-atomic', 7),
+                ('verify/fedora-26', 5),
+                ('verify/fedora-25', 3),
+                ('verify/debian-stable', 2),
+                ('verify/centos-7', 1)
+            ],
+            'status': [('failure', 100)],
+            'date': ['20170718T153639Z', '20170720T224927Z'],
+            'label': '0'
         })
 
 if __name__ == '__main__':
