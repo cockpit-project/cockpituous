@@ -3,7 +3,9 @@ LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
 
+# whois-mkpasswd conflicts with expect and we don't need it
 RUN dnf -y update && \
+    dnf -y remove whois-mkpasswd && \
     dnf -y install \
 bind-utils \
 bodhi-client \
