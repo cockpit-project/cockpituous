@@ -191,7 +191,7 @@ prepare()
     trace "Updating spec file"
 
     printf "# This spec file has been automatically updated\n" >> $specfile
-    printf "Version:\t$TAG\nRelease:\t$RELEASE%%{?dist}\n" >> $specfile
+    printf "Version:        $TAG\nRelease:        $RELEASE%%{?dist}\n" >> $specfile
 
     # Start the changelog appropriately
     printf "%%changelog\n" >> $logfile
