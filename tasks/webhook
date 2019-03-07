@@ -100,17 +100,21 @@ class ReleaseHandler(github_handler.GithubHandler):
         title = request['pull_request']['title']
         number = int(request['number'])
         action = request['action']
+        merged = request['pull_request'].get('merged', False)
 
         logging.info('repo: %s; title: %s; number: %d; action: %s', repo, title, number, action)
         if '[no-test]' in title:
             logging.info("Found '[no-test]' in pull request title, skipping testing")
             return None
         # see https://developer.github.com/v3/activity/events/types/#pullrequestevent for all actions
+        if action == 'closed' and merged:
+            logging.info("pull request was merged, ensuring cockpit checkout is latest master")
+            ensure_cockpit_checkout()
+            return None
         if action not in ['opened', 'synchronize']:
             logging.info("action not in ['opened', 'synchronize'], skipping testing")
             return None
 
-        ensure_cockpit_checkout()
         cmd = ['bots/tests-scan', '--pull-number', str(number), '--amqp', 'amqp.cockpit.svc.cluster.local:5671']
         # the cockpit repo itself is treated as a special case in tests-scan, in
         # order to avoid complexity avoid supplying the repo option for now
@@ -133,7 +137,6 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.info("Status description doesn't end with '(direct trigger)', skipping testing")
             return None
 
-        ensure_cockpit_checkout()
         cmd = ['bots/tests-scan', '--sha', sha, '--amqp', 'amqp.cockpit.svc.cluster.local:5671', '--context', context]
         # the cockpit repo itself is treated as a special case in tests-scan, in
         # order to avoid complexity avoid supplying the repo option for now
