@@ -1,7 +1,9 @@
 FROM cockpit/infra-base
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
+# whois-mkpasswd conflicts with expect and we don't need it
 RUN dnf -y update && \
+    dnf -y remove whois-mkpasswd && \
     dnf -y install \
         american-fuzzy-lop \
         bind-utils \
