@@ -103,9 +103,6 @@ class ReleaseHandler(github_handler.GithubHandler):
         merged = request['pull_request'].get('merged', False)
 
         logging.info('repo: %s; title: %s; number: %d; action: %s', repo, title, number, action)
-        if '[no-test]' in title:
-            logging.info("Found '[no-test]' in pull request title, skipping testing")
-            return None
         # see https://developer.github.com/v3/activity/events/types/#pullrequestevent for all actions
         if action == 'closed' and merged:
             logging.info("pull request was merged, ensuring cockpit checkout is latest master")
@@ -113,6 +110,9 @@ class ReleaseHandler(github_handler.GithubHandler):
             return None
         if action not in ['opened', 'synchronize']:
             logging.info("action not in ['opened', 'synchronize'], skipping testing")
+            return None
+        if '[no-test]' in title:
+            logging.info("Found '[no-test]' in pull request title, skipping testing")
             return None
 
         cmd = ['bots/tests-scan', '--pull-number', str(number), '--amqp', 'amqp.cockpit.svc.cluster.local:5671']
