@@ -1,4 +1,4 @@
-FROM cockpit/infra-base
+FROM fedora:latest
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 # whois-mkpasswd conflicts with expect and we don't need it
@@ -44,6 +44,7 @@ RUN dnf -y update && \
         openssl \
         origin-clients \
         psmisc \
+        procps-ng \
         python \
         python-libguestfs \
         python-lxml \
@@ -67,7 +68,9 @@ RUN dnf -y update && \
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
-RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
+RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
+    mkdir -p /home/user/.ssh && mkdir -p /usr/local/bin && \
+    mkdir -p /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
     usermod -a -G mock user && \
     echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
     echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg && \
@@ -92,7 +95,8 @@ RUN mkdir -p /usr/local/bin /home/user /build /secrets /cache/images /cache/gith
 # Prevent us from screwing around with KVM settings in the container
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 
-ENV LIBGUESTFS_BACKEND=direct \
+ENV LANG=C.UTF-8 \
+    LIBGUESTFS_BACKEND=direct \
     XDG_CACHE_HOME=/build \
     HOME=/home/user \
     TMPDIR=/tmp \
