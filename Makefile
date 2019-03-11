@@ -11,14 +11,6 @@ WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
 TASK_CACHE := /var/cache/cockpit-tasks
 DOCKER := $(shell which podman docker 2>/dev/null)
 
-base-container:
-	$(DOCKER) build -t docker.io/cockpit/infra-base:$(TAG) base
-	$(DOCKER) tag docker.io/cockpit/infra-base:$(TAG) docker.io/cockpit/infra-base:latest
-	$(DOCKER) tag cockpit/infra-base:$(TAG) cockpit/infra-base:latest
-
-base-push:
-	base/push-container docker.io/cockpit/infra-base
-
 containers: images-container release-container tests-container
 	@true
 
@@ -35,7 +27,7 @@ images-container:
 	$(DOCKER) tag docker.io/cockpit/images:$(TAG) cockpit/images:latest
 
 images-push:
-	base/push-container docker.io/cockpit/images
+	./push-container docker.io/cockpit/images
 
 release-shell:
 	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
@@ -67,7 +59,7 @@ release-container:
 	$(DOCKER) tag docker.io/cockpit/release:$(TAG) cockpit/release:latest
 
 release-push:
-	base/push-container docker.io/cockpit/release
+	./push-container docker.io/cockpit/release
 
 tasks-shell:
 	$(DOCKER) run -ti --rm \
@@ -85,7 +77,7 @@ tasks-container:
 	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) cockpit/tasks:latest
 
 tasks-push:
-	base/push-container docker.io/cockpit/tasks
+	./push-container docker.io/cockpit/tasks
 
 tasks-secrets:
 	@cd tasks && ./build-secrets $(TASK_SECRETS)
@@ -104,4 +96,4 @@ learn-container:
 	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) cockpit/learn:latest
 
 learn-push:
-	base/push-container docker.io/cockpit/learn
+	./push-container docker.io/cockpit/learn
