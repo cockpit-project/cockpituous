@@ -1,4 +1,4 @@
-FROM cockpit/infra-base
+FROM fedora:latest
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 RUN dnf -y update \
@@ -7,16 +7,14 @@ RUN dnf -y update \
         python3 \
         python3-scikit-learn \
         python3-matplotlib \
- && dnf clean all
-
-RUN mkdir -p /cache/train \
- && chown -R user /home/user /cache/train
+ && dnf clean all \
+ && mkdir -p /cache/train
 
 COPY * /learn/
 WORKDIR /
 ENV TEST_DATA=/cache \
     PATH=$PATH:/learn \
-    HOME=/home/user
+    HOME=/home
 
 EXPOSE 8080
 VOLUME /cache
