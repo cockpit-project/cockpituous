@@ -1,16 +1,17 @@
-FROM cockpit/infra-base
+FROM fedora:latest
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 RUN dnf -y update && \
     dnf -y install nginx && \
     dnf clean all
 
-RUN mkdir -p /usr/local/bin && \
+RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
+    mkdir -p /home/user/.ssh && chown -R user /home/user && \
+    mkdir -p /usr/local/bin && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
     rm -rf /usr/share/nginx/html && \
-    ln -snf /cache/images /usr/share/nginx/html && \
-    chown -R user /home/user
+    ln -snf /cache/images /usr/share/nginx/html
 
 COPY install-service /usr/local/bin/
 COPY nginx.conf /etc/nginx/
