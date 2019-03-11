@@ -177,7 +177,8 @@ by the webhook which automatically starts a release runner.
 When a pull request event is received, the webhook will scan the pull request
 for tests that need to be run. These will be put in a distributed queue to later
 be consumed by other task bots. If "[no-test]" is in the title of the pull
-request, it won't be scanned.
+request, it won't be scanned (this is implemented in cockpit's
+bots/tests-scan).
 
 When a status event is received where the description ends with
 "(direct trigger)", the webhook will scan the pull request with the revision
