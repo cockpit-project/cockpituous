@@ -6,37 +6,20 @@ RUN dnf -y update && \
     dnf -y remove whois-mkpasswd && \
     dnf -y install \
         american-fuzzy-lop \
-        bind-utils \
-        bodhi-client \
-        bzip2 \
         chromium-headless \
-        copr-cli \
         curl \
         expect \
-        fedpkg \
-        fontconfig \
-        freetype \
         gcc \
         gcc-c++ \
-        GConf2 \
-        gettext \
         git \
         gnupg \
-        grubby \
-        gtk2 \
-        hardlink \
         jq \
-        kernel-headers \
-        koji \
-        krb5-workstation \
-        libappstream-glib \
         libguestfs-tools \
         libguestfs-xfs \
+        libappstream-glib \
         libvirt \
         libvirt-client \
-        libvirt-python \
         libvirt-python3 \
-        libXScrnSaver \
         mock \
         nc \
         net-tools \
@@ -45,20 +28,13 @@ RUN dnf -y update && \
         origin-clients \
         psmisc \
         procps-ng \
-        python \
-        python-libguestfs \
-        python-lxml \
-        python-scikit-learn \
         python3 \
-        python3-scikit-learn \
         rpm-build \
         rpmdevtools \
         sed \
-        selinux-policy-devel \
         sudo \
         tar \
         virt-install \
-        xorg-x11-server-Xvfb \
         zanata-client && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
