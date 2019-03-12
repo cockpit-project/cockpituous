@@ -63,8 +63,6 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
     ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \
     ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
-    git clone https://github.com/cockpit-project/cockpit /build/cockpit && \
-    cd /build/cockpit && npm install && \
     chmod g=u /etc/passwd && \
     chmod -R ugo+w /build /secrets /cache /home/user
 
