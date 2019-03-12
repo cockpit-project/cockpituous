@@ -131,4 +131,4 @@ release container with
 
 Note that both of these will publish logs to fedorapeople.org by default. If
 you want to disable this, or publish somewhere else, unset or change the
-`$TEST_PUBLISH` environment variable instead.
+`$RELEASE_SINK` environment variable instead.
