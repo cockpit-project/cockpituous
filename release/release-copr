@@ -75,7 +75,6 @@ check()
 {
     check_config
     copr-cli list
-    ssh fedorapeople.org -- mkdir -p public_html
 }
 
 prepare()
