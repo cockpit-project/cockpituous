@@ -1,4 +1,4 @@
-FROM fedora:latest
+FROM fedora:28
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 # whois-mkpasswd conflicts with expect and we don't need it
