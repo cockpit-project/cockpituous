@@ -11,8 +11,7 @@ import github_handler
 
 HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
-# FIXME: make this a request parameter
-SINK = 'fedorapeople.org'
+SINK = os.getenv('RELEASE_SINK', 'fedorapeople.org')
 COCKPIT_CHECKOUT = HOME_DIR + '/cockpit'
 
 # Kubernetes Job template for actually running a release
