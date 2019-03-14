@@ -35,6 +35,7 @@ RUN dnf -y update && \
         sudo \
         tar \
         virt-install \
+        wget \
         zanata-client && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
