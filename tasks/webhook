@@ -28,7 +28,7 @@ spec:
         - name: release
           image: cockpit/release
           workingDir: /build
-          args: [ "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
+          args: [ "-s", "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
           volumeMounts:
           - name: secrets
             mountPath: /run/secrets/release

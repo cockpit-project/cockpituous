@@ -24,6 +24,7 @@
 # -z         RELEASE_CHECK=1        Check access and configuration
 # -l         RELEASE_SINK=1         Host to sink logs to
 # -t         RELEASE_TAG=0.X        Tag to release
+# -s                                Keep running in infinite sleep when release fails
 #
 
 
@@ -41,10 +42,11 @@ FAIL=0
 DRYRUN=0
 JOBS=""
 REPO=""
+SUCCESS_FLAGFILE=
 
 usage()
 {
-    echo "usage: release-runner [-nqvz] [-r REPO] [-t TAG] SCRIPT" >&2
+    echo "usage: release-runner [-nqvzs] [-r REPO] [-t TAG] SCRIPT" >&2
     exit ${1:-2}
 }
 
@@ -167,7 +169,7 @@ runner()
     fi
 }
 
-while getopts "l:nqr:t:vxz" opt; do
+while getopts "l:nqr:t:vxzs" opt; do
     case "$opt" in
     l)
         SINK="$OPTARG"
@@ -192,6 +194,9 @@ while getopts "l:nqr:t:vxz" opt; do
     z)
         RELEASE_CHECK=1
         DRYRUN=1
+        ;;
+    s)
+        SUCCESS_FLAGFILE=$(mktemp -t success-XXXXXX)
         ;;
     -)
         break
@@ -249,8 +254,17 @@ else
         printf '{ "message": "Release running: %s", "irc": { "channel": "#cockpit" } }\n' "$RELEASE_TAG"
         if stdbuf -oL -eL "$0" "$@"; then
             printf '\n{ "message": "Release complete: %s", "irc": { "channel": "#cockpit" } }' "$RELEASE_TAG"
+            # absent flag file means success
+            [ -z "$SUCCESS_FLAGFILE" ] || rm "$SUCCESS_FLAGFILE"
         else
             printf '\n{ "message": "Release failed: %s", "irc": { "channel": "#cockpit" } }' "$RELEASE_TAG"
         fi
     ) | stdbuf -oL -eL ssh "$SINK" -- python sink "release-$(basename $REPO .git)-$RELEASE_TAG"
+fi
+
+# if we want to sit on failure, check if the flag file still exists (i. e. release failed)
+if [ -n "$SUCCESS_FLAGFILE" ] && [ -e "$SUCCESS_FLAGFILE" ]; then
+    rm "$SUCCESS_FLAGFILE"
+    echo "Sleeping indefinitely to debug release failure"
+    sleep infinity
 fi
