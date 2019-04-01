@@ -110,6 +110,10 @@ class ReleaseHandler(github_handler.GithubHandler):
         if action not in ['opened', 'synchronize']:
             logging.info("action not in ['opened', 'synchronize'], skipping testing")
             return None
+        # tests-scan also checks the labels, but apparently /issues/#/labels is not synchronous right at PR creation
+        if any([l['name'] == 'no-test' for l in request['pull_request'].get('labels', [])]):
+            logging.info("PR has no-test label, skipping testing")
+            return None
 
         cmd = ['bots/tests-scan', '--pull-number', str(number), '--amqp', 'amqp.cockpit.svc.cluster.local:5671']
         # the cockpit repo itself is treated as a special case in tests-scan, in
