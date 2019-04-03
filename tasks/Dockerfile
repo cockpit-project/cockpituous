@@ -39,7 +39,7 @@ RUN dnf -y update && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all && \
-    pip3 install pika # python3-pika RPM doesn't support SNI extension for TLS, which is needed for SSL auth with RabbitMQ on OpenShift
+    pip3 install 'pika<0.14.0' # python3-pika RPM doesn't support SNI extension for TLS, which is needed for SSL auth with RabbitMQ on OpenShift
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
