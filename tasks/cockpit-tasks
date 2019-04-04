@@ -115,10 +115,11 @@ slumber
 for i in $(seq 1 30); do
     work_done=
 
-    update_repo  bots        https://github.com/cockpit-project/cockpit
-    run_one_task cockpit     https://github.com/cockpit-project/cockpit
-    run_one_task starter-kit https://github.com/cockpit-project/starter-kit
-    run_one_task welder-web  https://github.com/weldr/welder-web
+    update_repo  bots           https://github.com/cockpit-project/cockpit
+    run_one_task cockpit        https://github.com/cockpit-project/cockpit
+    run_one_task starter-kit    https://github.com/cockpit-project/starter-kit
+    run_one_task welder-web     https://github.com/weldr/welder-web
+    run_one_task cockpit-podman https://github.com/cockpit-project/cockpit-podman
 
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
