@@ -76,7 +76,7 @@ def setup():
 
 def ensure_cockpit_checkout():
     if not os.path.isdir(COCKPIT_CHECKOUT):
-        url = 'https://github.com/cockpit-project/cockpit/'
+        url = 'https://github.com/cockpit-project/cockpit'
         subprocess.check_call(['git', 'clone', url, COCKPIT_CHECKOUT])
     subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'fetch', 'origin'])
     subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'reset', '--hard'])
