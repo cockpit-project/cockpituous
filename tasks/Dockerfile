@@ -12,6 +12,7 @@ RUN dnf -y update && \
         git \
         gnupg \
         jq \
+        libgit2-glib \
         libguestfs-tools \
         libguestfs-xfs \
         libappstream-glib \
@@ -27,6 +28,11 @@ RUN dnf -y update && \
         psmisc \
         procps-ng \
         python3 \
+        python3-devel \
+        python3-flask \
+        python3-gobject \
+        python3-pytoml \
+        python3-semantic_version \
         rpm-build \
         rpmdevtools \
         sed \
