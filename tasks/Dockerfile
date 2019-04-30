@@ -18,7 +18,6 @@ RUN dnf -y update && \
         libvirt \
         libvirt-client \
         libvirt-python3 \
-        mock \
         nc \
         net-tools \
         npm \
@@ -30,7 +29,6 @@ RUN dnf -y update && \
         rpm-build \
         rpmdevtools \
         sed \
-        sudo \
         tar \
         virt-install \
         wget \
@@ -46,9 +44,6 @@ COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     mkdir -p /home/user/.ssh && mkdir -p /usr/local/bin && \
     mkdir -p /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
-    usermod -a -G mock user && \
-    echo 'user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
-    echo "config_opts['basedir'] = '/build/mock/'" >> /etc/mock/site-defaults.cfg && \
     printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
