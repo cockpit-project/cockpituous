@@ -18,6 +18,7 @@ RUN dnf -y update && \
         libvirt \
         libvirt-client \
         libvirt-python3 \
+        make \
         nc \
         net-tools \
         npm \
