@@ -2,28 +2,31 @@
 
 set -eufx
 
-SECRETS=/var/lib/cockpit-secrets/tasks
+SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
+INSTANCES=3
 
 mkdir -p $SECRETS $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
 
-cat <<EOF > /etc/systemd/system/cockpit-tasks.service
+systemctl stop 'cockpit-tasks@*.service'
+
+cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 [Unit]
-Description=Cockpit Verify
+Description=Cockpit Tasks %i
 Requires=docker.service
 After=docker.service
 
 [Service]
-Environment="TEST_JOBS=4"
+Environment="TEST_JOBS=8"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
-Environment="TEST_PUBLISH=sink"
+Environment="TEST_PUBLISH=sink-infracloud"
 Restart=always
 RestartSec=60
-ExecStartPre=-/usr/bin/docker rm -f cockpit-tasks
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-tasks --volume=\$TEST_CACHE:/cache:rw --volume=\$TEST_SECRETS:/secrets:ro --uts=host --shm-size=500m --privileged --env=TEST_OS=\"\$TEST_OS\" --env=TEST_JOBS=\"\$TEST_JOBS\" --env=TEST_PUBLISH=\"\$TEST_PUBLISH\" cockpit/tasks"
-ExecStop=/usr/bin/docker rm -f cockpit-tasks
+ExecStartPre=-/usr/bin/docker rm -f cockpit-tasks-%i
+ExecStart=/usr/bin/docker run --name=cockpit-tasks-%i --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro --shm-size=1024m --user=1111 --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
+ExecStop=/usr/bin/docker rm -f cockpit-tasks-%i
 
 [Install]
 WantedBy=multi-user.target
@@ -35,3 +38,5 @@ echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666"' > /etc/udev/rules.d/80-kvm.rules
 echo "options kvm-intel nested=1" > /etc/modprobe.d/kvm-intel.conf
 echo "options kvm-amd nested=1" > /etc/modprobe.d/kvm-amd.conf
 ( rmmod kvm-intel && modprobe kvm-intel ) || ( rmmod kvm-amd && modprobe kvm-amd )
+
+for i in `seq $INSTANCES`; do systemctl enable --now cockpit-tasks@$i; done

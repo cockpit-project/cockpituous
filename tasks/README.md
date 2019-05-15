@@ -53,15 +53,14 @@ Make sure docker and atomic are installed and running:
 
 You may want to customize things like the operating system to test or number of jobs:
 
-    $ sudo mkdir -p /etc/systemd/system/cockpit-tasks.service.d
-    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_JOBS=8\n" > /etc/systemd/system/cockpit-tasks.service.d/jobs.conf'
-    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_CACHE=/mnt/nfs/share/cache\n" > /etc/systemd/system/cockpit-tasks.service.d/cache.conf'
+    $ sudo mkdir -p /etc/systemd/system/cockpit-tasks@.service.d
+    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_JOBS=4\n" > /etc/systemd/system/cockpit-tasks@.service.d/jobs.conf'
+    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_CACHE=/mnt/nfs/share/cache\n" > /etc/systemd/system/cockpit-tasks@.service.d/cache.conf'
     $ sudo systemctl daemon-reload
 
-And now you can start the service:
+And now you can restart the service:
 
-    $ sudo systemctl start cockpit-tasks
-    $ sudo systemctl enable cockpit-tasks
+    $ sudo systemctl restart cockpit-tasks@*
 
 To generate the certificates needed for cross-cluster amqp auth follow this
 guide:
@@ -72,8 +71,8 @@ guide:
 
 Some helpful commands:
 
-    # journalctl -fu cockpit-tasks
-    # systemctl stop cockpit-tasks
+    # journalctl -fu cockpit-tasks@*
+    # systemctl stop cockpit-tasks@*
 
 ## Updates
 
