@@ -42,7 +42,7 @@ way that they all prepare their steps, and then commit them after everything
 has been prepared. See the delivery scripts of
 [cockpit](https://github.com/cockpit-project/cockpit/blob/master/tools/cockpituous-release)
 and
-[welder-web](https://github.com/weldr/welder-web/blob/master/utils/cockpituous-release)
+[cockpit-composer](https://github.com/weldr/cockpit-composer/blob/master/utils/cockpituous-release)
 as examples.
 
 You can test your script locally (possibly in a
