@@ -103,7 +103,7 @@ function run_one_task() {
 }
 
 # on mass deployment, avoid GitHub stampede
-slumber
+sleep $(shuf -i 0-120 -n 1)
 
 # Perform a couple of tasks or waits, then restart
 for i in $(seq 1 30); do
