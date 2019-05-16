@@ -26,6 +26,7 @@ RUN dnf -y update && \
         origin-clients \
         psmisc \
         procps-ng \
+        python \
         python3 \
         rpm-build \
         rpmdevtools \
