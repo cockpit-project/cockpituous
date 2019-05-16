@@ -63,7 +63,7 @@ release-push:
 
 tasks-shell:
 	$(DOCKER) run -ti --rm \
-		--privileged --uts=host \
+		--shm-size=1024m \
 		--volume=$(CURDIR)/tasks:/usr/local/bin \
 		--volume=$(TASK_SECRETS):/secrets:ro \
 		--volume=$(WEBHOOK_SECRETS):/run/webhook/secrets:ro \
