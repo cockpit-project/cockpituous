@@ -24,6 +24,8 @@ Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_PUBLISH=sink-infracloud"
 Restart=always
 RestartSec=60
+# give docker pull enough time
+TimeoutStartSec=10min
 ExecStartPre=-/usr/bin/docker rm -f cockpit-tasks-%i
 ExecStartPre=/usr/bin/docker pull cockpit/tasks
 ExecStart=/usr/bin/docker run --name=cockpit-tasks-%i --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro --shm-size=1024m --user=1111 --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
