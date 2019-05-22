@@ -74,7 +74,7 @@ ENV LANG=C.UTF-8 \
     TEST_DATA=/build \
     TEST_PUBLISH=
 
-VOLUME /secrets /cache /tmp /run/secrets/webhook
+VOLUME /cache
 
 USER user
 WORKDIR /build

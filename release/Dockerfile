@@ -50,6 +50,5 @@ ENV NODE_PATH=/usr/bin/node.real LANG=C.UTF-8
 RUN mv /usr/bin/node /usr/bin/node.real
 ADD node-stdio-wrapper /usr/bin/node
 
-VOLUME /run/secrets/release
 WORKDIR /build
 ENTRYPOINT ["/usr/local/bin/release-runner"]
