@@ -16,7 +16,7 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
 COPY install-service /usr/local/bin/
 COPY nginx.conf /etc/nginx/
 
-VOLUME /secrets /cache
+VOLUME /cache
 
 EXPOSE 8080 8443
 STOPSIGNAL SIGQUIT
