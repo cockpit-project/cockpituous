@@ -46,7 +46,7 @@ and
 as examples.
 
 You can test your script locally (possibly in a
-[cockpit/tests container](https://hub.docker.com/r/cockpit/tests/)) like
+[cockpit/tasks container](https://hub.docker.com/r/cockpit/tasks/)) like
 this:
 
  * Run `git clean -ffdx` to make sure you are testing a clean tree.
@@ -69,6 +69,17 @@ this:
    above:
 
        git tag -d 999
+
+## Deploying for your project
+
+Once delivery scripts work locally, make sure that it is present in your
+`master` and every other branch from which you want to make releases. Releases
+are triggered by pushing a signed tag, which corresponds to the "Branch or
+tag creation" GitHub webhook event.
+
+Set up a [Cockpit CI webhook](../tasks/#let-github-webhook-trigger-actions) in
+order to activate automatic releases, if you didn't already do that for
+triggering tests.
 
 ## Spec file requirements
 
