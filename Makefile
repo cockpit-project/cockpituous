@@ -17,7 +17,7 @@ containers: images-container release-container tests-container
 images-shell:
 	$(DOCKER) run -ti --rm --publish=8493:443 \
 		--volume=$(TASK_SECRETS):/secrets:ro \
-		--volume=$(TASK_CACHE):/cache:rw \
+		--volume=$(TASK_CACHE)/images:/cache/images:rw \
 		--entrypoint=/bin/bash \
         cockpit/images -i
 
