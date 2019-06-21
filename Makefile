@@ -15,7 +15,7 @@ containers: images-container release-container tests-container
 	@true
 
 images-shell:
-	$(DOCKER) run -ti --rm --publish=8493:443 \
+	$(DOCKER) run -ti --rm --publish 8080:8080 --publish=8493:8443 \
 		--volume=$(TASK_SECRETS):/secrets:ro \
 		--volume=$(TASK_CACHE)/images:/cache/images:rw \
 		--entrypoint=/bin/bash \
