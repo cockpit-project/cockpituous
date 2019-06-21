@@ -20,7 +20,7 @@ Environment="TASK_SECRETS=$SECRETS"
 Restart=always
 RestartSec=60
 ExecStartPre=-/usr/bin/docker rm -f cockpit-images
-ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-images --publish=8090:8080 --publish=8493:8443 --volume=\$TASK_SECRETS:/secrets:ro --volume=\$TASK_CACHE:/cache:rw cockpit/images"
+ExecStart=/bin/sh -xc "/usr/bin/docker run --name=cockpit-images --publish=8090:8080 --publish=8493:8443 --volume=\$TASK_SECRETS:/secrets:ro --volume=\$TASK_CACHE/images:/cache/images:rw cockpit/images"
 ExecStop=/usr/bin/docker rm -f cockpit-images
 
 [Install]
