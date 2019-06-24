@@ -28,6 +28,7 @@ RUN dnf -y update && \
         procps-ng \
         python \
         python3 \
+        python3-pika \
         rpm-build \
         rpmdevtools \
         sed \
@@ -38,8 +39,7 @@ RUN dnf -y update && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
-    dnf clean all && \
-    pip3 install 'pika<0.14.0' # python3-pika RPM doesn't support SNI extension for TLS, which is needed for SSL auth with RabbitMQ on OpenShift
+    dnf clean all
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
