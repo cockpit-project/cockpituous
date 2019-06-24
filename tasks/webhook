@@ -7,6 +7,10 @@ import shutil
 import http.server
 import pipes
 import json
+import contextlib
+import ssl
+
+import pika
 
 import github_handler
 
@@ -83,6 +87,33 @@ def ensure_cockpit_checkout():
     subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'clean', '-dxff'])
     subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'checkout', 'origin/master'])
 
+@contextlib.contextmanager
+def distributed_queue(amqp_server):
+    try:
+        host, port = amqp_server.split(':')
+    except ValueError:
+        logging.error('Please format amqp_server as host:port')
+        sys.exit(1)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(
+        host=host,
+        port=int(port),
+        ssl=True,
+        ssl_options=pika.SSLOptions(
+            ssl_version=ssl.PROTOCOL_TLSv1_2,
+            cafile='/run/secrets/webhook/ca.pem',
+            keyfile='/run/secrets/webhook/amqp-client.key',
+            certfile='/run/secrets/webhook/amqp-client.pem',
+            server_hostname=host),
+        credentials=pika.credentials.ExternalCredentials()))
+    channel = connection.channel()
+    channel.queue_declare(queue='webhook', auto_delete=False)
+    yield channel
+    connection.close()
+
+def publish_to_queue(routing_key, body):
+    with distributed_queue('amqp.cockpit.svc.cluster.local:5671') as queue:
+        queue.basic_publish('', routing_key, body, properties=pika.BasicProperties(content_type='application/json'))
+
 
 class ReleaseHandler(github_handler.GithubHandler):
     def handle_event(self, event, request):
@@ -112,12 +143,11 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.info("action not in ['opened', 'synchronize'], skipping testing")
             return None
 
-        cmd = ['bots/tests-scan', '--pull-data', json.dumps(request['pull_request']), '--amqp', 'amqp.cockpit.svc.cluster.local:5671']
-        # the cockpit repo itself is treated as a special case in tests-scan, in
-        # order to avoid complexity avoid supplying the repo option for now
-        if repo != 'cockpit-project/cockpit':
-            cmd += ['--repo', repo]
-        subprocess.check_call(cmd, cwd=COCKPIT_CHECKOUT)
+        body = {
+            'event': 'pull_request',
+            'request': request,
+        }
+        publish_to_queue('webhook', json.dumps(body))
         return None
 
     def handle_status_event(self, event, request):
@@ -134,12 +164,11 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.info("Status description doesn't end with '(direct trigger)', skipping testing")
             return None
 
-        cmd = ['bots/tests-scan', '--sha', sha, '--amqp', 'amqp.cockpit.svc.cluster.local:5671', '--context', context]
-        # the cockpit repo itself is treated as a special case in tests-scan, in
-        # order to avoid complexity avoid supplying the repo option for now
-        if repo != 'cockpit-project/cockpit':
-            cmd += ['--repo', repo]
-        subprocess.check_call(cmd, cwd=COCKPIT_CHECKOUT)
+        body = {
+            'event': 'status',
+            'request': request,
+        }
+        publish_to_queue('webhook', json.dumps(body))
         return None
 
     def handle_create_event(self, event, request):
