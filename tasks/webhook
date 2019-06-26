@@ -128,6 +128,8 @@ class ReleaseHandler(github_handler.GithubHandler):
             return self.handle_pull_request_event(event, request)
         elif event == 'status':
             return self.handle_status_event(event, request)
+        elif event == 'issues':
+            return self.handle_issues_event(event, request)
         return (501, 'unsupported event ' + event)
 
     def handle_pull_request_event(self, event, request):
@@ -143,8 +145,8 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.info("pull request was merged, ensuring cockpit checkout is latest master")
             ensure_cockpit_checkout()
             return None
-        if action not in ['opened', 'synchronize']:
-            logging.info("action not in ['opened', 'synchronize'], skipping testing")
+        if action not in ['opened', 'synchronize', 'edited', 'labeled']:
+            logging.info("action %s unknown, skipping pull request event" % action)
             return None
 
         publish_to_queue('webhook', event, request)
@@ -162,6 +164,15 @@ class ReleaseHandler(github_handler.GithubHandler):
         logging.info('repo: %s; sha: %s; state: %s; description: %s', repo, sha, state, description)
         if not description.rstrip().endswith('(direct trigger)'):
             logging.info("Status description doesn't end with '(direct trigger)', skipping testing")
+            return None
+
+        publish_to_queue('webhook', event, request)
+        return None
+
+    def handle_issues_event(self, event, request):
+        action = request['action']
+        if event == 'issues' and action not in ['opened', 'edited', 'labeled']:
+            logging.info("action %s unknown, skipping issues event" % action)
             return None
 
         publish_to_queue('webhook', event, request)
