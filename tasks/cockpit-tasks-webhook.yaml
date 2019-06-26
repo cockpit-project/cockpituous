@@ -42,7 +42,7 @@ items:
               readOnly: true
             env:
             - name: RELEASE_SINK
-              value: sink
+              value: sink-local
         volumes:
         - name: webhook-secrets
           secret:
