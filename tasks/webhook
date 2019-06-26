@@ -110,9 +110,13 @@ def distributed_queue(amqp_server):
     yield channel
     connection.close()
 
-def publish_to_queue(routing_key, body):
+def publish_to_queue(routing_key, event, request):
+    body = {
+        'event': event,
+        'request': request,
+    }
     with distributed_queue('amqp.cockpit.svc.cluster.local:5671') as queue:
-        queue.basic_publish('', routing_key, body, properties=pika.BasicProperties(content_type='application/json'))
+        queue.basic_publish('', routing_key, json.dumps(body), properties=pika.BasicProperties(content_type='application/json'))
 
 
 class ReleaseHandler(github_handler.GithubHandler):
@@ -143,11 +147,7 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.info("action not in ['opened', 'synchronize'], skipping testing")
             return None
 
-        body = {
-            'event': 'pull_request',
-            'request': request,
-        }
-        publish_to_queue('webhook', json.dumps(body))
+        publish_to_queue('webhook', event, request)
         return None
 
     def handle_status_event(self, event, request):
@@ -164,11 +164,7 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.info("Status description doesn't end with '(direct trigger)', skipping testing")
             return None
 
-        body = {
-            'event': 'status',
-            'request': request,
-        }
-        publish_to_queue('webhook', json.dumps(body))
+        publish_to_queue('webhook', event, request)
         return None
 
     def handle_create_event(self, event, request):
