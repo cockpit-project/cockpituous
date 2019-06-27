@@ -173,13 +173,16 @@ by the webhook which automatically starts a release runner.
 
 ### Automated testing
 
-When a pull request event is received, the webhook will scan the pull request
-for tests that need to be run. These will be put in a distributed queue to later
-be consumed by other task bots. If "[no-test]" is in the title of the pull
-request, it won't be scanned (this is implemented in cockpit's
-bots/tests-scan).
+When an pull request event or a status event is received, the webhook will
+publish the event to the webhook AMQP queue. These are then consumed and
+interpreted from the webhook queue by task bots. Task bots will publish tasks to
+the relevant AMQP queues, to be consumed again by task bots at a later point in
+time.
 
-When a status event is received where the description ends with
-"(direct trigger)", the webhook will scan the pull request with the revision
-equal to the sha1 associated with the status for a specific test to run. The
-test will be put in a distributed queue to later be consumed by other task bots.
+A pull request event is queued when the pull request is opened or
+synchronized. A status event is only queued where the description ends with
+"(direct trigger)".
+
+The reason for this indirection with one interpret-queue (the webhook queue) and
+several task queues, is to reduce load on the webhook. The intepreting of status
+events for instance can take up to 10 seconds.
