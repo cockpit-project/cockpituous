@@ -42,6 +42,8 @@ if [ -r /secrets/npm-registry.crt ]; then
     export NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
 fi
 
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-/build}
+
 echo "Starting testing"
 
 function update_repo() {
@@ -101,7 +103,7 @@ function run_one_task() {
     update_repo "$1" "$2"
 
     if [ ! -d "$dir/bots" ]; then
-        cp -drl bots/bots "$dir/"
+        cp -drl "$XDG_CACHE_HOME"/cockpit-project/bots/bots "$dir/"
     fi
 
     # Get a task and execute it, 12 hours max
@@ -118,11 +120,11 @@ sleep $(shuf -i 0-120 -n 1)
 for i in $(seq 1 30); do
     work_done=
 
-    update_repo  bots             https://github.com/cockpit-project/cockpit
-    run_one_task cockpit          https://github.com/cockpit-project/cockpit
-    run_one_task starter-kit      https://github.com/cockpit-project/starter-kit
-    run_one_task cockpit-composer https://github.com/weldr/cockpit-composer
-    run_one_task cockpit-podman   https://github.com/cockpit-project/cockpit-podman
+    update_repo  "$XDG_CACHE_HOME"/cockpit-project/bots             https://github.com/cockpit-project/cockpit
+    run_one_task "$XDG_CACHE_HOME"/cockpit-project/cockpit          https://github.com/cockpit-project/cockpit
+    run_one_task "$XDG_CACHE_HOME"/cockpit-project/starter-kit      https://github.com/cockpit-project/starter-kit
+    run_one_task "$XDG_CACHE_HOME"/weldr/cockpit-composer           https://github.com/weldr/cockpit-composer
+    run_one_task "$XDG_CACHE_HOME"/cockpit-project/cockpit-podman   https://github.com/cockpit-project/cockpit-podman
 
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
