@@ -34,6 +34,7 @@ items:
       emptyDir: { }
     - name: train
       emptyDir: { }
+    restartPolicy: Never
 - kind: Service
   apiVersion: v1
   metadata:
@@ -46,3 +47,13 @@ items:
       port: 80
       targetPort: 8080
       protocol: TCP
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: cockpit-learn
+  spec:
+    to:
+      kind: Service
+      name: cockpit-learn
+    port:
+      targetPort: 8080
