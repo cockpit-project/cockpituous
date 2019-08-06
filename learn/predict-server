@@ -1,0 +1,12 @@
+#!/bin/sh
+
+SOCKET="/cache/fcgiwrap.socket"
+/usr/sbin/fcgiwrap -s unix:"$SOCKET" &
+
+while [ ! -S "$SOCKET" ]; do
+    echo "waiting for $SOCKET"
+    sleep 1
+done
+
+chmod 777 "$SOCKET"
+nginx -g "daemon off;"

@@ -12,15 +12,20 @@ items:
     containers:
       - name: predict
         image: docker.io/cockpit/learn
-        command: [ "lighttpd", "-D", "-f", "/learn/lighttpd.conf" ]
+        command: [ "/learn/predict-server" ]
         ports:
           - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
             protocol: TCP
         volumeMounts:
          - name: cache
            mountPath: /cache
          - name: train
            mountPath: /cache/train
+         - name: secrets
+           mountPath: /secrets
+           readOnly: true
       - name: train
         image: docker.io/cockpit/learn
         command: [ "/learn/train-tests", "--verbose", "--batch", "/cache/train/*" ]
@@ -34,6 +39,10 @@ items:
       emptyDir: { }
     - name: train
       emptyDir: { }
+    - name: secrets
+      secret:
+        secretName: cockpit-tasks-secrets
+    restartPolicy: Never
 - kind: Service
   apiVersion: v1
   metadata:
@@ -46,3 +55,19 @@ items:
       port: 80
       targetPort: 8080
       protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: learn
+  spec:
+    to:
+      kind: Service
+      name: cockpit-learn
+    port:
+      targetPort: 8443
+    tls:
+      termination: passthrough
