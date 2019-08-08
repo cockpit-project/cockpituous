@@ -33,6 +33,12 @@ if [ $loop != "yes" ]; then
     exec "$@"
 fi
 
+# set up custom NPM registry
+if [ -n "$NPM_REGISTRY" ]; then
+    npm config set registry "$NPM_REGISTRY"
+    echo "Set NPM registry to $NPM_REGISTRY"
+fi
+
 echo "Starting testing"
 
 function update_repo() {
