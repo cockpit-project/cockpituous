@@ -38,6 +38,9 @@ if [ -n "$NPM_REGISTRY" ]; then
     npm config set registry "$NPM_REGISTRY"
     echo "Set NPM registry to $NPM_REGISTRY"
 fi
+if [ -r /secrets/npm-registry.crt ]; then
+    export NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
+fi
 
 echo "Starting testing"
 
