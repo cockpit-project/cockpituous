@@ -14,6 +14,9 @@ import pika
 
 import github_handler
 
+# Reduce pika noise
+logging.getLogger("pika").propagate = False
+
 HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
 SINK = os.getenv('RELEASE_SINK', 'sink-local')
