@@ -20,7 +20,7 @@ logging.getLogger("pika").propagate = False
 HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
 SINK = os.getenv('RELEASE_SINK', 'sink-local')
-COCKPIT_CHECKOUT = HOME_DIR + '/cockpit'
+BOTS_CHECKOUT = HOME_DIR + '/bots'
 
 # Kubernetes Job template for actually running a release
 JOB = '''---
@@ -79,16 +79,16 @@ def setup():
     os.umask(old_umask)
 
     ensure_cockpit_checkout()
-    subprocess.check_call(['bots/tests-scan', '--amqp', 'amqp.cockpit.svc.cluster.local:5671'], cwd=COCKPIT_CHECKOUT)
+    subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp', 'amqp.cockpit.svc.cluster.local:5671', '--repo', 'cockpit-project/cockpit'], cwd=BOTS_CHECKOUT)
 
 def ensure_cockpit_checkout():
-    if not os.path.isdir(COCKPIT_CHECKOUT):
-        url = 'https://github.com/cockpit-project/cockpit'
-        subprocess.check_call(['git', 'clone', url, COCKPIT_CHECKOUT])
-    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'fetch', 'origin'])
-    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'reset', '--hard'])
-    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'clean', '-dxff'])
-    subprocess.check_call(['git', '-C', COCKPIT_CHECKOUT, 'checkout', 'origin/master'])
+    if not os.path.isdir(BOTS_CHECKOUT):
+        url = 'https://github.com/cockpit-project/bots'
+        subprocess.check_call(['git', 'clone', url, BOTS_CHECKOUT])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'fetch', 'origin'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/master'])
 
 @contextlib.contextmanager
 def distributed_queue(amqp_server):

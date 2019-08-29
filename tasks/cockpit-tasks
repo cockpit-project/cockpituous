@@ -102,8 +102,8 @@ function run_one_task() {
 
     update_repo "$1" "$2"
 
-    if [ ! -d "$dir/bots" ]; then
-        cp -drl "$XDG_CACHE_HOME"/cockpit-project/bots/bots "$dir/"
+    if [ ! -d "$dir/bots" ] && [ ! -L "$dir/bots" ]; then
+        cp -drl "$XDG_CACHE_HOME"/cockpit-project/bots "$dir/"
     fi
 
     # Get a task and execute it, 12 hours max
@@ -113,19 +113,35 @@ function run_one_task() {
     fi
 }
 
+function run_from_queue() {
+    cd "$XDG_CACHE_HOME"/cockpit-project/bots
+    if /usr/bin/timeout 12h ./run-queue --amqp "$AMQP_SERVER"; then
+        work_done=1
+    fi
+}
+
 # on mass deployment, avoid GitHub stampede
 sleep $(shuf -i 0-120 -n 1)
 
-# Perform a couple of tasks or waits, then restart
+PROJECTS="
+cockpit-project/bots
+cockpit-project/cockpit
+cockpit-project/starter-kit
+cockpit-project/cockpit-podman
+weldr/cockpit-composer
+"
+
+# check for tasks
+update_repo  "$XDG_CACHE_HOME"/cockpit-project/bots https://github.com/cockpit-project/bots
+for P in $PROJECTS; do
+    run_one_task "$XDG_CACHE_HOME"/"$P"                 https://github.com/"$P"
+done
+
+# Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
     work_done=
-
-    update_repo  "$XDG_CACHE_HOME"/cockpit-project/bots             https://github.com/cockpit-project/cockpit
-    run_one_task "$XDG_CACHE_HOME"/cockpit-project/cockpit          https://github.com/cockpit-project/cockpit
-    run_one_task "$XDG_CACHE_HOME"/cockpit-project/starter-kit      https://github.com/cockpit-project/starter-kit
-    run_one_task "$XDG_CACHE_HOME"/weldr/cockpit-composer           https://github.com/weldr/cockpit-composer
-    run_one_task "$XDG_CACHE_HOME"/cockpit-project/cockpit-podman   https://github.com/cockpit-project/cockpit-podman
-
+    update_repo  "$XDG_CACHE_HOME"/cockpit-project/bots https://github.com/cockpit-project/bots
+    run_from_queue || true
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
 done
