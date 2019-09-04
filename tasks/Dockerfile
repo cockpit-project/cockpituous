@@ -13,8 +13,6 @@ RUN dnf -y update && \
         git \
         gnupg \
         jq \
-        libguestfs-tools \
-        libguestfs-xfs \
         libappstream-glib \
         libvirt-daemon-kvm \
         libvirt-client \
