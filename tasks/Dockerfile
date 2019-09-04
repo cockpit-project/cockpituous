@@ -16,7 +16,7 @@ RUN dnf -y update && \
         libguestfs-tools \
         libguestfs-xfs \
         libappstream-glib \
-        libvirt \
+        libvirt-daemon-kvm \
         libvirt-client \
         libvirt-python3 \
         make \
