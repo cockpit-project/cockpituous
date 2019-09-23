@@ -78,10 +78,10 @@ def setup():
         shutil.copyfile(src, dest)
     os.umask(old_umask)
 
-    ensure_cockpit_checkout()
+    ensure_bots_checkout()
     subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp', 'amqp.cockpit.svc.cluster.local:5671', '--repo', 'cockpit-project/cockpit'], cwd=BOTS_CHECKOUT)
 
-def ensure_cockpit_checkout():
+def ensure_bots_checkout():
     if not os.path.isdir(BOTS_CHECKOUT):
         url = 'https://github.com/cockpit-project/bots'
         subprocess.check_call(['git', 'clone', url, BOTS_CHECKOUT])
@@ -146,7 +146,7 @@ class ReleaseHandler(github_handler.GithubHandler):
         # see https://developer.github.com/v3/activity/events/types/#pullrequestevent for all actions
         if action == 'closed' and merged:
             logging.info("pull request was merged, ensuring cockpit checkout is latest master")
-            ensure_cockpit_checkout()
+            ensure_bots_checkout()
             return None
         if action not in ['opened', 'synchronize', 'edited', 'labeled']:
             logging.info("action %s unknown, skipping pull request event" % action)
