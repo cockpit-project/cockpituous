@@ -25,8 +25,10 @@ RUN dnf -y update && \
         origin-clients \
         psmisc \
         procps-ng \
+        python3-pyflakes \
         python \
         python3 \
+        python3-pycodestyle \
         python3-pika \
         rpm-build \
         rpmdevtools \
