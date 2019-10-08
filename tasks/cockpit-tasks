@@ -102,7 +102,7 @@ function run_one_task() {
 
     update_repo "$1" "$2"
 
-    if [ ! -d "$dir/bots" ] && [ ! -L "$dir/bots" ]; then
+    if [ "$(basename $repo_url)" != "bots" ] && [ ! -d "$dir/bots" ] && [ ! -L "$dir/bots" ]; then
         cp -drl "$XDG_CACHE_HOME"/cockpit-project/bots "$dir/"
     fi
 
@@ -132,7 +132,6 @@ weldr/cockpit-composer
 "
 
 # check for tasks
-update_repo  "$XDG_CACHE_HOME"/cockpit-project/bots https://github.com/cockpit-project/bots
 for P in $PROJECTS; do
     run_one_task "$XDG_CACHE_HOME"/"$P"                 https://github.com/"$P"
 done
