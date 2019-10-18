@@ -4,7 +4,7 @@ set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
-INSTANCES=3
+INSTANCES=${INSTANCES:-3}
 
 mkdir -p $SECRETS $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
@@ -22,7 +22,7 @@ Environment="TEST_JOBS=8"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_PUBLISH=sink-infracloud"
-Environment="NPM_REGISTRY="
+Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
 Restart=always
 RestartSec=60
 # give docker pull enough time
