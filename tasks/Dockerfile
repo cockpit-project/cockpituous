@@ -6,6 +6,7 @@ RUN dnf -y update && \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
         chromium-headless \
+        firefox \
         curl \
         expect \
         gcc \
