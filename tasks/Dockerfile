@@ -15,6 +15,7 @@ RUN dnf -y update -x coreutils && \
         gcc-c++ \
         git \
         gnupg \
+        intltool \
         jq \
         libappstream-glib \
         libvirt-daemon-kvm \
