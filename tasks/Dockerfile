@@ -1,9 +1,7 @@
 FROM fedora:30
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
-# HACK: Do not update `coreutils`, as it breaks `ls .`
-# See https://bugzilla.redhat.com/show_bug.cgi?id=1764152
-RUN dnf -y update -x coreutils && \
+RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
