@@ -29,7 +29,7 @@ RestartSec=60
 # give docker pull enough time
 TimeoutStartSec=10min
 ExecStartPre=-/usr/bin/docker rm -f cockpit-tasks-%i
-ExecStartPre=/usr/bin/docker pull cockpit/tasks
+ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull /usr/bin/docker pull cockpit/tasks
 ExecStartPre=-/usr/bin/docker network rm cockpit-tasks-%i
 ExecStartPre=/usr/bin/docker network create --driver bridge cockpit-tasks-%i
 ExecStart=/usr/bin/docker run --name=cockpit-tasks-%i --hostname=%i-%H --network=cockpit-tasks-%i --storage-opt size=50G --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
