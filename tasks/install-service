@@ -6,8 +6,9 @@ SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
 INSTANCES=${INSTANCES:-3}
 
-mkdir -p $SECRETS $CACHE
+mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
+chcon -R -t container_file_t $SECRETS $CACHE
 
 systemctl stop 'cockpit-tasks@*.service'
 
