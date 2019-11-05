@@ -1,12 +1,13 @@
 FROM fedora:30
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
+# HACK: Install Firefox 69, since 70 has broken cdp, see https://bugzilla.mozilla.org/show_bug.cgi?id=1593226
 RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
         chromium-headless \
-        firefox \
+        https://kojipkgs.fedoraproject.org//packages/firefox/69.0.3/2.fc30/x86_64/firefox-69.0.3-2.fc30.x86_64.rpm \
         curl \
         expect \
         gcc \
