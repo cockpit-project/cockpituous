@@ -122,7 +122,7 @@ def contains(expect, result, debug=True):
             if not contains(expect[key], result.get(key), debug):
                 return False
         return True
-    elif cmp(expect, result) != 0:
+    elif expect != result:
         if debug:
             sys.stderr.write("Expecting " + json.dumps(expect) + " but saw " + json.dumps(result) + "\n")
         return False

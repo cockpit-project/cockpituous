@@ -1,5 +1,4 @@
-#!/usr/bin/python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
 
 # This file is part of Cockpit.
 #
@@ -59,12 +58,12 @@ CONTAINS = [
 ]
 
 import os
-import imp
+import importlib.machinery
 import unittest
 
 # Import the sink code
 BASE = os.path.dirname(__file__)
-sink = imp.load_source("sink", os.path.join(BASE, "sink"))
+sink = importlib.machinery.SourceFileLoader("sink", os.path.join(BASE, "sink")).load_module()
 
 class TestLogic(unittest.TestCase):
     def testContains(self):
