@@ -8,6 +8,7 @@ __all__ = (
     "GithubHandler",
 )
 
+
 class GithubHandler(http.server.BaseHTTPRequestHandler):
     def check_sig(self, request):
         '''Validate github signature of request.
