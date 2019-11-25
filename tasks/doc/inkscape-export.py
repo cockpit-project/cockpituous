@@ -4,7 +4,6 @@ import os
 import codecs
 from xml.dom import minidom
 import subprocess
-import sys
 
 INKSCAPE = '/usr/bin/inkscape'
 
@@ -18,7 +17,7 @@ def list_layers(svg):
 def export_layer(svg, directory, layer, stay):
     if layer in stay:
         return
-    print layer, "..."
+    print(layer + " ...")
     for g in svg.getElementsByTagName("g"):
         if g.attributes.has_key("inkscape:label"):
             label = g.attributes["inkscape:label"].value

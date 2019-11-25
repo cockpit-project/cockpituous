@@ -533,7 +533,7 @@ def check_prune(config, logs, dry_run):
                 fd = os.open(status_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
                 try:
                     fcntl.flock(fd, fcntl.LOCK_NB | fcntl.LOCK_EX)
-                except IOError as ex:
+                except IOError:
                     os.close(fd)
                     print("can't lock, bailing out")
                     sys.stderr.write("Unable to lock log pruning status file: {0}\n".format(status_file))
