@@ -2,26 +2,6 @@
 
 from __future__ import print_function
 
-# Rough configuration file follows, place it in ~/.config/sink
-
-# PruneInterval [days] defaults to 0 (disabled)
-DEFAULTS = u"""
-[Sink]
-Url: http://%(user)s.fedorapeople.org/logs/%(identifier)s/log
-Logs: ~/public_html/logs
-PruneInterval: 0
-
-[Irc]
-Server: chat.freenode.net:6667
-Login: %(user)sbot %(user)sbot %(user)sbot
-Nick: %(user)sbot
-
-[GitHub]
-Server: https://api.github.com
-"""
-
-TOKEN = "~/.config/github-token"
-
 import argparse
 import errno
 import fcntl
@@ -64,10 +44,29 @@ try:
     from io import StringIO
 except ImportError:
     from cStringIO import StringIO
-try:
-    MAX_BUFF_SIZE = sys.maxsize
-except:
-    MAX_BUFF_SIZE = sys.maxint
+
+MAX_BUFF_SIZE = sys.maxsize
+
+
+# Rough configuration file follows, place it in ~/.config/sink
+
+# PruneInterval [days] defaults to 0 (disabled)
+DEFAULTS = u"""
+[Sink]
+Url: http://%(user)s.fedorapeople.org/logs/%(identifier)s/log
+Logs: ~/public_html/logs
+PruneInterval: 0
+
+[Irc]
+Server: chat.freenode.net:6667
+Login: %(user)sbot %(user)sbot %(user)sbot
+Nick: %(user)sbot
+
+[GitHub]
+Server: https://api.github.com
+"""
+
+TOKEN = "~/.config/github-token"
 
 
 # Expansion of strings in JSON objects.
@@ -79,6 +78,7 @@ def jpath(val, path):
         val = val.get(p, None)
     return val
 
+
 def expand_str(val, env):
     def sub(m):
         if m.group(1):
@@ -87,15 +87,17 @@ def expand_str(val, env):
             return ":"
     return re.sub(r':([-_.a-zA-Z0-9]+)|::', sub, val)
 
+
 def expand(val, env):
     if isinstance(val, basestring):
-        return expand_str(val,env)
+        return expand_str(val, env)
     elif isinstance(val, dict):
-        return { k: expand(v, env) for k, v in val.items() }
+        return {k: expand(v, env) for k, v in val.items()}
     elif isinstance(val, list):
-        return [ expand(v, env) for v in val ]
+        return [expand(v, env) for v in val]
     else:
         return val
+
 
 # Compare two JSON style values to see if one is contained in the other
 # For lists and dict make sure all items in expect are also present in result
@@ -109,12 +111,11 @@ def contains(expect, result, debug=True):
                     found += 1
             if found == 0:
                 if debug:
-                    sys.stderr.write("Expected " + json.dumps(exp) + " but not present in " +
-                                     json.dumps(result) + "\n")
+                    sys.stderr.write("Expected %s but not present in %s\n" % (json.dumps(exp), json.dumps(result)))
                 return False
             elif found > 1:
                 if debug:
-                    sys.stderr.write("Expected one " + json.dumps(exp) + " but found " + str(found) + " times\n")
+                    sys.stderr.write("Expected one %s but found %s times\n" % (json.dumps(exp), str(found)))
                 return False
         return True
     elif isinstance(expect, dict) and isinstance(result, dict):
@@ -124,10 +125,11 @@ def contains(expect, result, debug=True):
         return True
     elif expect != result:
         if debug:
-            sys.stderr.write("Expecting " + json.dumps(expect) + " but saw " + json.dumps(result) + "\n")
+            sys.stderr.write("Expecting %s but saw %s\n" % (json.dumps(expect), json.dumps(result)))
         return False
     else:
         return True
+
 
 class GitHub(object):
     def __init__(self, config):
@@ -138,10 +140,10 @@ class GitHub(object):
                 self.token = gt.read().strip()
         except IOError as exc:
             if exc.errno == errno.ENOENT:
-                 pass
+                pass
             else:
                 raise
-        self.results = { }
+        self.results = {}
         self.child = 0
 
     def __del__(self):
@@ -150,9 +152,9 @@ class GitHub(object):
     def req(self, token, request):
         method = request.get('method', "GET")
         resource = expand(request.get('resource', None), self.results)
-        data = expand(request.get('data', None),  self.results)
+        data = expand(request.get('data', None), self.results)
         token = request.get('token', token or self.token)
-        headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests" }
+        headers = {"Content-type": "application/json", "User-Agent": "Cockpit Tests"}
         if token:
             headers["Authorization"] = "token " + token
         if self.url.scheme == 'http':
@@ -195,8 +197,8 @@ class GitHub(object):
         return True
 
     def push(self, status):
-        github = status.get("github", { })
-        http = status.get("http", { })
+        github = status.get("github", {})
+        http = status.get("http", {})
         token = github.get("token")
         requests = (github.get("requests") or []) + (http.get("requests") or [])
 
@@ -226,6 +228,7 @@ class GitHub(object):
                 except:
                     traceback.print_exc()
                 os._exit(ret)
+
 
 class Irc(object):
     def __init__(self, config):
@@ -259,7 +262,7 @@ class Irc(object):
         quit = False
 
         # Now wait for appropriate events
-        inputs = [ msgf, ircf ]
+        inputs = [msgf, ircf]
         while inputs:
             (rfds, wfds, efds) = select.select(inputs, [], [])
             for fd in rfds:
@@ -307,7 +310,7 @@ class Irc(object):
         self.pipe = os.fdopen(wfd, "w")
 
     def push(self, status):
-        irc = status.get("irc", { })
+        irc = status.get("irc", {})
         message = status.get("message")
         channel = irc.get("channel")
         if message and channel:
@@ -317,6 +320,7 @@ class Irc(object):
                 self.pipe.write(channel + " :" + line + "\n")
             self.pipe.flush()
 
+
 def write_new(path, content):
     try:
         os.remove(path)
@@ -324,6 +328,7 @@ def write_new(path, content):
         pass
     with open(path, 'wb') as f:
         f.write(content)
+
 
 class Extras(object):
     def __init__(self, config):
@@ -334,9 +339,10 @@ class Extras(object):
             for url in data['extras']:
                 urlretrieve(url, os.path.basename(url))
 
+
 class Status(object):
     def __init__(self, config, identifier):
-        self.reporters = [ GitHub(config), Irc(config), Extras(config) ]
+        self.reporters = [GitHub(config), Irc(config), Extras(config)]
         self.link = config.get("Sink", "Url").replace('@@', identifier)
         self.data = None
 
@@ -392,6 +398,7 @@ class Status(object):
             fp.write(json.dumps(clean_data))
         return used
 
+
 class Buffer(object):
 
     def __init__(self, fd):
@@ -421,16 +428,20 @@ class Buffer(object):
         result += os.read(self.fd, 1024)
         return result
 
+
 class Tee():
     def __init__(self, log, std):
         self.log = log
         self.std = std
+
     def write(self, *args):
         self.log.write(*args)
         self.std.write(*args)
+
     def flush(self, *args):
         self.log.flush(*args)
         self.std.flush(*args)
+
     def close(self, *args):
         self.log.close(*args)
         self.log.close(*args)
@@ -468,6 +479,7 @@ def mkdir_and_chdir(base, identifier):
     os.fchmod(dirfd, 0o755)
     os.close(dirfd)
 
+
 def prune_logs(base_path=".", dry_run=False):
     """ Check all subdirectories of the current path and delete the ones that
         are either empty or contain only files older than the age threshold.
@@ -494,7 +506,7 @@ def prune_logs(base_path=".", dry_run=False):
                 for filename in files:
                     last_modified = max(last_modified, os.stat(os.path.join(root, filename)).st_mtime)
 
-            diff_days = (reference_time - last_modified) / (60*60*24)
+            diff_days = (reference_time - last_modified) / (60 * 60 * 24)
 
             # keep anything newer than 30 days old
             if diff_days < age_threshold:
@@ -506,6 +518,7 @@ def prune_logs(base_path=".", dry_run=False):
                 shutil.rmtree(path)
         except:
             continue
+
 
 def check_prune(config, logs, dry_run):
     """ See if we have to prune logs, and if we should, fork and do so
@@ -521,7 +534,7 @@ def check_prune(config, logs, dry_run):
         if os.path.isfile(status_file):
             reference_time = time.time()
             last_modified = os.stat(status_file).st_mtime
-            diff_days = (reference_time - last_modified) / (60*60*24)
+            diff_days = (reference_time - last_modified) / (60 * 60 * 24)
             prune_now = diff_days >= prune_interval
 
         # if we should prune, fork so we don't block the sink
@@ -543,6 +556,7 @@ def check_prune(config, logs, dry_run):
                 prune_logs(logs, dry_run)
                 sys.exit(0)
 
+
 def main():
     parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
     parser.add_argument('-d', '--dry-run', dest='dry_run', action="store_true",
@@ -558,9 +572,9 @@ def main():
         user = os.environ.get("LOGNAME", os.getlogin())
     except:
         user = os.environ.get("LOGNAME", None)
-    config = SafeConfigParser({ "user": user, "identifier": "@@" })
+    config = SafeConfigParser({"user": user, "identifier": "@@"})
     config.readfp(StringIO(DEFAULTS))
-    config.read([ os.path.expanduser(args.config) ])
+    config.read([os.path.expanduser(args.config)])
 
     # Create the directory and chdir
     logs = os.path.expanduser(config.get("Sink", "Logs"))
@@ -618,6 +632,7 @@ def main():
         if ret:
             raise subprocess.CalledProcessError(ret, "tar")
         subprocess.check_call(["chmod", "--recursive", "ugo+r", "."])
+
 
 if __name__ == "__main__":
     main()

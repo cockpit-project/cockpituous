@@ -58,6 +58,7 @@ if ! whoami && [ -w /etc/passwd ]; then
 fi
 '''
 
+
 def setup():
     '''Prepare temporary home directory from secrets'''
 
@@ -79,7 +80,10 @@ def setup():
     os.umask(old_umask)
 
     ensure_bots_checkout()
-    subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp', 'amqp.cockpit.svc.cluster.local:5671', '--repo', 'cockpit-project/cockpit'], cwd=BOTS_CHECKOUT)
+    subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
+                           'amqp.cockpit.svc.cluster.local:5671', '--repo', 'cockpit-project/cockpit'],
+                          cwd=BOTS_CHECKOUT)
+
 
 def ensure_bots_checkout():
     if not os.path.isdir(BOTS_CHECKOUT):
@@ -89,6 +93,7 @@ def ensure_bots_checkout():
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/master'])
+
 
 @contextlib.contextmanager
 def distributed_queue(amqp_server):
@@ -100,7 +105,7 @@ def distributed_queue(amqp_server):
 
     context = ssl.create_default_context(cafile='/run/secrets/webhook/ca.pem')
     context.load_cert_chain(keyfile='/run/secrets/webhook/amqp-client.key',
-        certfile='/run/secrets/webhook/amqp-client.pem')
+                            certfile='/run/secrets/webhook/amqp-client.pem')
     context.check_hostname = False
     connection = pika.BlockingConnection(pika.ConnectionParameters(
         host=host,
@@ -113,13 +118,15 @@ def distributed_queue(amqp_server):
     yield channel
     connection.close()
 
+
 def publish_to_queue(routing_key, event, request):
     body = {
         'event': event,
         'request': request,
     }
     with distributed_queue('amqp.cockpit.svc.cluster.local:5671') as queue:
-        queue.basic_publish('', routing_key, json.dumps(body), properties=pika.BasicProperties(content_type='application/json'))
+        queue.basic_publish('', routing_key, json.dumps(body),
+                            properties=pika.BasicProperties(content_type='application/json'))
 
 
 class ReleaseHandler(github_handler.GithubHandler):

@@ -7,19 +7,21 @@ import subprocess
 
 INKSCAPE = '/usr/bin/inkscape'
 
+
 def list_layers(svg):
-    layers = [ ]
+    layers = []
     for g in svg.getElementsByTagName("g"):
-        if g.attributes.has_key("inkscape:label"):
+        if "inkscape:label" in g.attributes:
             layers.append(g.attributes["inkscape:label"].value)
     return layers
+
 
 def export_layer(svg, directory, layer, stay):
     if layer in stay:
         return
     print(layer + " ...")
     for g in svg.getElementsByTagName("g"):
-        if g.attributes.has_key("inkscape:label"):
+        if "inkscape:label" in g.attributes:
             label = g.attributes["inkscape:label"].value
             if label == layer or label in stay:
                 g.attributes['style'] = 'display:inline'
@@ -30,6 +32,7 @@ def export_layer(svg, directory, layer, stay):
     png = os.path.join(directory, layer + ".png")
     subprocess.check_call([INKSCAPE, "--export-png", png, dest])
     os.unlink(dest)
+
 
 def main():
     from argparse import ArgumentParser
@@ -42,6 +45,7 @@ def main():
 
     for layer in list_layers(svg):
         export_layer(svg, os.path.dirname(args.src), layer, args.stay)
+
 
 if __name__ == '__main__':
     main()
