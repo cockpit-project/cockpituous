@@ -4,6 +4,11 @@ all:
 	@echo "       make release-cockpit" >&2
 	@echo "       make release-container" >&2
 	@echo "       make release-install" >&2
+	@echo "       make check" >&2
+
+check:
+	sink/test-logic
+	sink/test-sink
 
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
