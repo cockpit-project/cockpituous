@@ -6,7 +6,6 @@ import logging
 import subprocess
 import shutil
 import http.server
-import pipes
 import json
 import contextlib
 import ssl
@@ -160,7 +159,6 @@ class ReleaseHandler(github_handler.GithubHandler):
         repo = request['repository']['full_name']
         sha = request['sha']
         state = request['state']
-        context = pipes.quote(request['context'])
         description = request.get('description', '')
         if state != 'pending':
             return None
