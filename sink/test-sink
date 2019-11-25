@@ -1,5 +1,4 @@
-#!/usr/bin/python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
 
 # This file is part of Cockpit.
 #
@@ -18,19 +17,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Cockpit; If not, see <http://www.gnu.org/licenses/>.
 
-import httplib
 import json
 import os
 import signal
 import subprocess
 import time
 import unittest
+import http.client
 
 ADDRESS = ("127.0.0.8", 8989)
 BASE = os.path.dirname(__file__)
 SINK = os.path.join(BASE, "sink")
 CONFIG = os.path.join(BASE, "test-sink.conf")
-DEVNULL = open("/dev/null", "r+")
 
 
 def mockServer():
@@ -44,21 +42,19 @@ def mockServer():
         "test": {"test": "handler"}
     }
 
-    import BaseHTTPServer
+    import http.server
 
-    class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
-
+    class Handler(http.server.BaseHTTPRequestHandler):
         def replyJson(self, value):
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps(value))
-            self.wfile.close()
+            self.wfile.write(json.dumps(value).encode())
 
         def do_POST(self):
             if self.path == "/test":
-                data = self.rfile.read(int(self.headers.getheader('Content-Length')))
-                self.server.data["test"] = json.loads(data)
+                data = self.rfile.read(int(self.headers['Content-Length']))
+                self.server.data["test"] = json.loads(data.decode())
                 self.replyJson(self.server.data["test"])
             else:
                 self.send_error(404, 'Mock Not Found: ' + self.path)
@@ -72,7 +68,7 @@ def mockServer():
             else:
                 self.send_error(404, 'Mock Not Found: ' + self.path)
 
-    httpd = BaseHTTPServer.HTTPServer(ADDRESS, Handler)
+    httpd = http.server.HTTPServer(ADDRESS, Handler)
     httpd.data = data
     httpd.serve_forever()
     os._exit(1)
@@ -106,16 +102,16 @@ class TestGitHub(unittest.TestCase, ):
         # Make sure the sink works
         input = json.dumps(begin) + "\nCONTENT\n{ }"
         sink = subprocess.Popen([SINK, "--config", CONFIG, "identifier"],
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True, bufsize=1)
         (output, error) = sink.communicate(input)
         self.assertEqual(sink.returncode, 0)
         self.assertEqual(output, "CONTENT\n")
 
         # Make sure the data was posted
-        conn = httplib.HTTPConnection("{0}:{1}".format(*ADDRESS))
+        conn = http.client.HTTPConnection("{0}:{1}".format(*ADDRESS))
         conn.request("GET", "/test")
         output = conn.getresponse().read()
-        self.assertEqual(output, "\"string\"")
+        self.assertEqual(output, b"\"string\"")
 
     def testExpectSucceed(self):
         begin = {
@@ -129,7 +125,7 @@ class TestGitHub(unittest.TestCase, ):
         }
 
         sink = subprocess.Popen([SINK, "--config", CONFIG, "identifier"],
-                                stdin=subprocess.PIPE, stdout=DEVNULL)
+                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True, bufsize=1)
         sink.stdin.write(json.dumps(begin) + "\nWAITING\n")
 
         # Wait for watches to happen
@@ -153,11 +149,12 @@ class TestGitHub(unittest.TestCase, ):
         }
 
         sink = subprocess.Popen([SINK, "--config", CONFIG, "identifier"],
-                                stdin=subprocess.PIPE, stdout=DEVNULL)
+                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True, bufsize=1)
         sink.stdin.write(json.dumps(begin) + "\nWAITING\n")
 
         # Should terminate by itself due to /expect
         ret = sink.wait()
+        sink.stdin.close()
         self.assertEqual(ret, -signal.SIGTERM)
 
 
