@@ -9,6 +9,8 @@ all:
 check:
 	sink/test-logic
 	sink/test-sink
+	python2 -m pyflakes sink/sink sink/test-sink
+	python3 -m pyflakes tasks sink/test-logic tasks/webhook
 
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
