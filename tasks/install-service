@@ -9,7 +9,7 @@ INSTANCES=${INSTANCES:-3}
 if RUNC=$(which podman 2>/dev/null); then
     UNIT_DEPS=''
     DEVICES="--device=/dev/kvm"
-    NETWORK=''  # default works fine
+    NETWORK='--net=slirp4netns'  # isolate containers from each other
     NETWORK_SETUP=''
     NETWORK_TEARDOWN=''
 else
