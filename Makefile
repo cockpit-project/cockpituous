@@ -9,8 +9,7 @@ all:
 check:
 	sink/test-logic
 	sink/test-sink
-	python2 -m pyflakes sink/sink
-	python3 -m pyflakes tasks sink/test-sink sink/test-logic tasks/webhook
+	python3 -m pyflakes tasks sink/sink sink/test-sink sink/test-logic tasks/webhook
 	python3 -m $$(python3 -m pep8 --version >/dev/null 2>&1 && echo pep8 || echo pycodestyle) --max-line-length=120 --ignore=E722 tasks sink/sink sink/test-logic sink/test-sink tasks/webhook
 
 TAG := $(shell date --iso-8601)
