@@ -1,6 +1,4 @@
-#!/usr/bin/env python2
-
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import argparse
 import errno
@@ -19,31 +17,11 @@ import time
 import traceback
 import re
 
-# Try Python 3, fail back to Python 2
-try:
-    from http.client import HTTPConnection
-    from http.client import HTTPSConnection
-except ImportError:
-    from httplib import HTTPConnection
-    from httplib import HTTPSConnection
-try:
-    from urllib.parse import urljoin
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urljoin
-    from urlparse import urlparse
-try:
-    from urllib.request import urlretrieve
-except ImportError:
-    from urllib import urlretrieve
-try:
-    from configparser import SafeConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser
-try:
-    from io import StringIO
-except ImportError:
-    from cStringIO import StringIO
+from http.client import HTTPConnection, HTTPSConnection
+from urllib.parse import urljoin, urlparse
+from urllib.request import urlretrieve
+from configparser import ConfigParser
+from io import StringIO
 
 MAX_BUFF_SIZE = sys.maxsize
 
@@ -68,6 +46,10 @@ Server: https://api.github.com
 
 TOKEN = "~/.config/github-token"
 
+# binary streams; in main() they get tee'd to log file
+stdout = sys.stdout.buffer
+stderr = sys.stderr.buffer
+
 
 # Expansion of strings in JSON objects.
 
@@ -89,7 +71,7 @@ def expand_str(val, env):
 
 
 def expand(val, env):
-    if isinstance(val, basestring):
+    if isinstance(val, str):
         return expand_str(val, env)
     elif isinstance(val, dict):
         return {k: expand(v, env) for k, v in val.items()}
@@ -111,11 +93,13 @@ def contains(expect, result, debug=True):
                     found += 1
             if found == 0:
                 if debug:
-                    sys.stderr.write("Expected %s but not present in %s\n" % (json.dumps(exp), json.dumps(result)))
+                    stderr.write(("Expected %s but not present in %s\n" % (
+                        json.dumps(exp), json.dumps(result))).encode())
                 return False
             elif found > 1:
                 if debug:
-                    sys.stderr.write("Expected one %s but found %s times\n" % (json.dumps(exp), str(found)))
+                    stderr.write(("Expected one %s but found %s times\n" % (
+                        json.dumps(exp), str(found))).encode())
                 return False
         return True
     elif isinstance(expect, dict) and isinstance(result, dict):
@@ -125,7 +109,7 @@ def contains(expect, result, debug=True):
         return True
     elif expect != result:
         if debug:
-            sys.stderr.write("Expecting %s but saw %s\n" % (json.dumps(expect), json.dumps(result)))
+            stderr.write(("Expecting %s but saw %s\n" % (json.dumps(expect), json.dumps(result))).encode())
         return False
     else:
         return True
@@ -158,9 +142,9 @@ class GitHub(object):
         if token:
             headers["Authorization"] = "token " + token
         if self.url.scheme == 'http':
-            conn = HTTPConnection(self.url.netloc, strict=True)
+            conn = HTTPConnection(self.url.netloc)
         else:
-            conn = HTTPSConnection(self.url.netloc, strict=True)
+            conn = HTTPSConnection(self.url.netloc)
         # conn.set_debuglevel(1)
         conn.request(method, resource, data and json.dumps(data) or None, headers)
         response = conn.getresponse()
@@ -169,7 +153,7 @@ class GitHub(object):
         if response.status < 200 or response.status >= 300:
             raise RuntimeError("Couldn't update GitHub: {0} {1}\n{2}\n".format(
                                response.status, response.reason, output.strip()))
-        return json.loads(output)
+        return json.loads(output.decode())
 
     def cleanup(self):
         child = self.child
@@ -222,8 +206,8 @@ class GitHub(object):
                 try:
                     if not self.watches(token, watches):
                         os.kill(os.getppid(), signal.SIGTERM)
-                        sys.stderr.write("State not as expected. Possible collision. Aborting.\n")
-                        sys.stderr.flush()
+                        stderr.write(b"State not as expected. Possible collision. Aborting.\n")
+                        stderr.flush()
                         ret = 1
                 except:
                     traceback.print_exc()
@@ -257,7 +241,7 @@ class Irc(object):
         ircf.sendall("NICK " + self.nick + "\n")
 
         # Our relay buffer and sending logic
-        buf = ""
+        buf = b''
         ready = False
         quit = False
 
@@ -281,8 +265,8 @@ class Irc(object):
                     elif self.nick in data:
                         ready = True
             if ready:
-                (lines, unused, buf) = buf.rpartition("\n")
-                for message in lines.split("\n"):
+                (lines, unused, buf) = buf.rpartition(b"\n")
+                for message in lines.split(b"\n"):
                     if message:
                         ircf.sendall("PRIVMSG " + message + "\n")
                 if quit:
@@ -293,15 +277,15 @@ class Irc(object):
             return
 
         [rfd, wfd] = os.pipe()
-        sys.stdout.flush()
-        sys.stderr.flush()
+        stdout.flush()
+        stderr.flush()
         self.pid = os.fork()
         if self.pid == 0:
             ret = 0
             os.close(wfd)
             try:
                 self.process(rfd)
-                sys.stdout.flush()
+                stdout.flush()
             except:
                 traceback.print_exc()
                 ret = 1
@@ -361,12 +345,12 @@ class Status(object):
 
     def begin(self, line, log):
         try:
-            data = json.loads(line)
+            data = json.loads(line.decode())
         except:
-            sys.stderr.write(self.link + "\n")
+            stderr.write((self.link + "\n").encode())
             return False
         self.push(data, log)
-        sys.stderr.write(data["link"] + "\n")
+        stderr.write((data["link"] + "\n").encode())
         return True
 
     def clean_status(self, data):
@@ -378,7 +362,7 @@ class Status(object):
             return False
         used = False
         try:
-            data = json.loads(line)
+            data = json.loads(line.decode())
             used = True
         except:
             data = self.data
@@ -403,7 +387,7 @@ class Buffer(object):
 
     def __init__(self, fd):
         self.fd = fd
-        self.buf = ''
+        self.buf = b''
 
     def push(self, piece):
         self.buf = piece + self.buf
@@ -413,7 +397,7 @@ class Buffer(object):
 
     def read(self, n=MAX_BUFF_SIZE):
         result = self.buf
-        self.buf = ''
+        self.buf = b''
         while len(result) < n:
             want = n - len(result)
             data = os.read(self.fd, want > 1024 and 1024 or want)
@@ -424,7 +408,7 @@ class Buffer(object):
 
     def readone(self):
         result = self.buf
-        self.buf = ''
+        self.buf = b''
         result += os.read(self.fd, 1024)
         return result
 
@@ -513,7 +497,7 @@ def prune_logs(base_path=".", dry_run=False):
                 continue
 
             if dry_run:
-                sys.stderr.write("Pruning {0} (age: {1} days)\n".format(path, int(round(diff_days))))
+                stderr.write(("Pruning {0} (age: {1} days)\n".format(path, int(round(diff_days)))).encode())
             else:
                 shutil.rmtree(path)
         except:
@@ -540,7 +524,7 @@ def check_prune(config, logs, dry_run):
         # if we should prune, fork so we don't block the sink
         if prune_now:
             if not os.path.isdir(logs):
-                sys.stderr.write("warning: log directory {0} doesn't exist, nothing to do\n".format(logs))
+                stderr.write(("warning: log directory {0} doesn't exist, nothing to do\n".format(logs)).encode())
             elif os.fork() == 0:
                 # update the file for writing and lock it (prevent concurrent pruning)
                 fd = os.open(status_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
@@ -549,7 +533,7 @@ def check_prune(config, logs, dry_run):
                 except IOError:
                     os.close(fd)
                     print("can't lock, bailing out")
-                    sys.stderr.write("Unable to lock log pruning status file: {0}\n".format(status_file))
+                    stderr.write(("Unable to lock log pruning status file: {0}\n".format(status_file)).encode())
                     sys.exit(0)
 
                 os.chdir(logs)
@@ -572,8 +556,8 @@ def main():
         user = os.environ.get("LOGNAME", os.getlogin())
     except:
         user = os.environ.get("LOGNAME", None)
-    config = SafeConfigParser({"user": user, "identifier": "@@"})
-    config.readfp(StringIO(DEFAULTS))
+    config = ConfigParser({"user": user, "identifier": "@@"})
+    config.read_file(StringIO(DEFAULTS))
     config.read([os.path.expanduser(args.config)])
 
     # Create the directory and chdir
@@ -592,37 +576,39 @@ def main():
     # Initialize status reporters
     status = Status(config, identifier)
 
-    log = open("log", "w")
-    sys.stdout = Tee(log, sys.stdout)
-    sys.stderr = Tee(log, sys.stderr)
+    log = open("log", "wb")
+    # treat streams as binary stream, to avoid problems with non-ASCII data
+    global stdout, stderr
+    stdout = Tee(log, sys.stdout.buffer)
+    stderr = Tee(log, sys.stderr.buffer)
 
     # Now relay any data until zero byte
     buffer = Buffer(0)
     attached = False
     count = 0          # Number of lines processed
-    last = ""          # Last full output valid line
+    last = b""         # Last full output valid line
     done = False       # Set when done
     while not done:
-        sys.stdout.flush()
+        stdout.flush()
         data = buffer.readone()
         if not data:
             done = True
-        (text, zero, trailing) = (last + data).partition('\x00')
+        (text, zero, trailing) = (last + data).partition(b'\x00')
         if len(zero):
             buffer.push(trailing)
             attached = True
             done = True
-        lines = text.split("\n")
+        lines = text.split(b"\n")
         last = lines.pop()
         for line in lines:
-            line += "\n"
+            line += b"\n"
             count += 1
             if count == 1:
                 if status.begin(line, log):
                     continue
-            sys.stdout.write(line)
+            stdout.write(line)
     if not status.finish(last, log):
-        sys.stdout.write(last)
+        stdout.write(last)
 
     if attached:
         tar = subprocess.Popen(["tar", "-xzf", "-"], stdin=subprocess.PIPE)
