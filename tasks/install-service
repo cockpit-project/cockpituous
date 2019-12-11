@@ -35,9 +35,12 @@ RestartSec=60
 # give image pull enough time
 TimeoutStartSec=10min
 ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
+ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
-ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=%i-%l --device=/dev/kvm --net=slirp4netns --memory=24g --pids-limit=16384 --volume=npm-cache-%i:/work/.npm --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
+ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
+ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=%i-%l --device=/dev/kvm --network=cockpit-tasks-%i --memory=24g --pids-limit=16384 --volume=npm-cache-%i:/work/.npm --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
 ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
+ExecStop=/usr/bin/podman network rm cockpit-tasks-%i
 
 [Install]
 WantedBy=multi-user.target
