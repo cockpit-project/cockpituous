@@ -43,6 +43,7 @@ RUN dnf -y update && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
+    pip3 install --no-cache-dir wlc && \
     dnf clean all
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
