@@ -44,6 +44,10 @@ fi
 
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-/build}
 
+# Set up github user and token
+git config --global credential.helper store
+echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-credentials
+
 echo "Starting testing"
 
 function update_repo() {
