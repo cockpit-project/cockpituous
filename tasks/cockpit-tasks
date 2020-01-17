@@ -133,6 +133,7 @@ cockpit-project/cockpit
 cockpit-project/starter-kit
 cockpit-project/cockpit-podman
 weldr/cockpit-composer
+weldr/lorax
 "
 
 # check for tasks
