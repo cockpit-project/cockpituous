@@ -38,12 +38,10 @@ RUN dnf -y update && \
         sed \
         tar \
         virt-install \
-        wget \
-        python3-zanata-client && \
+        wget && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
-    pip3 install --no-cache-dir wlc && \
     dnf clean all
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
@@ -62,7 +60,6 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -snf /secrets/codecov-token /home/user/.config/codecov-token && \
     ln -snf /secrets/rhel-login /home/user/.rhel/login && \
     ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
-    ln -snf /secrets/zanata.ini /home/user/.config/zanata.ini && \
     ln -snf /secrets/lorax-test-env.sh /home/user/.config/lorax-test-env && \
     ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
     chmod g=u /etc/passwd && \
