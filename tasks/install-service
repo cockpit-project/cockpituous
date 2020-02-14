@@ -38,7 +38,7 @@ $UNIT_DEPS
 Environment="TEST_JOBS=8"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
-Environment="TEST_PUBLISH=sink"
+Environment="TEST_PUBLISH=${TEST_PUBLISH:-sink}"
 Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
 Restart=always
 RestartSec=60
