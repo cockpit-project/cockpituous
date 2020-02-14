@@ -340,7 +340,7 @@ class Status(object):
                 reporter.push(data)
             except:
                 traceback.print_exc()
-                traceback.print_exc(file=log)
+                log.write(traceback.format_exc().encode('UTF-8'))
         self.data = data
 
     def begin(self, line, log):
