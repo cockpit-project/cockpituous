@@ -135,6 +135,7 @@ cockpit-project/cockpit-podman
 cockpit-project/cockpit-ostree
 weldr/cockpit-composer
 weldr/lorax
+skobyda/cockpit-certificates
 "
 
 # check for tasks
