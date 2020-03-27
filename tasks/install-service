@@ -39,6 +39,8 @@ Environment="TEST_JOBS=8"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_PUBLISH=${TEST_PUBLISH:-sink}"
+Environment="TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}"
+Environment="TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}"
 Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
 Restart=always
 RestartSec=60
@@ -48,7 +50,7 @@ ExecStartPre=-$RUNC rm -f cockpit-tasks-%i
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull $RUNC pull cockpit/tasks
 ExecStartPre=$RUNC pull cockpit/tasks
 $NETWORK_SETUP
-ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=16g --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
+ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=16g --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
 ExecStop=$RUNC rm -f cockpit-tasks-%i
 $NETWORK_TEARDOWN
 
