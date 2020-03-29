@@ -24,6 +24,7 @@ from configparser import ConfigParser
 from io import StringIO
 
 MAX_BUFF_SIZE = sys.maxsize
+EXIT_COLLISION = 77
 
 
 # Rough configuration file follows, place it in ~/.config/sink
@@ -208,7 +209,7 @@ class GitHub(object):
                         os.kill(os.getppid(), signal.SIGTERM)
                         stderr.write(b"State not as expected. Possible collision. Aborting.\n")
                         stderr.flush()
-                        ret = 1
+                        ret = EXIT_COLLISION
                 except:
                     traceback.print_exc()
                 os._exit(ret)
