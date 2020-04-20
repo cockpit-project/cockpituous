@@ -133,7 +133,7 @@ cockpit-project/cockpit
 cockpit-project/starter-kit
 cockpit-project/cockpit-podman
 cockpit-project/cockpit-ostree
-weldr/cockpit-composer
+osbuild/cockpit-composer
 weldr/lorax
 "
 
