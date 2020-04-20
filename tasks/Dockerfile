@@ -35,6 +35,7 @@ RUN dnf -y update && \
         python3-pika \
         rpm-build \
         rpmdevtools \
+        rsync \
         sed \
         tar \
         virt-install \
