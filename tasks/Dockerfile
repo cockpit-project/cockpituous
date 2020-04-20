@@ -7,7 +7,7 @@ RUN dnf -y update && \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
         chromium-headless \
-        https://kojipkgs.fedoraproject.org//packages/firefox/69.0.3/2.fc30/x86_64/firefox-69.0.3-2.fc30.x86_64.rpm \
+        https://kojipkgs.fedoraproject.org//packages/firefox/69.0.3/2.module_f30+6823+393aa9e5/x86_64/firefox-69.0.3-2.module_f30+6823+393aa9e5.x86_64.rpm \
         curl \
         expect \
         gcc \
@@ -64,7 +64,8 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -snf /secrets/lorax-test-env.sh /home/user/.config/lorax-test-env && \
     ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
     chmod g=u /etc/passwd && \
-    chmod -R ugo+w /build /secrets /cache /home/user
+    chmod -R ugo+w /build /secrets /cache /home/user && \
+    ln -s /app/bin/firefox /usr/bin/firefox
 
 # Prevent us from screwing around with KVM settings in the container
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
