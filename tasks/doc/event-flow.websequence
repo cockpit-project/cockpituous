@@ -1,0 +1,16 @@
+# render this on https://www.websequencediagrams.com/
+title CI Event Flow
+
+GitHub -> webhook container: webhook event\n(JSON payload)
+webhook container -> RabbitMQ container: AMQP with raw\nJSON payload\n→ webhook queue
+RabbitMQ container -> webhook container: queue put success
+webhook container -> GitHub: Finish HTTP webhook request
+RabbitMQ container -> tasks bot: run-queue\npick from webhook queue
+note right of tasks bot: checks event type field,\ncalls {tests,issue}-scan
+tasks bot -> RabbitMQ container: shell command into\ninternal or public\ntasks queue
+tasks bot -> RabbitMQ container: ACK picked webhook queue item
+RabbitMQ container -> tasks bot: run-queue\npick from tasks queues
+tasks bot -> GitHub: update issue/PR to "in progress"
+note right of tasks bot: execute shell command\n(test, po update, etc.)
+tasks bot -> GitHub: update issue/PR to "pass" or "fail"
+tasks bot -> RabbitMQ container: ACK picked tasks queue item
