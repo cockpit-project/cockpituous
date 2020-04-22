@@ -144,7 +144,9 @@ command:
 
     $ oc scale rc cockpit-tasks --replicas=3
 
-## Let GitHub webhook trigger actions
+## GitHub webhook integration
+
+### GitHub setup
 
 Add a webhook to your GitHub project on the Settings → Webhooks page of your project:
 
@@ -173,16 +175,79 @@ by the webhook which automatically starts a release runner.
 
 ### Automated testing
 
-When an pull request event or a status event is received, the webhook will
-publish the event to the webhook AMQP queue. These are then consumed and
-interpreted from the webhook queue by task bots. Task bots will publish tasks to
-the relevant AMQP queues, to be consumed again by task bots at a later point in
-time.
+When a pull request event or a status event is received, the webhook will
+trigger tests for the tasks bots (see "Event flow" below for details).
 
-A pull request event is queued when the pull request is opened or
-synchronized. A status event is only queued where the description ends with
-"(direct trigger)".
+A pull request event is queued when the pull request is opened or synchronized.
+A status event is only queued where the description ends with "(direct
+trigger)".
 
-The reason for this indirection with one interpret-queue (the webhook queue) and
-several task queues, is to reduce load on the webhook. The intepreting of status
-events for instance can take up to 10 seconds.
+### Event flow for PRs and issues
+
+We don't directly connect webhook events to tasks bots, as workers come and
+go, and fail quite often; also, we need something to schedule the incoming
+requests across all available workers.
+
+So we put the webhook events into
+[AMQP](https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol) queues.
+AMQP provides a distributed, transactional, and fail-safe work queue, provides
+the scheduling for free, and is really easy to set up.
+
+![Event flow diagram](doc/event-flow.png)
+
+ * Project configures a webhook for the interesting bits; most importantly
+   "pull request opened or pushed" and "issue changed". (We use "branch or tag
+   creation as well, but releases have a different flow not shown here).
+
+ * A PR is opened/changed in a project, or an issue gets a bot-related task
+   (e. g. "fetch new translations" or "check for NPM updates"). GitHub sends a
+   webhook event of the corresponding type.
+
+ * The webhook calls an OpenShift route, e. g.
+
+      http://webhook-cockpit.apps.ci.centos.org/cockpituous-release
+
+   This is a route/service that gets that HTTP request to a pod that has (1) an
+   off-the-shelf [RabbitMQ container](https://hub.docker.com/_/rabbitmq), and
+   (2) a cockpit/tasks container that runs the actual
+   [webhook](https://github.com/cockpit-project/cockpituous/blob/master/tasks/webhook).
+
+   See the [Kubernetes resources](https://github.com/cockpit-project/cockpituous/blob/master/tasks/cockpit-tasks-webhook.yaml)
+   for details about the route, service, and pod.
+
+   That webhook is a fairly straightforward piece of Python that routes the
+   various event types to `handle_{pull_request,create,issues,...}()` handlers
+   and essentially just connect to the AMQP pod next to it
+   (amqp.cockpit.svc.cluster.local:5671) and put the payload into the "webhook" queue.
+
+   This initial step involves no complicated logic or interpretation, and just
+   puts the payload into a safe place. The reason for this indirection with one
+   interpret-queue (the webhook queue) and several task queues, is to reduce
+   load on the webhook. The interpreting of status events for instance can take
+   up to 10 seconds and can fail, and HTTP requests ought to be replied fast
+   and reliably.
+
+ * Then all real test/release/etc. worker bots also connect to the same AMQP
+   container (locally through the service or remotely through the route).
+   [run-queue](https://github.com/cockpit-project/bots/tree/master/run-queue)
+   consumes a queue entry, does its thing (see below), and once everything is done it
+   acks the entry back to the AMQP server. If anything goes wrong in between
+   and the worker crashes, AMQP automatically puts the item back into the
+   queue.
+
+   Authentication to AMQP happens through client-side SSL certificates; we have a
+   [distributed_queue.py](https://github.com/cockpit-project/bots/blob/master/task/distributed_queue.py)
+   convenience wrapper for this.
+
+ * Some cockpit/tasks bot picks up the event payload from the "webhook" queue,
+   and interprets it with [tests-scan](https://github.com/cockpit-project/bots/blob/master/tests-scan)
+   or [issue-scan](https://github.com/cockpit-project/bots/blob/master/issue-scan)
+   depending on the event type. This results in a shell command like
+   `tests-invoke [...]`, `npm-update [...]`, or similar. If this involves any
+   Red Hat internal resources, like RHEL or Windows images, that command gets
+   put into the "internal" queue, otherwise into the "public" queue.
+
+ * Some cockpit/tasks bot picks up the shell command from the internal or
+   public queue (depending on whether it has access to Red Hat internal
+   infrastructure), executes it, publishes the log, updates the GitHub status,
+   and finally acks the queue item.
