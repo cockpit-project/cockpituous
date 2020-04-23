@@ -1,19 +1,14 @@
-# Cockpit Continuous Integration
+# Cockpit Continuous Integration tasks
 
-This is the staging container and configuration for the Cockpit
-integration tests. This documentation is for deployment on Fedora 22+
-or RHEL 7+.
+This is the staging container and configuration for the Cockpit integration
+tests and automated maintenance tasks. This documentation is for deployment on
+Fedora 22+ or RHEL 7+.
 
 Use the following commands to run the tasks container as a one off:
 
     $ sudo yum -y install docker atomic oci-kvm-hook
     $ sudo systemctl start docker
     $ sudo atomic run cockpit/tasks
-
-You can run the tests in the resulting container shell like this.
-Or see tests/HACKING in the cockpit repo for more info.
-
-   $ test/verify/run-tests --install
 
 The container has optional mounts:
 
