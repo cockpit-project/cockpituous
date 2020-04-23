@@ -30,8 +30,8 @@ The mounts normally default to `/var/lib/cockpit-secrets/tasks`,
 # Deploying on a host
 
 For testing machines that publish back results create a file called
-```/var/lib/cockpit-secrets/tasks/ssh-config``` as follows, and place ```id_rsa```
-```id_rsa.pub``` ```authorized_keys``` and a ```github-token``` in the same directory.
+`/var/lib/cockpit-secrets/tasks/ssh-config` as follows, and place `id_rsa`
+`id_rsa.pub` `authorized_keys` and a `github-token` in the same directory.
 
     UserKnownHostsFile /secrets/authorized_keys
     Host sink
@@ -85,15 +85,15 @@ It will restart automatically when it finds a pause in the verification work.
 The testing machines can run on Openshift cluster(s).
 
 Create a service account for use by the testing machines. Make sure to have the
-```oci-kvm-hook``` package installed on all nodes.  This is because of the requirement
-to access ```/dev/kvm```. Further work is necessary to remove this requirement.
+`oci-kvm-hook` package installed on all nodes.  This is because of the requirement
+to access `/dev/kvm`. Further work is necessary to remove this requirement.
 
     $ oc create -f tasks/cockpituous-account.json
     $ oc adm policy add-scc-to-user anyuid -z cockpituous
     $ oc adm policy add-scc-to-user hostmount-anyuid -z cockpituous
 
 Now create all the remaining kubernetes objects. The secrets are created from
-the ```/var/lib/cockpit-secrets/tasks``` directory as described above. For the
+the `/var/lib/cockpit-secrets/tasks` directory as described above. For the
 webhook secrets a github token `~/.config/github-webhook-token` should be
 present.
 
@@ -108,7 +108,7 @@ Some helpful commands:
     $ oc describe pods
     $ oc log -f cockpit-tasks-xxxx
 
-The tests need ```/dev/kvm``` to be accessible to non-root users on each node:
+The tests need `/dev/kvm` to be accessible to non-root users on each node:
 
     $ sudo modprobe kvm
     $ printf 'kvm\n' | sudo tee /etc/modules-load.d/kvm.conf
