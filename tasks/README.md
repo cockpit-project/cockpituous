@@ -17,16 +17,15 @@ Or see tests/HACKING in the cockpit repo for more info.
 
 The container has optional mounts:
 
- * ```/secrets```: A directory containing at least the following files
-   * ```ssh-config```: SSH configuration file containing a 'sink' host
-   * ```github-token```: A file containing a GitHub token to post results
-   * ```image-stores```: Non default locations to try downloading images from
-   * ```rhel-login```: Red Hat subscription credential login (optional)
-   * ```rhel-password```: Red Hat subscription credential password (optional)
- * ```/cache```: A directory for reusable cached data such as downloaded image files
+ * `/secrets`: A directory for tasks specific secrets, with at least the following files:
+   * `ssh-config`: SSH configuration file containing a 'sink' host
+   * `image-stores`: Non default locations to try downloading images from (optional)
+ * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
+   * `.config--github-token`: GitHub token to create and update issues and PRs
+ * `/cache`: A directory for reusable cached data such as downloaded image files
 
-The mounts normally default to ```/var/lib/cockpit-secrets/tasks``` and
-```/var/cache/cockpit-tasks``` on the host.
+The mounts normally default to `/var/lib/cockpit-secrets/tasks`,
+`/var/lib/cockpit-secrets/webhook`, and `/var/cache/cockpit-tasks` on the host.
 
 # Deploying on a host
 
