@@ -35,6 +35,8 @@ spec:
           mountPath: "/cache/images"
         - name: shm
           mountPath: "/dev/shm"
+        - name: tmp
+          mountPath: "/tmp"
         resources:
           limits:
             memory: 16G
@@ -54,6 +56,8 @@ spec:
         emptyDir:
           medium: Memory
       - name: tmp
-        emptyDir: {}
+        emptyDir:
+          medium: Memory
+          sizeLimit: 10G
       nodeSelector:
         oci_kvm_hook: allowed
