@@ -20,7 +20,7 @@ items:
           image: docker.io/cockpit/tasks
           env:
           - name: TEST_JOBS
-            value: '8'
+            value: '4'
           - name: TEST_PUBLISH
             value: sink-local
           - name: AMQP_SERVER
