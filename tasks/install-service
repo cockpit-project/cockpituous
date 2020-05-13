@@ -5,6 +5,13 @@ set -eufx
 SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
 INSTANCES=${INSTANCES:-3}
+TMPFS_GB=10
+
+# if the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention;
+# note the *2 as the containers also need actual RAM for themselves
+if awk "/MemAvailable:/ { exit (\$2 > ${TMPFS_GB}*1048576*2*${INSTANCES}) ? 0 : 1  }" /proc/meminfo; then
+    TMPVOL="--tmpfs /tmp:size=${TMPFS_GB}g"
+fi
 
 if RUNC=$(which podman 2>/dev/null); then
     UNIT_DEPS=''
@@ -50,7 +57,7 @@ ExecStartPre=-$RUNC rm -f cockpit-tasks-%i
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull $RUNC pull cockpit/tasks
 ExecStartPre=$RUNC pull cockpit/tasks
 $NETWORK_SETUP
-ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=16g --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
+ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=16g --volume=\${TEST_CACHE}:/cache:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 cockpit/tasks
 ExecStop=$RUNC rm -f cockpit-tasks-%i
 $NETWORK_TEARDOWN
 
