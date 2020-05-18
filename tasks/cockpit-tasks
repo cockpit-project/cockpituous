@@ -121,6 +121,7 @@ function run_from_queue() {
     cd "$XDG_CACHE_HOME"/cockpit-project/bots
     if /usr/bin/timeout 12h ./run-queue --amqp "$AMQP_SERVER"; then
         work_done=1
+        rm -rf "${TEST_DATA:-/}"/tmp/*
     fi
 }
 
