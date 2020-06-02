@@ -1,4 +1,4 @@
-FROM fedora:30
+FROM fedora:32
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 # HACK: Install Firefox 69, since 70 has broken cdp, see https://bugzilla.mozilla.org/show_bug.cgi?id=1593226
