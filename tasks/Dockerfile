@@ -69,7 +69,7 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -snf /secrets/lorax-test-env.sh /home/user/.config/lorax-test-env && \
     ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
     chmod g=u /etc/passwd && \
-    chmod -R ugo+w /build /secrets /cache /home/user && \
+    chmod -R ugo+w /cache /build /secrets /cache /home/user && \
     ln -s /app/bin/firefox /usr/bin/firefox
 
 # Prevent us from screwing around with KVM settings in the container
@@ -84,7 +84,7 @@ ENV LANG=C.UTF-8 \
     TEST_DATA=/build \
     TEST_PUBLISH=
 
-VOLUME /cache
+VOLUME /cache/images
 
 USER user
 WORKDIR /build
