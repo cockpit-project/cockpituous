@@ -53,13 +53,9 @@ RUN curl --location 'https://download.mozilla.org/?product=firefox-nightly-lates
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
-    mkdir -p /usr/local/bin /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
+    mkdir -p /usr/local/bin /secrets /cache/images /cache/github && \
     mkdir -p /home/user/.config /home/user/.ssh /home/user/.cache /home/user/.rhel && \
     printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n[cockpit "bots"]\n\timages-data-dir = /cache/images\n' >/home/user/.gitconfig && \
-    ln -s /cache/images /build/images && \
-    ln -s /cache/images /build/virt-builder && \
-    ln -s /cache/github /build/github && \
-    ln -s /tmp /build/tmp && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/image-stores /home/user/.config/image-stores && \
     ln -snf /secrets/codecov-token /home/user/.config/codecov-token && \
@@ -68,7 +64,7 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -snf /secrets/lorax-test-env.sh /home/user/.config/lorax-test-env && \
     ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
     chmod g=u /etc/passwd && \
-    chmod -R ugo+w /cache /build /secrets /cache /home/user && \
+    chmod -R ugo+w /cache /secrets /cache /home/user && \
     ln -s /app/bin/firefox /usr/bin/firefox
 
 # Prevent us from screwing around with KVM settings in the container
@@ -76,18 +72,16 @@ RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 
 ENV LANG=C.UTF-8 \
     LIBGUESTFS_BACKEND=direct \
-    XDG_CACHE_HOME=/build \
     HOME=/home/user \
     TMPDIR=/tmp \
     TEMPDIR=/tmp \
     TEST_OVERLAY_DIR=/tmp \
-    TEST_DATA=/build \
     TEST_PUBLISH=
 
 VOLUME /cache/images
 
 USER user
-WORKDIR /build
+WORKDIR /home/user
 CMD ["/usr/local/bin/cockpit-tasks", "--publish", "$TEST_PUBLISH", "--verbose"]
 
 # We execute the script in the host, but it doesn't exist on the host. So pipe it in
