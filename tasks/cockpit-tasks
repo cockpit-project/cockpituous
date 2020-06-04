@@ -42,7 +42,7 @@ if [ -r /secrets/npm-registry.crt ]; then
     export NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
 fi
 
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-/build}
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 
 # Set up github user and token
 git config --global credential.helper store
