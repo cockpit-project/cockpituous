@@ -1,14 +1,13 @@
 FROM fedora:32
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
-# HACK: Install Firefox 69, since 70 has broken cdp, see https://bugzilla.mozilla.org/show_bug.cgi?id=1593226
 RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
         chromium-headless \
-        https://kojipkgs.fedoraproject.org//packages/firefox/69.0.3/2.module_f30+6823+393aa9e5/x86_64/firefox-69.0.3-2.module_f30+6823+393aa9e5.x86_64.rpm \
         curl \
+        dbus-glib \
         expect \
         gcc \
         gcc-c++ \
@@ -20,6 +19,7 @@ RUN dnf -y update && \
         libvirt-daemon-kvm \
         libvirt-client \
         libvirt-python3 \
+        libXt \
         make \
         nc \
         net-tools \
@@ -44,6 +44,11 @@ RUN dnf -y update && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
+
+# Install nightly firefox, as neither the betas nor Fedora distro builds have the remote debugger
+RUN curl --location 'https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64&lang=en-US' | \
+        tar -C /usr/local/lib/ -xj && \
+    ln -s /usr/local/lib/firefox/firefox /usr/local/bin/
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
