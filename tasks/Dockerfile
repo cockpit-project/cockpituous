@@ -53,14 +53,13 @@ RUN curl --location 'https://download.mozilla.org/?product=firefox-nightly-lates
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
-    mkdir -p /home/user/.ssh && mkdir -p /usr/local/bin && \
-    mkdir -p /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
+    mkdir -p /usr/local/bin /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
+    mkdir -p /home/user/.config /home/user/.ssh /home/user/.cache /home/user/.rhel && \
     printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
     ln -s /cache/github /build/github && \
     ln -s /tmp /build/tmp && \
-    mkdir -p /home/user/.config /home/user/.ssh /home/user/.rhel && \
     ln -snf /secrets/ssh-config /home/user/.ssh/config && \
     ln -snf /secrets/image-stores /home/user/.config/image-stores && \
     ln -snf /secrets/codecov-token /home/user/.config/codecov-token && \
