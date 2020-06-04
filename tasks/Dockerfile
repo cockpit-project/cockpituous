@@ -71,12 +71,8 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 
 ENV LANG=C.UTF-8 \
-    LIBGUESTFS_BACKEND=direct \
     HOME=/home/user \
-    TMPDIR=/tmp \
-    TEMPDIR=/tmp \
-    TEST_OVERLAY_DIR=/tmp \
-    TEST_PUBLISH=
+    TEST_OVERLAY_DIR=/tmp
 
 VOLUME /cache/images
 
