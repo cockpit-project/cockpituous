@@ -55,7 +55,7 @@ COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     mkdir -p /usr/local/bin /build /secrets /cache/images /cache/github /build/libvirt/qemu && \
     mkdir -p /home/user/.config /home/user/.ssh /home/user/.cache /home/user/.rhel && \
-    printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n' >/home/user/.gitconfig && \
+    printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n[cockpit "bots"]\n\timages-data-dir = /cache/images\n' >/home/user/.gitconfig && \
     ln -s /cache/images /build/images && \
     ln -s /cache/images /build/virt-builder && \
     ln -s /cache/github /build/github && \
@@ -80,6 +80,7 @@ ENV LANG=C.UTF-8 \
     HOME=/home/user \
     TMPDIR=/tmp \
     TEMPDIR=/tmp \
+    TEST_OVERLAY_DIR=/tmp \
     TEST_DATA=/build \
     TEST_PUBLISH=
 
