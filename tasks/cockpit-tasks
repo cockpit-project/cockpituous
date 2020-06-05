@@ -39,7 +39,8 @@ if [ -r /secrets/npm-registry.crt ]; then
     export NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
 fi
 
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+# let's just do our work in the current directory
+WORKDIR="$PWD"
 
 # Set up github user and token
 git config --global credential.helper store
@@ -104,7 +105,7 @@ function run_one_task() {
     update_repo "$1" "$2"
 
     if [ "$(basename $repo_url)" != "bots" ] && [ ! -d "$dir/bots" ] && [ ! -L "$dir/bots" ]; then
-        cp -drl "$XDG_CACHE_HOME"/cockpit-project/bots "$dir/"
+        cp -drl "$WORKDIR"/cockpit-project/bots "$dir/"
     fi
 
     # Get a task and execute it, 12 hours max
@@ -115,7 +116,7 @@ function run_one_task() {
 }
 
 function run_from_queue() {
-    cd "$XDG_CACHE_HOME"/cockpit-project/bots
+    cd "$WORKDIR"/cockpit-project/bots
     if /usr/bin/timeout 12h ./run-queue --amqp "$AMQP_SERVER"; then
         work_done=1
         rm -rf "${TEST_DATA:-/}"/tmp/*
@@ -137,13 +138,13 @@ weldr/lorax
 
 # check for tasks
 for P in $PROJECTS; do
-    run_one_task "$XDG_CACHE_HOME"/"$P"                 https://github.com/"$P"
+    run_one_task "$WORKDIR"/"$P"                 https://github.com/"$P"
 done
 
 # Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
     work_done=
-    update_repo  "$XDG_CACHE_HOME"/cockpit-project/bots https://github.com/cockpit-project/bots
+    update_repo  "$WORKDIR"/cockpit-project/bots https://github.com/cockpit-project/bots
     run_from_queue || true
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
