@@ -22,6 +22,8 @@ spec:
           value: sink-local
         - name: AMQP_SERVER
           value: 'amqp.cockpit.svc.cluster.local:5671'
+        - name: RUN_STATISTICS_QUEUE
+          value: '1'
         volumeMounts:
         - name: secrets
           mountPath: "/secrets"
