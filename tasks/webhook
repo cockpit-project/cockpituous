@@ -157,7 +157,6 @@ class ReleaseHandler(github_handler.GithubHandler):
         if action == 'closed' and merged:
             logging.info("pull request was merged, ensuring cockpit checkout is latest master")
             ensure_bots_checkout()
-            return None
         if action not in ['opened', 'synchronize', 'edited', 'labeled']:
             logging.info("action %s unknown, skipping pull request event" % action)
             return None
