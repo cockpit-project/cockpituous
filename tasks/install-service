@@ -42,7 +42,7 @@ Description=Cockpit Tasks %i
 $UNIT_DEPS
 
 [Service]
-Environment="TEST_JOBS=${TEST_JOBS:-4}"
+Environment="TEST_JOBS=${TEST_JOBS:-5}"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_PUBLISH=${TEST_PUBLISH:-sink}"

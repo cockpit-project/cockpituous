@@ -17,7 +17,7 @@ spec:
         image: docker.io/cockpit/tasks
         env:
         - name: TEST_JOBS
-          value: '4'
+          value: '5'
         - name: TEST_PUBLISH
           value: sink-local
         - name: AMQP_SERVER
