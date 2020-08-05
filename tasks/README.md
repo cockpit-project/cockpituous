@@ -162,6 +162,17 @@ Add a webhook to your GitHub project on the Settings → Webhooks page of your p
 See [GitHub development documentation](https://developer.github.com/webhooks/)
 for more information.
 
+### Set up bot as collaborator
+
+ * On your project's "Settings → Manage Access" page, invite the [cockpituous user](https://github.com/cockpituous) as a collaborator.
+ * Once you see the "Pending invite", in the list, the clipboard symbol copies the corresponding `/invitations` URL to the clipboard. Send that to Martin Pitt (`pitti` in `#cockpit` on FreeNode IRC) or Marius Vollmer (`mvollmer` on IRC), who will log into GitHub as `cockpituous` user and accept the invite.
+
+### Set up automatic test triggering
+
+ * In the [Cockpit bots project](https://github.com/cockpit-project/bots), add your project to the [test map](https://github.com/cockpit-project/bots/blob/master/task/testmap.py). Start with `_manual` tests.
+ * Send a first PR to your project and use [bots/tests-trigger](https://github.com/cockpit-project/bots/blob/master/tests-trigger) to trigger the contexts that you want. They should be picked up and run.
+ * Once you fix your tests to succeed, adjust the test map again to move them to the "master" branch. From now on, every PR against master will automatically trigger these tests.
+
 ### Automated releases
 
 Whenever a new release tag gets pushed to a project a "create" event is received
