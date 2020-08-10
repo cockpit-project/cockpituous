@@ -116,6 +116,12 @@ def contains(expect, result, debug=True):
         return True
 
 
+def github_usr1_handler(sig, frame):
+    stderr.write(b"State not as expected. Possible collision. Aborting.\n")
+    stderr.flush()
+    sys.exit(EXIT_COLLISION)
+
+
 class GitHub(object):
     def __init__(self, config):
         self.token = None
@@ -130,6 +136,7 @@ class GitHub(object):
                 raise
         self.results = {}
         self.child = 0
+        signal.signal(signal.SIGUSR1, github_usr1_handler)
 
     def __del__(self):
         self.cleanup()
@@ -206,10 +213,9 @@ class GitHub(object):
                 ret = 0
                 try:
                     if not self.watches(token, watches):
-                        os.kill(os.getppid(), signal.SIGTERM)
-                        stderr.write(b"State not as expected. Possible collision. Aborting.\n")
-                        stderr.flush()
-                        ret = EXIT_COLLISION
+                        # signal to the parent process to exit with code 77
+                        os.kill(os.getppid(), signal.SIGUSR1)
+                        ret = 1
                 except:
                     traceback.print_exc()
                 os._exit(ret)
@@ -339,7 +345,7 @@ class Status(object):
         for reporter in self.reporters:
             try:
                 reporter.push(data)
-            except:
+            except Exception:
                 traceback.print_exc()
                 log.write(traceback.format_exc().encode('UTF-8'))
         self.data = data
