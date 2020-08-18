@@ -87,7 +87,7 @@ commit()
     fi
 
     echo "$PASSWORD" | setsid -w -- bodhi updates new --type=enhancement --close-bugs --notes="$NOTES" \
-        --stable-karma=2 --unstable-karma=-1 --autokarma --request=stable --user $USER  \
+        --stable-karma=2 --unstable-karma=-1 --autokarma --autotime --request=stable --user $USER  \
         ${fednvr}
 )
 
