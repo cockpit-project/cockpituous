@@ -35,7 +35,7 @@ spec:
     spec:
       containers:
         - name: release
-          image: cockpit/release
+          image: docker.io/cockpit/release
           workingDir: /build
           args: [ "-s", "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
           volumeMounts:
