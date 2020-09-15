@@ -17,7 +17,7 @@ items:
       spec:
         containers:
           - name: images
-            image: cockpit/images
+            image: docker.io/cockpit/images
             ports:
               - containerPort: 8080
                 protocol: TCP
