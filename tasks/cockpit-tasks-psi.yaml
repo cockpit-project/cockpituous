@@ -40,7 +40,7 @@ spec:
             cpu: 7750m
           limits:
             cpu: 7750m
-            memory: 16G
+            memory: 24G
       volumes:
       - name: secrets
         secret:
