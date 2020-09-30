@@ -41,7 +41,7 @@ spec:
           mountPath: "/tmp"
         resources:
           limits:
-            memory: 16G
+            memory: 24G
       volumes:
       - name: secrets
         secret:
