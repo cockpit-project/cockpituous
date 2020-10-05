@@ -154,10 +154,7 @@ class ReleaseHandler(github_handler.GithubHandler):
 
         logging.info('repo: %s; title: %s; number: %d; action: %s', repo, title, number, action)
         # see https://developer.github.com/v3/activity/events/types/#pullrequestevent for all actions
-        if action == 'closed' and merged:
-            logging.info("pull request was merged, ensuring cockpit checkout is latest master")
-            ensure_bots_checkout()
-        elif action not in ['opened', 'synchronize', 'edited', 'labeled']:
+        if action not in ['opened', 'synchronize', 'edited', 'labeled']:
             logging.info("action %s unknown, skipping pull request event" % action)
             return None
 
