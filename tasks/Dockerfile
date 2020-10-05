@@ -50,7 +50,7 @@ RUN curl --location 'https://download.mozilla.org/?product=firefox-nightly-lates
         tar -C /usr/local/lib/ -xj && \
     ln -s /usr/local/lib/firefox/firefox /usr/local/bin/
 
-COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
+COPY cockpit-tasks install-service webhook /usr/local/bin/
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     mkdir -p /usr/local/bin /secrets /cache/images /cache/github && \

@@ -1,0 +1,167 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import logging
+import subprocess
+import shutil
+import http.server
+import json
+import contextlib
+import ssl
+
+import pika
+
+import github_handler
+
+# Reduce pika noise
+logging.getLogger("pika").propagate = False
+
+HOME_DIR = '/tmp/home'
+WEBHOOK_SECRETS = '/run/secrets/webhook'
+SINK = os.getenv('RELEASE_SINK', 'sink-local')
+BOTS_CHECKOUT = HOME_DIR + '/bots'
+sys.path.append(BOTS_CHECKOUT)
+
+# Kubernetes Job template for actually running a release
+JOB = '''---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: %(jobname)s
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    spec:
+      containers:
+        - name: release
+          image: docker.io/cockpit/release
+          workingDir: /build
+          args: [ "-s", "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
+          volumeMounts:
+          - name: secrets
+            mountPath: /run/secrets/release
+            readOnly: true
+          env:
+          - name: RELEASE_SINK
+            value: %(sink)s
+      volumes:
+      - name: secrets
+        secret:
+          secretName: cockpit-release-secrets
+      restartPolicy: Never
+'''
+
+PASSWD_ENTRY_SCRIPT = '''
+set -ex
+if ! whoami && [ -w /etc/passwd ]; then
+    echo "user:x:$(id -u):0:random uid:${HOME:-/home/user}:/sbin/nologin" >> /etc/passwd
+fi
+'''
+
+# TODO I guess we will not be doing the setup() tests-scan on aws, which is fine I guess
+# does aws have jobs/single-fire functions for this? (separate from the lambda)
+def setup():
+    '''Prepare temporary home directory from secrets'''
+
+    if os.path.isdir(HOME_DIR):
+        return
+    logging.debug('Initializing %s', HOME_DIR)
+    os.makedirs(HOME_DIR)
+
+    # install credentials from secrets volume; copy to avoid world-readable files
+    # (which e. g. ssh complains about), and to make them owned by our random UID.
+    old_umask = os.umask(0o77)
+    for f in os.listdir(WEBHOOK_SECRETS):
+        if f.startswith('..'):
+            continue  # secrets volume internal files
+        src = os.path.join(WEBHOOK_SECRETS, f)
+        dest = os.path.join(HOME_DIR, f.replace('--', '/'))
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copyfile(src, dest)
+    os.umask(old_umask)
+
+    ensure_bots_checkout()
+    from task import testmap
+    for project in testmap.projects():
+        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
+                               'amqp.cockpit.svc.cluster.local:5671', '--repo', project],
+                              cwd=BOTS_CHECKOUT)
+
+
+def ensure_bots_checkout():
+    if not os.path.isdir(BOTS_CHECKOUT):
+        url = 'https://github.com/cockpit-project/bots'
+        subprocess.check_call(['git', 'clone', url, BOTS_CHECKOUT])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'fetch', 'origin'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/master'])
+
+
+# non-aws
+class GithubHandlerHTTPWrapper(http.server.BaseHTTPRequestHandler):
+    def fail(self, reason, code=404):
+        logging.error(reason)
+        self.send_response(code)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(reason.encode())
+        self.wfile.write(b'\n')
+
+    def success(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b'OK\n')
+
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        request = self.rfile.read(content_length)
+
+        release_handler = github_handler.ReleaseHandler(self.headers, request)
+
+        result = release_handler.handle():
+        if result: # TODO ?
+            self.success()
+        else:
+            self.fail(result.reason, result.code)
+
+
+        # event = self.headers.get('X-GitHub-Event')
+
+        # request = request.decode('UTF-8')
+        # logging.debug('event: %s, path: %s', event, self.path)
+
+        # request = json.loads(request)
+        # logging.debug('repository: %s', request['repository']['full_name'])
+
+        # try:
+        #     request['repository']['clone_url']
+        # except KeyError:
+        #     self.fail('Request misses repository clone_url')
+        #     return
+
+        # if event == 'ping':
+        #     self.success()
+        #     return
+        # err = self.handle_event(event, request)
+        # if err:
+        #     self.fail(err[1], code=err[0])
+        # else:
+        #     self.success()
+
+#
+# main
+#
+
+logging.basicConfig(level=logging.DEBUG)  # INFO
+
+# ensure we have a passwd entry for random UIDs
+# https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
+subprocess.check_call(PASSWD_ENTRY_SCRIPT, shell=True)
+
+os.environ['HOME'] = HOME_DIR
+
+setup()
+http.server.HTTPServer(('', 8080), GithubHandlerHTTPWrapper).serve_forever()

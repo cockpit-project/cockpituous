@@ -1,138 +1,69 @@
-#!/usr/bin/python3
-
 import os
-import sys
+import hmac
 import logging
-import subprocess
-import shutil
-import http.server
 import json
-import contextlib
-import ssl
+import http.server
 
-import pika
+import distributed_queue
 
-import github_handler
+__all__ = (
+    "GithubHandler",
+    "aws_handler",
+)
 
-# Reduce pika noise
-logging.getLogger("pika").propagate = False
-
-HOME_DIR = '/tmp/home'
-WEBHOOK_SECRETS = '/run/secrets/webhook'
-SINK = os.getenv('RELEASE_SINK', 'sink-local')
-BOTS_CHECKOUT = HOME_DIR + '/bots'
-sys.path.append(BOTS_CHECKOUT)
-
-# Kubernetes Job template for actually running a release
-JOB = '''---
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: %(jobname)s
-spec:
-  ttlSecondsAfterFinished: 0
-  template:
-    spec:
-      containers:
-        - name: release
-          image: docker.io/cockpit/release
-          workingDir: /build
-          args: [ "-s", "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
-          volumeMounts:
-          - name: secrets
-            mountPath: /run/secrets/release
-            readOnly: true
-          env:
-          - name: RELEASE_SINK
-            value: %(sink)s
-      volumes:
-      - name: secrets
-        secret:
-          secretName: cockpit-release-secrets
-      restartPolicy: Never
-'''
-
-PASSWD_ENTRY_SCRIPT = '''
-set -ex
-if ! whoami && [ -w /etc/passwd ]; then
-    echo "user:x:$(id -u):0:random uid:${HOME:-/home/user}:/sbin/nologin" >> /etc/passwd
-fi
-'''
-
-
-def setup():
-    '''Prepare temporary home directory from secrets'''
-
-    if os.path.isdir(HOME_DIR):
-        return
-    logging.debug('Initializing %s', HOME_DIR)
-    os.makedirs(HOME_DIR)
-
-    # install credentials from secrets volume; copy to avoid world-readable files
-    # (which e. g. ssh complains about), and to make them owned by our random UID.
-    old_umask = os.umask(0o77)
-    for f in os.listdir(WEBHOOK_SECRETS):
-        if f.startswith('..'):
-            continue  # secrets volume internal files
-        src = os.path.join(WEBHOOK_SECRETS, f)
-        dest = os.path.join(HOME_DIR, f.replace('--', '/'))
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        shutil.copyfile(src, dest)
-    os.umask(old_umask)
-
-    ensure_bots_checkout()
-    from task import testmap
-    for project in testmap.projects():
-        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
-                               'amqp.cockpit.svc.cluster.local:5671', '--repo', project],
-                              cwd=BOTS_CHECKOUT)
-
-
-def ensure_bots_checkout():
-    if not os.path.isdir(BOTS_CHECKOUT):
-        url = 'https://github.com/cockpit-project/bots'
-        subprocess.check_call(['git', 'clone', url, BOTS_CHECKOUT])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'fetch', 'origin'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/master'])
-
-
-@contextlib.contextmanager
-def distributed_queue(amqp_server):
-    try:
-        host, port = amqp_server.split(':')
-    except ValueError:
-        logging.error('Please format amqp_server as host:port')
-        sys.exit(1)
-
-    context = ssl.create_default_context(cafile='/run/secrets/webhook/ca.pem')
-    context.load_cert_chain(keyfile='/run/secrets/webhook/amqp-client.key',
-                            certfile='/run/secrets/webhook/amqp-client.pem')
-    context.check_hostname = False
-    connection = pika.BlockingConnection(pika.ConnectionParameters(
-        host=host,
-        port=int(port),
-        ssl_options=pika.SSLOptions(context, server_hostname=host),
-        credentials=pika.credentials.ExternalCredentials()))
-    channel = connection.channel()
-
-    channel.queue_declare(queue='webhook', auto_delete=False)
-    yield channel
-    connection.close()
-
+# 1 as basehttprequestHandler
+# 1 as pure python function
 
 def publish_to_queue(routing_key, event, request):
     body = {
         'event': event,
         'request': request,
     }
-    with distributed_queue('amqp.cockpit.svc.cluster.local:5671') as queue:
+    with distributed_queue.DistributedQueue('amqp.cockpit.svc.cluster.local:5671') as queue:
         queue.basic_publish('', routing_key, json.dumps(body),
                             properties=pika.BasicProperties(content_type='application/json'))
 
+class GithubHandler:
+    def __init__(self, headers, body):
+        self.headers = headers
+        self.body = body
 
-class ReleaseHandler(github_handler.GithubHandler):
+    def handle():
+        if self.check_sig(self.headers, self.body):
+            # TODO ERROR OUTputret
+            return
+
+        event = self.headers.get('X-GitHub-Event')
+        request = request.decode('UTF-8')
+        logging.debug('event: %s', event)
+        request = json.loads(request)
+        logging.debug('repository: %s', request['repository']['full_name'])
+
+        self.handle_event(event, request) # what to return ?
+
+    def check_sig(headers, request):
+        '''Validate github signature of request.
+
+        See https://developer.github.com/webhooks/securing/
+        '''
+            # load key
+            # TODO where to store this?
+            keyfile = os.path.expanduser('~/.config/github-webhook-token')
+            try:
+                with open(keyfile, 'rb') as f:
+                    key = f.read().strip()
+            except IOError as e:
+                logging.error('Failed to load GitHub key: %s', e)
+                return False
+
+            sig_sha1 = self.headers.get('X-Hub-Signature', '')
+            payload_sha1 = 'sha1=' + hmac.new(key, request, 'sha1').hexdigest()
+            if hmac.compare_digest(sig_sha1, payload_sha1):
+                return True
+            logging.error('GitHub signature mismatch! received: %s calculated: %s',
+                          sig_sha1, payload_sha1)
+            return False
+
     def handle_event(self, event, request):
         logging.info('Handling %s event', event)
         if event == 'create':
@@ -144,6 +75,9 @@ class ReleaseHandler(github_handler.GithubHandler):
         elif event == 'issues':
             return self.handle_issues_event(event, request)
         return (501, 'unsupported event ' + event)
+
+    def handle_ping_event(self, event, request):
+        return # whatever
 
     def handle_pull_request_event(self, event, request):
         repo = request['pull_request']['base']['repo']['full_name']
@@ -187,6 +121,12 @@ class ReleaseHandler(github_handler.GithubHandler):
         return None
 
     def handle_create_event(self, event, request):
+        raise NotImplementedError("The basic GithubHandler doesn't handle create events")
+
+
+# The ReleaseHandler requires an openshift environment
+class ReleaseHandler(GithubHandler):
+    def handle_create_event(self, event, request):
         ref_type = request.get('ref_type', '')
         if ref_type != 'tag':
             return (501, 'Ignoring ref_type %s, only doing releases on tags' % ref_type)
@@ -220,19 +160,3 @@ class ReleaseHandler(github_handler.GithubHandler):
             logging.error(str(e))
             return (400, str(e))
         return None
-
-
-#
-# main
-#
-
-logging.basicConfig(level=logging.DEBUG)  # INFO
-
-# ensure we have a passwd entry for random UIDs
-# https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
-subprocess.check_call(PASSWD_ENTRY_SCRIPT, shell=True)
-
-os.environ['HOME'] = HOME_DIR
-
-setup()
-http.server.HTTPServer(('', 8080), ReleaseHandler).serve_forever()
