@@ -86,6 +86,9 @@ def setup():
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
                                'amqp.cockpit.svc.cluster.local:5671', '--repo', project],
                               cwd=BOTS_CHECKOUT)
+        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'issue-scan'), '--amqp',
+                               'amqp.cockpit.svc.cluster.local:5671', '--repo', project],
+                              cwd=BOTS_CHECKOUT)
 
 
 def ensure_bots_checkout():
