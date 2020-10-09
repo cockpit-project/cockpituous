@@ -84,7 +84,7 @@ items:
       name: http
 
 - kind: Route
-  apiVersion: v1
+  apiVersion: route.openshift.io/v1
   metadata:
     name: logs-https
   spec:
@@ -117,6 +117,6 @@ items:
   data:
     sink: |
         [Sink]
-        Url: https://logs-https-cockpit.apps.ci.centos.org/logs/%(identifier)s/
+        Url: https://logs-https-frontdoor.apps.ocp.ci.centos.org/logs/%(identifier)s/
         Logs: /cache/images/logs
         PruneInterval: 14

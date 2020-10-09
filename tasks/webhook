@@ -20,6 +20,7 @@ logging.getLogger("pika").propagate = False
 HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
 SINK = os.getenv('RELEASE_SINK', 'sink-local')
+AMQP_SERVER = os.getenv('AMQP_SERVER', 'amqp.frontdoor.svc:5671')
 BOTS_CHECKOUT = HOME_DIR + '/bots'
 sys.path.append(BOTS_CHECKOUT)
 
@@ -55,10 +56,10 @@ def setup():
     from task import testmap
     for project in testmap.projects():
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
-                               'amqp.cockpit.svc.cluster.local:5671', '--repo', project],
+                               AMQP_SERVER, '--repo', project],
                               cwd=BOTS_CHECKOUT)
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'issue-scan'), '--amqp',
-                               'amqp.cockpit.svc.cluster.local:5671', '--repo', project],
+                               AMQP_SERVER, '--repo', project],
                               cwd=BOTS_CHECKOUT)
 
 
@@ -101,7 +102,7 @@ def publish_to_queue(routing_key, event, request):
         'event': event,
         'request': request,
     }
-    with distributed_queue('amqp.cockpit.svc.cluster.local:5671') as queue:
+    with distributed_queue(AMQP_SERVER) as queue:
         queue.basic_publish('', routing_key, json.dumps(body),
                             properties=pika.BasicProperties(content_type='application/json'))
 

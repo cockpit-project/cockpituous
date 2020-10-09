@@ -223,7 +223,7 @@ the scheduling for free, and is really easy to set up.
    That webhook is a fairly straightforward piece of Python that routes the
    various event types to `handle_{pull_request,create,issues,...}()` handlers
    and essentially just connect to the AMQP pod next to it
-   (amqp.cockpit.svc.cluster.local:5671) and put the payload into the "webhook" queue.
+   (amqp.frontdoor.svc:5671) and put the payload into the "webhook" queue.
 
    This initial step involves no complicated logic or interpretation, and just
    puts the payload into a safe place. The reason for this indirection with one
