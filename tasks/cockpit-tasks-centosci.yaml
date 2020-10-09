@@ -19,9 +19,9 @@ spec:
         - name: TEST_JOBS
           value: '5'
         - name: TEST_PUBLISH
-          value: sink-local
+          value: sink-local-4
         - name: AMQP_SERVER
-          value: 'amqp.cockpit.svc.cluster.local:5671'
+          value: 'amqp.frontdoor.svc:5671'
         - name: RUN_STATISTICS_QUEUE
           value: '1'
         volumeMounts:
@@ -42,6 +42,9 @@ spec:
         resources:
           limits:
             memory: 24G
+            devices.kubevirt.io/kvm: "1"
+          requests:
+              devices.kubevirt.io/kvm: "1"
       volumes:
       - name: secrets
         secret:
@@ -61,5 +64,3 @@ spec:
         emptyDir:
           medium: Memory
           sizeLimit: 10G
-      nodeSelector:
-        oci_kvm_hook: allowed

@@ -42,7 +42,9 @@ items:
               readOnly: true
             env:
             - name: RELEASE_SINK
-              value: sink-local
+              value: sink-local-4
+            - name: AMQP_SERVER
+              value: 'amqp.frontdoor.svc:5671'
         volumes:
         - name: webhook-secrets
           secret:
@@ -50,7 +52,6 @@ items:
         - name: amqp-config
           configMap:
             name: amqp-config
-        serviceAccountName: create-job
 
 - kind: Service
   apiVersion: v1
@@ -67,7 +68,7 @@ items:
       protocol: TCP
 
 - kind: Route
-  apiVersion: v1
+  apiVersion: route.openshift.io/v1
   metadata:
     name: webhook
   spec:
@@ -92,7 +93,7 @@ items:
       name: amqp-secure
 
 - kind: Route
-  apiVersion: v1
+  apiVersion: route.openshift.io/v1
   metadata:
     name: amqp
   spec:

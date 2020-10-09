@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: cockpit-images
-  namespace: cockpit
+  namespace: frontdoor
 spec:
   accessModes:
   - ReadWriteOnce

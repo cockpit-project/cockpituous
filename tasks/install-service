@@ -56,7 +56,7 @@ TimeoutStartSec=10min
 ExecStartPre=-$RUNC rm -f cockpit-tasks-%i
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull $RUNC pull docker.io/cockpit/tasks
 $NETWORK_SETUP
-ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=24g --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} --env=AMQP_SERVER=amqp-cockpit.apps.ci.centos.org:443 docker.io/cockpit/tasks
+ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=24g --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} --env=AMQP_SERVER=amqp-frontdoor.apps.ocp.ci.centos.org:443 docker.io/cockpit/tasks
 ExecStop=$RUNC rm -f cockpit-tasks-%i
 $NETWORK_TEARDOWN
 
