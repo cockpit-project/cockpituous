@@ -1,8 +1,6 @@
 FROM fedora:latest
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
-ADD https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec /tmp/cockpit.spec
-
 # whois-mkpasswd conflicts with expect and we don't need it
 RUN dnf -y update && \
     dnf -y remove whois-mkpasswd && \
@@ -36,7 +34,7 @@ which \
 dnf-utils \
     && \
     dnf -y install 'dnf-command(builddep)' && \
-    sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
+    curl https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec | sed 's/%{npm-version:.*}/0/' > /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all && \
     mkdir -p /usr/local/bin /home/user /build/ && \
