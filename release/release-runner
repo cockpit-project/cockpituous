@@ -68,18 +68,17 @@ init_container_home()
 {
     local secrets_dir=/run/secrets/release
     local home_dir='/home/user'
-
-    [ -d "$secrets_dir" ] || return 0
     export HOME=$home_dir
-
-    trace "Initializing $HOME"
 
     # ensure we have a passwd entry for random UIDs
     # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
     if ! whoami &> /dev/null && [ -w /etc/passwd ]; then
+       trace "Initializing random user"
        echo "randuser:x:$(id -u):0:random uid:${HOME}:/sbin/nologin" >> /etc/passwd
     fi
 
+    [ -d "$secrets_dir" ] || return 0
+    trace "Initializing $HOME"
      # install credentials from secrets volume; copy to avoid world-readable files
      # (which e. g. ssh complains about), and to make them owned by our random UID.
      local old_umask=$(umask -p)
