@@ -69,7 +69,7 @@ init_container_home()
     local secrets_dir=/run/secrets/release
     local home_dir='/home/user'
 
-    [ -d "$secrets_dir" ] && [ -d "$home_dir" ] || return 0
+    [ -d "$secrets_dir" ] || return 0
     export HOME=$home_dir
 
     trace "Initializing $HOME"
