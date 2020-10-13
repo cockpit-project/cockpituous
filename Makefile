@@ -104,3 +104,6 @@ learn-container:
 
 learn-push:
 	./push-container docker.io/cockpit/learn
+
+aws-webhook-zip:
+	zip -j aws-webhook.zip tasks/webhook/*

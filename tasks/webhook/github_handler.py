@@ -5,6 +5,7 @@ import json
 import http.server
 
 import distributed_queue
+import secrets
 
 __all__ = (
     "GithubHandler",
@@ -19,54 +20,49 @@ def publish_to_queue(routing_key, event, request):
         'event': event,
         'request': request,
     }
-    with distributed_queue.DistributedQueue('amqp.cockpit.svc.cluster.local:5671') as queue:
-        queue.basic_publish('', routing_key, json.dumps(body),
-                            properties=pika.BasicProperties(content_type='application/json'))
+    logging.info("Publishing to queue: %s", body)
+    # with distributed_queue.DistributedQueue('amqp.cockpit.svc.cluster.local:5671') as queue:
+        # queue.basic_publish('', routing_key, json.dumps(body),
+        #                     properties=pika.BasicProperties(content_type='application/json'))
 
 class GithubHandler:
     def __init__(self, headers, body):
         self.headers = headers
         self.body = body
 
-    def handle():
-        if self.check_sig(self.headers, self.body):
+    def handle(self):
+        if not self.check_sig():
             # TODO ERROR OUTputret
-            return
+            return 401, 'signature check failed'
 
-        event = self.headers.get('X-GitHub-Event')
-        request = request.decode('UTF-8')
-        logging.debug('event: %s', event)
-        request = json.loads(request)
+        event = self.headers.get('x-github-event')
+        logging.info('event: %s', event)
+        # logging.debug('body: %s', self.body)
+        request = json.loads(self.body.decode('UTF-8'))
         logging.debug('repository: %s', request['repository']['full_name'])
 
-        self.handle_event(event, request) # what to return ?
+        return self.handle_event(event, request) # what to return ?
 
-    def check_sig(headers, request):
+    def check_sig(self):
         '''Validate github signature of request.
 
         See https://developer.github.com/webhooks/securing/
         '''
-            # load key
-            # TODO where to store this?
-            keyfile = os.path.expanduser('~/.config/github-webhook-token')
-            try:
-                with open(keyfile, 'rb') as f:
-                    key = f.read().strip()
-            except IOError as e:
-                logging.error('Failed to load GitHub key: %s', e)
-                return False
 
-            sig_sha1 = self.headers.get('X-Hub-Signature', '')
-            payload_sha1 = 'sha1=' + hmac.new(key, request, 'sha1').hexdigest()
-            if hmac.compare_digest(sig_sha1, payload_sha1):
-                return True
-            logging.error('GitHub signature mismatch! received: %s calculated: %s',
-                          sig_sha1, payload_sha1)
-            return False
+        key = secrets.github_webhook_token()
+        sig_sha1 = self.headers.get('x-hub-signature', '')
+        payload_sha1 = 'sha1=' + hmac.new(key, self.body, 'sha1').hexdigest()
+        if hmac.compare_digest(sig_sha1, payload_sha1):
+            return True
+        logging.error('GitHub signature mismatch! received: %s calculated: %s',
+                      sig_sha1, payload_sha1)
+        return False
 
     def handle_event(self, event, request):
         logging.info('Handling %s event', event)
-        if event == 'create':
+        if event == 'ping':
+            return self.handle_ping_event(event, request)
+        elif event == 'create':
             return self.handle_create_event(event, request)
         elif event == 'pull_request':
             return self.handle_pull_request_event(event, request)
@@ -74,10 +70,10 @@ class GithubHandler:
             return self.handle_status_event(event, request)
         elif event == 'issues':
             return self.handle_issues_event(event, request)
-        return (501, 'unsupported event ' + event)
+        return 501, 'unsupported event ' + event
 
     def handle_ping_event(self, event, request):
-        return # whatever
+        return 200, "pong"
 
     def handle_pull_request_event(self, event, request):
         repo = request['pull_request']['base']['repo']['full_name']
