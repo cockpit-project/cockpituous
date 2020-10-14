@@ -23,35 +23,6 @@ SINK = os.getenv('RELEASE_SINK', 'sink-local')
 BOTS_CHECKOUT = HOME_DIR + '/bots'
 sys.path.append(BOTS_CHECKOUT)
 
-# Kubernetes Job template for actually running a release
-JOB = '''---
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: %(jobname)s
-spec:
-  ttlSecondsAfterFinished: 0
-  template:
-    spec:
-      containers:
-        - name: release
-          image: docker.io/cockpit/release
-          workingDir: /build
-          args: [ "-s", "-r", "%(git_repo)s", "-t", "%(tag)s", "%(script)s" ]
-          volumeMounts:
-          - name: secrets
-            mountPath: /run/secrets/release
-            readOnly: true
-          env:
-          - name: RELEASE_SINK
-            value: %(sink)s
-      volumes:
-      - name: secrets
-        secret:
-          secretName: cockpit-release-secrets
-      restartPolicy: Never
-'''
-
 PASSWD_ENTRY_SCRIPT = '''
 set -ex
 if ! whoami && [ -w /etc/passwd ]; then
@@ -138,9 +109,7 @@ def publish_to_queue(routing_key, event, request):
 class ReleaseHandler(github_handler.GithubHandler):
     def handle_event(self, event, request):
         logging.info('Handling %s event', event)
-        if event == 'create':
-            return self.handle_create_event(event, request)
-        elif event == 'pull_request':
+        if event == 'pull_request':
             return self.handle_pull_request_event(event, request)
         elif event == 'status':
             return self.handle_status_event(event, request)
@@ -190,41 +159,6 @@ class ReleaseHandler(github_handler.GithubHandler):
             return None
 
         publish_to_queue('webhook', event, request)
-        return None
-
-    def handle_create_event(self, event, request):
-        ref_type = request.get('ref_type', '')
-        if ref_type != 'tag':
-            return (501, 'Ignoring ref_type %s, only doing releases on tags' % ref_type)
-
-        try:
-            tag = request['ref']
-        except KeyError:
-            return (400, 'Request is missing tag name in "ref" field')
-
-        if self.path[0] != '/':
-            return (400, 'Invalid path, should start with /: ' + self.path)
-
-        # turn path into a relative one in the build dir
-        return self.release(request['repository']['clone_url'], tag, '.' + self.path)
-
-    @classmethod
-    def release(klass, project, tag, script):
-        logging.info('Releasing project %s, tag %s, script %s', project, tag, script)
-        jobname = 'release-job-%s-%s' % (os.path.splitext(os.path.basename(project))[0], tag)
-
-        # in case we want to restart a release, clean up the old job
-        subprocess.call(['oc', 'delete', 'job', jobname])
-
-        job = JOB % {'jobname': jobname, 'git_repo': project, 'tag': tag, 'script': script, 'sink': SINK}
-        try:
-            oc = subprocess.Popen(['oc', 'create', '-f', '-'], stdin=subprocess.PIPE)
-            oc.communicate(job.encode('UTF-8'), timeout=60)
-            if oc.wait(timeout=60) != 0:
-                raise RuntimeError('creating release job failed with exit code %i' % oc.returncode)
-        except (RuntimeError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            logging.error(str(e))
-            return (400, str(e))
         return None
 
 
