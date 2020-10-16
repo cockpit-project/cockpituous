@@ -28,6 +28,7 @@ npm \
 psmisc \
 rpm-build \
 rsync \
+sassc \
 tar \
 which \
 dnf-utils \

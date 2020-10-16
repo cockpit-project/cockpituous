@@ -36,6 +36,7 @@ RUN dnf -y update && \
         rpm-build \
         rpmdevtools \
         rsync \
+        sassc \
         sed \
         tar \
         virt-install \
