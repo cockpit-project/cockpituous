@@ -41,6 +41,7 @@ fi
 
 # let's just do our work in the current directory
 WORKDIR="$PWD"
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 
 # Set up github user and token
 git config --global credential.helper store
@@ -49,11 +50,14 @@ echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-cre
 echo "Starting testing"
 
 function update_repo() {
-    dir=$1
+    dir="$WORKDIR/$1"
+    link_target="$XDG_CACHE_HOME/$1"
     repo_url=$2
 
     if [ ! -d "$dir" ]; then
         git clone "$repo_url" "$dir"
+        # make-checkout clones with --reference-if-able="$XDG_CACHE_HOME/project/repo"
+        ln -s "$dir" "$link_target"
     elif [ -f "$dir/.git/shallow" ]; then
         # if we ended up with a shallow clone from a previous test, start from
         # scratch, as this is brittle to clean up afterwards
@@ -144,7 +148,7 @@ done
 # Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
     work_done=
-    update_repo  "$WORKDIR"/cockpit-project/bots https://github.com/cockpit-project/bots
+    update_repo  cockpit-project/bots https://github.com/cockpit-project/bots
     run_from_queue || true
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
