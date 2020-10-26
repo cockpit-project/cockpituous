@@ -69,51 +69,12 @@ function update_repo() {
     fi
 }
 
-function task() {
-    dir=$1
-
-    (
-        # If the tasks file is executable, run it
-        if [ -x "$dir"/.tasks ]; then
-            cd "$dir/" && ./.tasks
-
-        # If it exists then cat it
-        elif [ -e "$dir/.tasks" ]; then
-            cat "$dir/.tasks"
-
-        # No tasks found
-        else
-            echo "echo 'No tasks found in $dir repo' >&2; exit 1"
-        fi
-
-    # Remove empty lines, comments, and reverse sort.
-    # Then randomly pick one of the first 10 commands
-    ) | sed -e 's/#.*$//' -e '/^$/d' | sort -r | head -n 10 | shuf | head -n 1
-}
-
 # wait between 1 and 10 minutes
 function slumber() {
     sleep $(shuf -i 60-600 -n 1)
 }
 
 work_done=
-
-function run_one_task() {
-    dir=$1
-    repo_url=$2
-
-    update_repo "$1" "$2"
-
-    if [ "$(basename $repo_url)" != "bots" ] && [ ! -d "$dir/bots" ] && [ ! -L "$dir/bots" ]; then
-        cp -drl "$WORKDIR"/cockpit-project/bots "$dir/"
-    fi
-
-    # Get a task and execute it, 12 hours max
-    line=$(task "$dir")
-    if [ -n "$line" ] && /usr/bin/timeout 12h /bin/sh -c "cd '$dir/'; set -ex; $line"; then
-        work_done=1
-    fi
-}
 
 function run_from_queue() {
     cd "$WORKDIR"/cockpit-project/bots
@@ -125,21 +86,6 @@ function run_from_queue() {
 
 # on mass deployment, avoid GitHub stampede
 sleep $(shuf -i 0-120 -n 1)
-
-PROJECTS="
-cockpit-project/bots
-cockpit-project/cockpit
-cockpit-project/starter-kit
-cockpit-project/cockpit-podman
-cockpit-project/cockpit-ostree
-osbuild/cockpit-composer
-weldr/lorax
-"
-
-# check for tasks
-for P in $PROJECTS; do
-    run_one_task "$WORKDIR"/"$P"                 https://github.com/"$P"
-done
 
 # Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
