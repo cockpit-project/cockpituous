@@ -31,7 +31,7 @@ images-shell:
 images-container:
 	$(DOCKER) build -t docker.io/cockpit/images:$(TAG) images
 	$(DOCKER) tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
-	$(DOCKER) tag docker.io/cockpit/images:$(TAG) cockpit/images:latest
+	$(DOCKER) tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
 
 images-push:
 	./push-container docker.io/cockpit/images
@@ -63,7 +63,7 @@ release-cockpit:
 release-container:
 	$(DOCKER) build -t docker.io/cockpit/release:$(TAG) release
 	$(DOCKER) tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
-	$(DOCKER) tag docker.io/cockpit/release:$(TAG) cockpit/release:latest
+	$(DOCKER) tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
 
 release-push:
 	./push-container docker.io/cockpit/release
@@ -81,7 +81,7 @@ tasks-shell:
 tasks-container:
 	$(DOCKER) build -t docker.io/cockpit/tasks:$(TAG) tasks
 	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
-	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) cockpit/tasks:latest
+	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
 
 tasks-push:
 	./push-container docker.io/cockpit/tasks
@@ -100,7 +100,7 @@ learn-shell:
 learn-container:
 	$(DOCKER) build -t docker.io/cockpit/learn:$(TAG) learn
 	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
-	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) cockpit/learn:latest
+	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
 
 learn-push:
 	./push-container docker.io/cockpit/learn
