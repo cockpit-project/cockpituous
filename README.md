@@ -1,7 +1,6 @@
 The Cockpit Continuous Delivery Tools
 =====================================
 
- * base: infra base image used by the other containers
  * learn: Machine learning for test results
  * release: container to run releases
  * sink: log sink used by testing infrastructure
