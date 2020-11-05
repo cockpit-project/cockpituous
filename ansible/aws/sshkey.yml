@@ -1,0 +1,18 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars_files: aws_defaults.yml
+
+  tasks:
+    - name: Create AWS SSH key for new EC2 instances
+      ec2_key:
+        name: "{{ aws_key_name }}"
+        region: "{{ aws_region }}"
+      register: ec2_key
+
+    - name: Save private key
+      copy:
+        content: "{{ ec2_key.key.private_key }}" 
+        dest: "~/.ssh/id_aws.pem" 
+        mode: 0600
+      when: ec2_key.changed

@@ -1,0 +1,9 @@
+- name: Install RedHat CA certificate
+  get_url:
+    url: https://password.corp.redhat.com/RH-IT-Root-CA.crt
+    dest: /etc/pki/ca-trust/source/anchors
+  register: ca_cert_install
+
+- name: Update trust database after CA cert installation
+  command: update-ca-trust
+  when: ca_cert_install.changed

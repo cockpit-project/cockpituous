@@ -1,0 +1,31 @@
+---
+- hosts: tag_ServiceComponent_Demo
+
+  tasks:
+    - name: Set hostname
+      hostname:
+        name: primary
+
+    - name: Install packages
+      dnf:
+        name:
+          - cockpit-composer
+          - mariadb-server
+          - httpd
+        state: latest
+
+    - name: Create httpd log messages about broken config
+      shell: |
+        echo "BoGus" > /etc/httpd/conf.d/broken.conf
+        systemctl start httpd || true
+        rm /etc/httpd/conf.d/broken.conf
+
+    - name: Reboot system to get httpd logs into previous boot
+      reboot:
+        reboot_timeout: 1200
+
+    - name: Enable and start mariadb
+      service:
+        name: mariadb
+        enabled: true
+        state: started

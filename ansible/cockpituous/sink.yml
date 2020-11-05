@@ -1,0 +1,75 @@
+---
+- hosts: tag_ServiceComponent_Logs
+  gather_facts: false
+
+  tasks:
+  - name: "Set up systemd service for cockpit/images"
+    # use standard https port instead of 8493
+    shell: |
+      curl https://raw.githubusercontent.com/cockpit-project/cockpituous/master/images/install-service | sed 's/8493/443/' | sh -
+    args:
+      warn: false
+
+  # intentionally *not* 1111, so that it does not have access to most secrets
+  - name: "Create sink user"
+    user:
+      name: sink
+      comment: Cockpit sink ssh user
+
+  - name: "Create ~sink/.config dir"
+    file:
+      state: directory
+      path: ~sink/.config
+      owner: sink
+      group: sink
+
+  - name: "Set up github token secret link"
+    file:
+      state: link
+      src: /var/lib/cockpit-secrets/webhook/.config/github-token
+      dest: ~sink/.config/github-token
+      owner: sink
+      group: sink
+
+  - name: "Create ~sink/.ssh dir"
+    file:
+      state: directory
+      path: ~sink/.ssh
+      owner: sink
+      group: sink
+      mode: 0700
+
+  # ssh refuses this to be a link to a file owned by someone else, so copy
+  - name: "Set up sink authorized_keys"
+    copy:
+      src: /var/lib/cockpit-secrets/tasks/id_rsa.pub
+      dest: ~sink/.ssh/authorized_keys
+      remote_src: true
+      owner: sink
+      group: sink
+
+  - name: "Install sink code"
+    get_url:
+      url: https://raw.githubusercontent.com/cockpit-project/cockpituous/master/sink/sink
+      dest: ~sink/sink
+      owner: sink
+      group: sink
+      mode: 0555
+
+  - name: "Logs directory permissions"
+    file:
+      state: directory
+      path: /var/cache/cockpit-tasks/images/logs
+      owner: sink
+      group: sink
+      mode: 0755
+
+  - name: "Sink configuration"
+    copy:
+      dest: ~sink/.config/sink
+      mode: 0644
+      content: |
+        [Sink]
+        Url: https://{{ ansible_host }}/logs/%(identifier)s/
+        Logs: /var/cache/cockpit-tasks/images/logs
+        PruneInterval: 0.5

@@ -1,0 +1,18 @@
+---
+- hosts: tag_ServiceName_FrontDoorCI
+  roles:
+  - role: users
+    vars:
+      user: ec2-user
+  - system-upgrade
+  - ci-data-cache
+  - nested-kvm
+
+  tasks:
+  - name: Install required packages
+    yum:
+      name:
+        - podman
+        - git
+        - python3
+      state: latest

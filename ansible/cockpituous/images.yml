@@ -1,0 +1,41 @@
+---
+# FIXME: This uses podman, so does not work on cockpit-11 right now
+- hosts: tag_ServiceComponent_Images
+  gather_facts: false
+
+  tasks:
+  - name: "Set up systemd service for cockpit/images"
+    shell: |
+      curl https://raw.githubusercontent.com/cockpit-project/cockpituous/master/images/install-service | sh -
+
+  - name: "Set up image syncing: service"
+    copy:
+      dest: /etc/systemd/system/cockpit-image-sync.service
+      mode: 0644
+      content: |
+        [Unit]
+        Description=Regularly sync cockpit images from other servers
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/podman run -i --rm --volume=/var/cache/cockpit-tasks/images:/cache/images:rw docker.io/cockpit/tasks sh -exc 'mkdir -p ~/.cache; ln -s /cache/images ~/.cache/cockpit-images; git clone https://github.com/cockpit-project/bots; bots/image-download; bots/image-prune -c --force'
+        TimeoutStartSec=1h
+
+  - name: "Set up image syncing: timer"
+    copy:
+      dest: /etc/systemd/system/cockpit-image-sync.timer
+      mode: 0644
+      content: |
+        [Unit]
+        Description=Regularly sync cockpit images from other servers
+        [Timer]
+        OnActiveSec=10min
+        OnUnitActiveSec=1h
+        RandomizedDelaySec=10min
+        [Install]
+        WantedBy=timers.target
+
+  - name: Enable image syncing
+    systemd:
+      name: cockpit-image-sync.timer
+      enabled: true
+      state: started

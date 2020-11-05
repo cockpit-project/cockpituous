@@ -1,0 +1,42 @@
+---
+- name: Enable persistent journal
+  file:
+    path: /var/log/journal
+    state: directory
+
+- name: Create admin user
+  user:
+    name: admin
+    # foobar123
+    password: $6$QlzUthhQuiNJ.JAN$MXWgN6AqBjtoHb8Nc89bmka7nNrLMSv3s0IFAwgzPaEHhwLveeTwt7Siocynx7OhdZvzTmEvZ2oacdPpKCbx8.
+    groups: ["wheel"]
+    generate_ssh_key: yes
+    append: yes
+
+- name: Enable password SSH login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication.*no'
+    state: absent
+  register: sshd_config
+
+- name: Restart sshd on changes
+  service:
+    name: sshd
+    state: restarted
+  when: sshd_config.changed
+
+- name: Install packages
+  dnf:
+    name:
+      - cockpit-podman
+      - subscription-manager-cockpit
+      - appstream-data
+      - firewalld
+    state: latest
+
+- name: Enable firewall
+  service:
+    name: firewalld
+    enabled: yes
+    state: started

@@ -1,0 +1,81 @@
+---
+- hosts: e2e
+  gather_facts: false
+  roles:
+  - role: users
+    vars:
+      user: root
+  - system-upgrade
+  - redhat-ca
+  - ci-data-cache
+  - nested-kvm
+
+  tasks:
+  - name: Drop domain name from /etc/hostname
+    replace:
+      path: /etc/hostname
+      regexp: '\..*$'
+      replace: ''
+
+  - name: Disable sshd UseDNS; we don't need that, and breaks ssh on DNS failures
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^UseDNS '
+      insertafter: '^#UseDNS '
+      line: 'UseDNS no'
+
+  - name: Set up subscription
+    shell: |
+      if ! subscription-manager list | grep -q OpenShift; then
+          subscription-manager repos --enable="rhel-7-server-rpms" --enable="rhel-7-server-extras-rpms"
+      fi
+
+  - name: Enable EPEL
+    yum: name=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm state=present
+
+  - name: Install required packages
+    yum: name={{ item }} state=present
+    with_items:
+    - lvm2
+    - docker
+    - screen
+    - oci-kvm-hook
+
+  # /home LV usually takes up all available space, and we don't need it
+  - name: Set up LVM
+    shell: |
+      set -ex
+      VG=$(vgs --noheadings | awk '{print $1}')
+      if mountpoint /home; then
+        umount /home
+        lvremove -y $VG/home
+        sed -i '/\/home\b/d' /etc/fstab
+      fi
+
+      echo "CONTAINER_ROOT_LV_SIZE=200g" > /etc/sysconfig/docker-storage-setup
+      docker-storage-setup
+
+      lvcreate -y -v --size 200G -n cockpit $VG
+      mkfs.xfs -L cockpitcache /dev/mapper/*-cockpit
+      mkdir -p /var/cache/cockpit-tasks
+      echo 'LABEL=cockpitcache /var/cache/cockpit-tasks   xfs     defaults        1 2' >> /etc/fstab
+      mount /var/cache/cockpit-tasks
+    args:
+      creates: /var/cache/cockpit-tasks
+
+  - name: Enable docker
+    service: name=docker enabled=true state=started
+
+  - name: block access to npmjs.com to enforce using RH internal registry
+    iptables:
+      ip_version: ipv4
+      chain: DOCKER
+      source: 104.16.0.0/16
+      jump: REJECT
+
+  - name: block access to npmjs.com to enforce using RH internal registry (IPv6)
+    iptables:
+      ip_version: ipv6
+      chain: FORWARD
+      source: 2606:4700::6810:0/112
+      jump: REJECT

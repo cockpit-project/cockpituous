@@ -1,0 +1,2 @@
+[all:vars]
+oc_command="oc"
