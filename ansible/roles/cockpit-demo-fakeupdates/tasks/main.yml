@@ -1,0 +1,25 @@
+---
+- name: Install packages
+  dnf:
+    name:
+      - python3
+      - rpm-build
+      - createrepo_c
+      - dnf-automatic
+    state: latest
+
+- name: Back up original repos
+  shell: |
+    mv /etc/yum.repos.d /etc/yum.repos.d.disabled
+    mkdir -p /etc/yum.repos.d
+  args:
+    creates: /etc/yum.repos.d.disabled
+
+- name: Copy fake updates script
+  copy:
+    src: roles/cockpit-demo-fakeupdates/updateinfo-test.py
+    dest: /root
+    mode: a+x
+
+- name: Create fake updates
+  command: /root/updateinfo-test.py

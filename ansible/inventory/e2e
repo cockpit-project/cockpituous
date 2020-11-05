@@ -1,0 +1,20 @@
+# master copy of secrets
+[master]
+cockpit-9.e2e.bos.redhat.com ansible_user=root
+
+[e2e]
+cockpit-7.e2e.bos.redhat.com ansible_user=root
+cockpit-8.e2e.bos.redhat.com ansible_user=root
+cockpit-9.e2e.bos.redhat.com ansible_user=root
+cockpit-10.e2e.bos.redhat.com ansible_user=root
+cockpit-11.e2e.bos.redhat.com ansible_user=root
+ci-srv-01.e2e.bos.redhat.com ansible_user=root
+ci-srv-02.e2e.bos.redhat.com ansible_user=root
+ci-srv-03.e2e.bos.redhat.com ansible_user=root
+ci-srv-04.e2e.bos.redhat.com ansible_user=root
+ci-srv-05.e2e.bos.redhat.com ansible_user=root
+ci-srv-06.e2e.bos.redhat.com ansible_user=root
+
+[e2e:vars]
+notification_mx=smtp.corp.redhat.com
+notification_to=mpitt@redhat.com,mmarusak@redhat.com,sraymaek@redhat.com

@@ -1,0 +1,25 @@
+---
+- name: Install package to have default network
+  dnf:
+    name:
+      - libvirt-daemon-config-network
+    state: latest
+
+- name: Start libvirtd service
+  service:
+    name: libvirtd.service
+    state: started
+
+- name: Run VM test1
+  shell: |
+    if ! virsh list --all --name | grep -q test1
+    then
+      virt-install --connect qemu:///system --memory 50 --pxe --network network=default --virt-type qemu --os-variant alpinelinux3.8 --disk none --wait 0 --name test1
+    fi
+
+- name: Run VM test2
+  shell: |
+    if ! virsh list --all --name | grep -q test2
+    then
+      virt-install --connect qemu:///system --memory 50 --pxe --network network=default --virt-type qemu --os-variant alpinelinux3.8 --disk none --wait 0 --name test2
+    fi

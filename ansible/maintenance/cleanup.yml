@@ -1,0 +1,10 @@
+---
+- hosts: e2e
+  gather_facts: false
+
+  tasks:
+  - name: Free up some space
+    shell: |
+      docker ps -qa | xargs docker rm
+      docker images -q | xargs docker rmi
+      yum clean all

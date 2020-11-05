@@ -1,0 +1,6 @@
+- name: Set SSH authorized keys from files
+  authorized_key:
+    user: "{{ user }}"
+    state: present
+    exclusive: True
+    key: "{{ lookup('file', 'ssh-keys') }}"

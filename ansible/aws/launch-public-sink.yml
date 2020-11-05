@@ -1,0 +1,51 @@
+---
+- name: Create public sink EC2 instance
+  hosts: localhost
+  gather_facts: false
+  vars_files: aws_defaults.yml
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        key_name: "{{ aws_key_name }}"
+        region: "{{ aws_region }}"
+        image: "{{ aws_rhel_ami }}"
+        instance_type: t2.small
+        monitoring: true
+        # persistent network device with stable external IP 54.89.13.31 (DNS logs.cockpit-project.org)
+        network_interfaces: eni-0fece6d6c83cd9eca
+        volumes:
+          - device_name: /dev/sda1
+            volume_size: 50
+            delete_on_termination: true
+        wait: true
+        instance_tags:
+          Name: cockpit-public-sink
+          ServiceOwner: FrontDoorSST
+          ServiceName: FrontDoorCI
+          ServiceComponent: Logs
+          ServicePhase: Prod
+          AppCode: ARR-001
+      register: ec2
+
+    - name: Add new instance to host group
+      add_host:
+        hostname: "{{ item.private_ip }}"
+        groupname: launched
+      loop: "{{ ec2.instances }}"
+
+    - name: Wait for SSH to come up
+      delegate_to: "{{ item.private_ip }}"
+      wait_for_connection:
+        delay: 60
+        timeout: 320
+      loop: "{{ ec2.instances }}"
+
+- name: Configure instances
+  hosts: launched
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Set host name
+      hostname:
+        name: aws-sink

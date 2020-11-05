@@ -1,0 +1,20 @@
+---
+- name: Add Cockpit COPR
+  yum_repository:
+    name: cockpit-preview
+    description: Cockpit COPR repo
+    baseurl: https://download.copr.fedorainfracloud.org/results/@cockpit/cockpit-preview/epel-8-$basearch/
+
+- name: Install Cockpit
+  dnf:
+    name:
+      - cockpit
+      - cockpit-storaged
+      - cockpit-machines
+    state: latest
+
+- name: Enable Cockpit
+  service:
+    name: cockpit.socket
+    enabled: yes
+    state: started

@@ -1,0 +1,17 @@
+- name: Set up cache partition
+  shell: |
+    mkdir -p /var/cache/cockpit-tasks
+    if [ -e /dev/disk/by-label/cockpitcache ]; then
+        echo 'LABEL=cockpitcache /var/cache/cockpit-tasks   xfs     defaults        1 2' >> /etc/fstab
+        mount /var/cache/cockpit-tasks
+    fi
+  args:
+    creates: /var/cache/cockpit-tasks
+
+- name: Set up Cockpit tasks cache directory
+  file:
+    path: /var/cache/cockpit-tasks/images
+    owner: '1111'
+    group: '1111'
+    state: directory
+    setype: container_file_t

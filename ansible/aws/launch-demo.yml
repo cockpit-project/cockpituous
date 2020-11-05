@@ -1,0 +1,46 @@
+---
+- name: Create demo instance
+  hosts: localhost
+  gather_facts: false
+  vars_files: aws_defaults.yml
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        key_name: "{{ aws_key_name }}"
+        region: "{{ aws_region }}"
+        image: "{{ aws_rhel_ami }}"
+        instance_type: t2.small
+        wait: yes
+        count: "{{ count | default(1) }}"
+        vpc_subnet_id: subnet-988c7ed5
+        assign_public_ip: yes
+        group: public-all
+        instance_tags:
+          Name: cockpit-demo
+          ServiceOwner: FrontDoorSST
+          ServiceComponent: Demo
+          ServicePhase: Temporary
+          AppCode: ARR-001
+      register: ec2
+
+    - name: Add new instance to host group
+      add_host:
+        hostname: "{{ item.public_dns_name }}"
+        groupname: launched
+      loop: "{{ ec2.instances }}"
+
+    - name: Wait for SSH to come up
+      delegate_to: "{{ item.public_dns_name }}"
+      wait_for_connection:
+        delay: 60
+        timeout: 320
+      loop: "{{ ec2.instances }}"
+
+- name: Configure instances
+  hosts: launched
+  become: true
+  gather_facts: true
+  roles:
+    - cockpit-copr
+    - cockpit-demo-generic

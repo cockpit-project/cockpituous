@@ -1,0 +1,24 @@
+# Restart all tasks bots to immediately roll out a rebuilt cockpit/tasks container
+# This uses `oc`, thus you must already be logged into OpenShift.
+---
+# Do OpenShift first, as it's asynchronous
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Restart OpenShift tasks containers
+      shell: "{{ oc_command }} get -o name -l infra=cockpit-tasks pods | xargs -l -r {{ oc_command }} delete --wait=false"
+
+    - name: Restart OpenShift webook container
+      shell: "{{ oc_command }} get -o name -l infra=webhook pods | xargs -l -r {{ oc_command }} delete --wait=false"
+
+
+- hosts: e2e tag_ServiceComponent_Tasks
+  gather_facts: false
+
+  tasks:
+  - name: Pre-pull current container image to avoid long downtime
+    # avoid docker_image module, that requires python-docker
+    command: docker pull docker.io/cockpit/tasks
+
+  - name: Restart systemd controlled tasks containers
+    command: systemctl restart cockpit-tasks@*
