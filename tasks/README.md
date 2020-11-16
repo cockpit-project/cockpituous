@@ -144,20 +144,15 @@ command:
 
 Add a webhook to your GitHub project on the Settings → Webhooks page of your project:
 
- * Set a Payload URL like
+ * Set the Payload URL to the DNS host name of the deployed route:
 
-       http://webhook-cockpit.apps.ci.centos.org/tools/cockpituous
-
-   using the URL of the deployed route, and the path to the release script of
-   the corresponding project's git tree (the git repository URL will be taken
-   from the POST data that GitHub sends).
+       http://webhook-frontdoor.apps.ocp.ci.centos.org
 
  * Use the same secret as in `~/.config/github-webhook-token` above.
 
  * Change the Content Type to `application/json`.
 
- * Select "Let me select individual events" and let the hook run on "Branch or
-   tag creation", "Pull requests", and "Statuses".
+ * Select "Let me select individual events" and let the hook run on "Pull requests" and "Statuses".
 
 See [GitHub development documentation](https://developer.github.com/webhooks/)
 for more information.
@@ -172,11 +167,6 @@ for more information.
  * In the [Cockpit bots project](https://github.com/cockpit-project/bots), add your project to the [test map](https://github.com/cockpit-project/bots/blob/master/task/testmap.py). Start with `_manual` tests.
  * Send a first PR to your project and use [bots/tests-trigger](https://github.com/cockpit-project/bots/blob/master/tests-trigger) to trigger the contexts that you want. They should be picked up and run.
  * Once you fix your tests to succeed, adjust the test map again to move them to the "master" branch. From now on, every PR against master will automatically trigger these tests.
-
-### Automated releases
-
-Whenever a new release tag gets pushed to a project a "create" event is received
-by the webhook which automatically starts a release runner.
 
 ### Automated testing
 
