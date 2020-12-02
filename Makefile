@@ -45,7 +45,7 @@ release-shell:
 		--volume=/home/cockpit:/home/user:rw \
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
-		--entrypoint=/bin/bash docker.io/cockpit/release
+		--entrypoint=/bin/bash ghcr.io/cockpit-project/release
 
 # run release container for a Cockpit release
 release-cockpit:
@@ -57,16 +57,16 @@ release-cockpit:
 		--volume=/home/cockpit:/home/user:rw \
 		--volume=/home/cockpit/release:/build:rw \
 		--volume=$(CURDIR)/release:/usr/local/bin \
-		docker.io/cockpit/release \
+		ghcr.io/cockpit-project/release \
 		-r https://github.com/cockpit-project/cockpit /build/tools/cockpituous-release
 
 release-container:
-	$(DOCKER) build -t docker.io/cockpit/release:$(TAG) release
-	$(DOCKER) tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
-	$(DOCKER) tag docker.io/cockpit/release:$(TAG) docker.io/cockpit/release:latest
+	$(DOCKER) build -t ghcr.io/cockpit-project/release:$(TAG) release
+	$(DOCKER) tag ghcr.io/cockpit-project/release:$(TAG) ghcr.io/cockpit-project/release:latest
+	$(DOCKER) tag ghcr.io/cockpit-project/release:$(TAG) ghcr.io/cockpit-project/release:latest
 
 release-push:
-	./push-container docker.io/cockpit/release
+	./push-container ghcr.io/cockpit-project/release
 
 tasks-shell:
 	$(DOCKER) run -ti --rm \
