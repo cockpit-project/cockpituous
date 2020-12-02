@@ -17,7 +17,7 @@
         Description=Regularly sync cockpit images from other servers
         [Service]
         Type=oneshot
-        ExecStart=/usr/bin/podman run -i --rm --volume=/var/cache/cockpit-tasks/images:/cache/images:rw docker.io/cockpit/tasks sh -exc 'mkdir -p ~/.cache; ln -s /cache/images ~/.cache/cockpit-images; git clone https://github.com/cockpit-project/bots; bots/image-download; bots/image-prune -c --force'
+        ExecStart=/usr/bin/podman run -i --rm --volume=/var/cache/cockpit-tasks/images:/cache/images:rw quay.io/cockpit/tasks sh -exc 'mkdir -p ~/.cache; ln -s /cache/images ~/.cache/cockpit-images; git clone https://github.com/cockpit-project/bots; bots/image-download; bots/image-prune -c --force'
         TimeoutStartSec=1h
 
   - name: "Set up image syncing: timer"

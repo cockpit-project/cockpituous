@@ -73,7 +73,7 @@ Some helpful commands:
 To update, just pull the new container and restart the cockpit-tasks service.
 It will restart automatically when it finds a pause in the verification work.
 
-    # docker pull docker.io/cockpit/tasks
+    # docker pull quay.io/cockpit/tasks
 
 ## Deploying on Openshift
 

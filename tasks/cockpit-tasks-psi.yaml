@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: cockpit-tasks
-        image: docker.io/cockpit/tasks
+        image: quay.io/cockpit/tasks
         env:
         - name: TEST_JOBS
           value: '5'

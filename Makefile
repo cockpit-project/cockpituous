@@ -55,15 +55,15 @@ tasks-shell:
 		--volume=$(WEBHOOK_SECRETS):/run/webhook/secrets:ro \
 		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
-        docker.io/cockpit/tasks -i
+        quay.io/cockpit/tasks -i
 
 tasks-container:
-	$(DOCKER) build -t docker.io/cockpit/tasks:$(TAG) tasks
-	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
-	$(DOCKER) tag docker.io/cockpit/tasks:$(TAG) docker.io/cockpit/tasks:latest
+	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks
+	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
+	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
 
 tasks-push:
-	./push-container docker.io/cockpit/tasks
+	./push-container quay.io/cockpit/tasks
 
 tasks-secrets:
 	@cd tasks && ./build-secrets $(TASK_SECRETS)
