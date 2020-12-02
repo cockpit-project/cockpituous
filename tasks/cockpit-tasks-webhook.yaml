@@ -31,7 +31,7 @@ items:
               mountPath: /etc/rabbitmq
               readOnly: true
           - name: webhook
-            image: docker.io/cockpit/tasks
+            image: quay.io/cockpit/tasks
             ports:
               - containerPort: 8080
                 protocol: TCP

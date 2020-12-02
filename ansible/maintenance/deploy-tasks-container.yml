@@ -18,7 +18,7 @@
   tasks:
   - name: Pre-pull current container image to avoid long downtime
     # avoid docker_image module, that requires python-docker
-    command: docker pull docker.io/cockpit/tasks
+    command: docker pull quay.io/cockpit/tasks
 
   - name: Restart systemd controlled tasks containers
     command: systemctl restart cockpit-tasks@*
