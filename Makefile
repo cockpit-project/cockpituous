@@ -37,28 +37,7 @@ images-push:
 	./push-container docker.io/cockpit/images
 
 release-shell:
-	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
-	chown -R cockpit:cockpit /home/cockpit/release
-	$(DOCKER) run -ti --rm -v /home/cockpit:/home/user:rw \
-		--privileged \
-		--env=RELEASE_SINK=fedorapeople.org \
-		--volume=/home/cockpit:/home/user:rw \
-		--volume=/home/cockpit/release:/build:rw \
-		--volume=$(CURDIR)/release:/usr/local/bin \
-		--entrypoint=/bin/bash ghcr.io/cockpit-project/release
-
-# run release container for a Cockpit release
-release-cockpit:
-	test -d /home/cockpit/release || git clone https://github.com/cockpit-project/cockpit /home/cockpit/release
-	chown -R cockpit:cockpit /home/cockpit/release
-	$(DOCKER) run -ti --rm -v /home/cockpit:/home/user:rw \
-		--privileged \
-		--env=RELEASE_SINK=fedorapeople.org \
-		--volume=/home/cockpit:/home/user:rw \
-		--volume=/home/cockpit/release:/build:rw \
-		--volume=$(CURDIR)/release:/usr/local/bin \
-		ghcr.io/cockpit-project/release \
-		-r https://github.com/cockpit-project/cockpit /build/tools/cockpituous-release
+	$(DOCKER) run -ti --rm --entrypoint=/bin/bash ghcr.io/cockpit-project/release
 
 release-container:
 	$(DOCKER) build -t ghcr.io/cockpit-project/release:$(TAG) release
