@@ -4,6 +4,7 @@
     name: cockpit-preview
     description: Cockpit COPR repo
     baseurl: https://download.copr.fedorainfracloud.org/results/@cockpit/cockpit-preview/epel-8-$basearch/
+    gpgcheck: no
 
 - name: Install Cockpit
   dnf:
