@@ -9,7 +9,6 @@ RUN dnf -y update && \
         curl \
         dbus-glib \
         expect \
-        gcc \
         gcc-c++ \
         git \
         gnupg \
@@ -20,16 +19,13 @@ RUN dnf -y update && \
         libvirt-client \
         libvirt-python3 \
         libXt \
-        make \
         nc \
         net-tools \
         npm \
-        openssl \
         origin-clients \
         psmisc \
         procps-ng \
         python3-pyflakes \
-        python \
         python3 \
         python3-pycodestyle \
         python3-pika \
@@ -37,7 +33,6 @@ RUN dnf -y update && \
         rpmdevtools \
         rsync \
         sassc \
-        sed \
         tar \
         virt-install \
         wget && \
