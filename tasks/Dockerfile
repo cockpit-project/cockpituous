@@ -5,10 +5,14 @@ RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
+        byobu \
         chromium-headless \
         curl \
         dbus-glib \
+        diffstat \
         expect \
+        fedpkg \
+        fpaste \
         gcc-c++ \
         git \
         gnupg \
@@ -33,7 +37,10 @@ RUN dnf -y update && \
         rpmdevtools \
         rsync \
         sassc \
+        socat \
+        strace \
         tar \
+        vim-enhanced \
         virt-install \
         wget && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
@@ -61,7 +68,10 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
     chmod g=u /etc/passwd && \
     chmod -R ugo+w /cache /secrets /cache /home/user && \
-    ln -s /app/bin/firefox /usr/bin/firefox
+    chown -R user:user /cache /home/user && \
+    chmod -R go-rwx /home/user/.ssh && \
+    ln -s /app/bin/firefox /usr/bin/firefox && \
+    printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache
 
 # Prevent us from screwing around with KVM settings in the container
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
@@ -81,3 +91,6 @@ LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --us
 
 # Run a simple interactive instance of the tests container
 LABEL RUN /usr/bin/docker run -ti --rm --volume=/var/lib/cockpit-secrets/tasks:/secrets:ro --volume=/var/cache/cockpit-tasks/images:/cache/images:rw IMAGE /bin/bash -i
+
+# Start a container in the background; attach to it with "docker exec -it <name> byobu"
+LABEL DEV /usr/bin/docker run -d --volume=/var/cache/cockpit-tasks/images:/cache/images:rw IMAGE sleep infinity
