@@ -55,20 +55,20 @@ RUN curl --location 'https://download.mozilla.org/?product=firefox-nightly-lates
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
-RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
+RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work && \
     mkdir -p /usr/local/bin /secrets /cache/images /cache/github && \
-    mkdir -p /home/user/.config /home/user/.ssh /home/user/.cache /home/user/.rhel && \
-    printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n[cockpit "bots"]\n\timages-data-dir = /cache/images\n' >/home/user/.gitconfig && \
-    ln -snf /secrets/ssh-config /home/user/.ssh/config && \
-    ln -snf /secrets/image-stores /home/user/.config/image-stores && \
-    ln -snf /secrets/codecov-token /home/user/.config/codecov-token && \
-    ln -snf /secrets/rhel-login /home/user/.rhel/login && \
-    ln -snf /secrets/rhel-password /home/user/.rhel/pass && \
-    ln -snf /secrets/lorax-test-env.sh /home/user/.config/lorax-test-env && \
-    ln -snf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
+    mkdir -p /work/.config /work/.ssh /work/.cache /work/.rhel && \
+    printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n[cockpit "bots"]\n\timages-data-dir = /cache/images\n' >/work/.gitconfig && \
+    ln -snf /secrets/ssh-config /work/.ssh/config && \
+    ln -snf /secrets/image-stores /work/.config/image-stores && \
+    ln -snf /secrets/codecov-token /work/.config/codecov-token && \
+    ln -snf /secrets/rhel-login /work/.rhel/login && \
+    ln -snf /secrets/rhel-password /work/.rhel/pass && \
+    ln -snf /secrets/lorax-test-env.sh /work/.config/lorax-test-env && \
+    ln -snf /run/secrets/webhook/.config--github-token /work/.config/github-token && \
     chmod g=u /etc/passwd && \
-    chmod -R ugo+w /cache /secrets /cache /home/user && \
-    chown -R user:user /cache /home/user && \
+    chmod -R ugo+w /cache /secrets /cache /work && \
+    chown -R user:user /cache /work && \
     ln -s /app/bin/firefox /usr/bin/firefox && \
     printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache
 
@@ -76,13 +76,12 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
 RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
 
 ENV LANG=C.UTF-8 \
-    HOME=/home/user \
     TEST_OVERLAY_DIR=/tmp
 
 VOLUME /cache/images
 
 USER user
-WORKDIR /home/user
+WORKDIR /work
 CMD ["/usr/local/bin/cockpit-tasks", "--publish", "$TEST_PUBLISH", "--verbose"]
 
 # We execute the script in the host, but it doesn't exist on the host. So pipe it in
