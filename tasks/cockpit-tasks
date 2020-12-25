@@ -18,7 +18,8 @@ fi
 # ensure we have a passwd entry for random UIDs
 # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
 if ! whoami && [ -w /etc/passwd ]; then
-    echo "user:x:$(id -u):0:random uid:${HOME:-/home/user}:/sbin/nologin" >> /etc/passwd
+    echo "user:x:$(id -u):0:random uid:/work:/sbin/nologin" >> /etc/passwd
+    export HOME=/work
 fi
 
 # If interactive arguments then just exec
