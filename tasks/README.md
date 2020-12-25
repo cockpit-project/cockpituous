@@ -75,9 +75,9 @@ It will restart automatically when it finds a pause in the verification work.
 
     # docker pull quay.io/cockpit/tasks
 
-## Deploying on Openshift
+# Deploying on OpenShift
 
-The testing machines can run on Openshift cluster(s).
+The testing machines can run on OpenShift cluster(s).
 
 Create a service account for use by the testing machines. Make sure to have the
 `oci-kvm-hook` package installed on all nodes.  This is because of the requirement
