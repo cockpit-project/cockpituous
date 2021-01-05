@@ -21,7 +21,8 @@ if RUNC=$(which podman 2>/dev/null); then
     NETWORK_TEARDOWN=''
 else
     RUNC=$(which docker)
-    DEVICES=''  # relying on oci-kvm-hook
+    # rely on oci-kvm-hook for /dev/kvm; but avoid stat failure on Fedora ≥ 33 guests on RHEL 7
+    DEVICES='--security-opt=seccomp=unconfined'
     NETWORK='--network=cockpit-tasks-%i'
     NETWORK_SETUP="ExecStartPre=-$RUNC network rm cockpit-tasks-%i
 ExecStartPre=$RUNC network create --driver bridge cockpit-tasks-%i"
