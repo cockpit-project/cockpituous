@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -eux
 
 # ensure we have a passwd entry for random UIDs
 # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
@@ -10,7 +10,7 @@ if ! whoami && [ -w /etc/passwd ]; then
 fi
 
 # set up custom NPM registry
-if [ -n "$NPM_REGISTRY" ]; then
+if [ -n "${NPM_REGISTRY:-}" ]; then
     npm config set registry "$NPM_REGISTRY"
     echo "Set NPM registry to $NPM_REGISTRY"
 fi
