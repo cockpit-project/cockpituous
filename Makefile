@@ -52,7 +52,7 @@ tasks-shell:
 		--shm-size=1024m \
 		--volume=$(CURDIR)/tasks:/usr/local/bin \
 		--volume=$(TASK_SECRETS):/secrets:ro \
-		--volume=$(WEBHOOK_SECRETS):/run/webhook/secrets:ro \
+		--volume=$(WEBHOOK_SECRETS):/run/secrets/webhook/:ro \
 		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
         quay.io/cockpit/tasks -i
