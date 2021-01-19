@@ -1,6 +1,20 @@
 name: tests
 on: [pull_request, workflow_dispatch]
 jobs:
+  unit-tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make python3-pyflakes python3-pep8
+
+      - name: Run unit tests
+        run: make check
+
   tasks:
     runs-on: ubuntu-20.04
     steps:
