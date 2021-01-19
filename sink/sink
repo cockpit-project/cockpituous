@@ -5,6 +5,7 @@ import errno
 import fcntl
 import json
 import os
+import pwd
 import select
 import shutil
 import signal
@@ -559,10 +560,12 @@ def main():
     args = parser.parse_args()
 
     # Load up configuration if available
-    try:
-        user = os.environ.get("LOGNAME", os.getlogin())
-    except:
-        user = os.environ.get("LOGNAME", None)
+    user = os.environ.get("LOGNAME")
+    if not user:
+        try:
+            user = os.getlogin()
+        except OSError:
+            user = pwd.getpwuid(os.getuid()).pw_name
     config = ConfigParser({"user": user, "identifier": "@@"})
     config.read_file(StringIO(DEFAULTS))
     config.read([os.path.expanduser(args.config)])
