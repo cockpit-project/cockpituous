@@ -48,9 +48,9 @@ function update_repo() {
     fi
 }
 
-# wait between 1 and 10 minutes
+# wait between 1 and 10 minutes, but not in an interactive terminal (annoying for debugging)
 function slumber() {
-    sleep $(shuf -i 60-600 -n 1)
+    [ -t 0 ] || sleep $(shuf -i ${1:-60-600} -n 1)
 }
 
 work_done=
@@ -64,7 +64,7 @@ function run_from_queue() {
 }
 
 # on mass deployment, avoid GitHub stampede
-sleep $(shuf -i 0-120 -n 1)
+slumber 0-120
 
 # Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
