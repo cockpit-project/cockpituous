@@ -138,9 +138,9 @@ command:
 
     $ oc scale rc cockpit-tasks --replicas=3
 
-## GitHub webhook integration
+# GitHub webhook integration
 
-### GitHub setup
+## GitHub setup
 
 Add a webhook to your GitHub project on the Settings → Webhooks page of your project:
 
@@ -157,18 +157,18 @@ Add a webhook to your GitHub project on the Settings → Webhooks page of your p
 See [GitHub development documentation](https://developer.github.com/webhooks/)
 for more information.
 
-### Set up bot as collaborator
+## Set up bot as collaborator
 
  * On your project's "Settings → Manage Access" page, invite the [cockpituous user](https://github.com/cockpituous) as a collaborator.
  * Once you see the "Pending invite", in the list, the clipboard symbol copies the corresponding `/invitations` URL to the clipboard. Send that to Martin Pitt (`pitti` in `#cockpit` on FreeNode IRC) or Marius Vollmer (`mvollmer` on IRC), who will log into GitHub as `cockpituous` user and accept the invite.
 
-### Set up automatic test triggering
+## Set up automatic test triggering
 
  * In the [Cockpit bots project](https://github.com/cockpit-project/bots), add your project to the [test map](https://github.com/cockpit-project/bots/blob/master/task/testmap.py). Start with `_manual` tests.
  * Send a first PR to your project and use [bots/tests-trigger](https://github.com/cockpit-project/bots/blob/master/tests-trigger) to trigger the contexts that you want. They should be picked up and run.
  * Once you fix your tests to succeed, adjust the test map again to move them to the "master" branch. From now on, every PR against master will automatically trigger these tests.
 
-### Automated testing
+## Automated testing
 
 When a pull request event or a status event is received, the webhook will
 trigger tests for the tasks bots (see "Event flow" below for details).
@@ -177,7 +177,7 @@ A pull request event is queued when the pull request is opened or synchronized.
 A status event is only queued where the description ends with "(direct
 trigger)".
 
-### Event flow for PRs and issues
+## Event flow for PRs and issues
 
 We don't directly connect webhook events to tasks bots, as workers come and
 go, and fail quite often; also, we need something to schedule the incoming
