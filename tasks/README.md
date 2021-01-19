@@ -17,10 +17,19 @@ The container has optional mounts:
    * `image-stores`: Non default locations to try downloading images from (optional)
  * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
    * `.config--github-token`: GitHub token to create and update issues and PRs
+   * `amqp-{client,server}.{pem,key}`: TLS certificates for RabbitMQ
+   * `ca.pem`: The general cockpit CI Certificate Authority which signed the above AMQP certificates
  * `/cache`: A directory for reusable cached data such as downloaded image files
 
 The mounts normally default to `/var/lib/cockpit-secrets/tasks`,
 `/var/lib/cockpit-secrets/webhook`, and `/var/cache/cockpit-tasks` on the host.
+
+To generate the [certificates needed for cross-cluster AMQP](https://www.rabbitmq.com/ssl.html) authentication,
+run the [credentials/webhook/generate.sh script](./credentials/webhook/generate.sh) script.
+This requires a generic "Cockpit CI" certificate authority first, so if you
+don't have that yet, run [credentials/generate-ca.sh](./credentials/generate-ca.sh) first.
+Run either script in the target directory (e.g.
+`/var/lib/cockpit-secrets/webhook/`).
 
 # Deploying on a host
 
@@ -55,11 +64,6 @@ You may want to customize things like the operating system to test or number of 
 And now you can restart the service:
 
     $ sudo systemctl restart cockpit-tasks@*
-
-To generate the certificates needed for cross-cluster amqp auth follow this
-guide:
-
-    https://www.rabbitmq.com/ssl.html
 
 ## Troubleshooting
 

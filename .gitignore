@@ -6,4 +6,6 @@ sink/sinkc
 learn/active
 learn/training-*/
 learn/.*
+tasks/credentials/**/*.key
+tasks/credentials/**/*.pem
 __pycache__
