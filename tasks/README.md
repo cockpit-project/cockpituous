@@ -142,6 +142,22 @@ command:
 
     $ oc scale rc cockpit-tasks --replicas=3
 
+# Deploying locally for development
+
+For hacking on the webhook or task container, or validating new container
+images, you can also run a simple [podman pod](http://docs.podman.io/en/latest/pod.html)
+locally with a RabbitMQ and a tasks container:
+
+    $ tasks/run-local.sh
+
+This will also generate the secrets in a temporary directory, unless they
+already exist in `tasks/credentials/`. By default this will use the
+`quay.io/cockpit/tasks:latest` container, but you can run a different tag by
+setting `$TASKS_TAG`.
+
+This currently does not yet have any convenient way to inject jobs into the
+AMQP queue; this will be provided at a later point.
+
 # GitHub webhook integration
 
 ## GitHub setup
