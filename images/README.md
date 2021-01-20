@@ -4,10 +4,7 @@ This is an image store for hosting VMs for Cockpit integration tests.
 
 # Deploying on a host
 
-Secrets need to be set up in the same way as for the
-[tasks container](../tasks/README.md). This container particularly needs the CA
-and server SSL certificates and the `htpasswd` file for authenticating users
-that are allowed to upload.
+Secrets need to be set up in the same way as for the [tasks container](../tasks/README.md). This container particularly needs the [CA](../tasks/credentials/generate-ca.sh) and [server SSL certificates](./generate-image-certs.sh) and the `htpasswd` file for authenticating users that are allowed to upload.
 
     $ sudo docker pull cockpit/images
     $ sudo atomic install cockpit/images
