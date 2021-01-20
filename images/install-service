@@ -3,7 +3,7 @@
 set -eufx
 
 CACHE=/var/cache/cockpit-tasks
-SECRETS=/var/lib/cockpit-secrets/tasks
+SECRETS=/var/lib/cockpit-secrets
 
 if RUNC=$(which podman 2>/dev/null); then
     UNIT_DEPS=''
@@ -24,11 +24,11 @@ $UNIT_DEPS
 
 [Service]
 Environment="TASK_CACHE=$CACHE"
-Environment="TASK_SECRETS=$SECRETS"
+Environment="SECRETS=$SECRETS"
 Restart=always
 RestartSec=60
 ExecStartPre=-$RUNC rm -f cockpit-images
-ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-images --publish=8090:8080 --publish=8493:8443 --volume=\$TASK_SECRETS:/secrets:ro --volume=\$TASK_CACHE/images:/cache/images:rw cockpit/images"
+ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-images --publish=8090:8080 --publish=8493:8443 --volume=\$SECRETS/tasks:/secrets:ro --volume=\$SECRETS/webhook:/run/secrets/webhook --volume=\$TASK_CACHE/images:/cache/images:rw cockpit/images"
 ExecStop=$RUNC rm -f cockpit-images
 
 [Install]
