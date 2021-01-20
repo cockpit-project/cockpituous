@@ -1,7 +1,3 @@
-# master copy of secrets
-[master]
-cockpit-9.e2e.bos.redhat.com ansible_user=root
-
 [e2e]
 cockpit-7.e2e.bos.redhat.com ansible_user=root
 cockpit-8.e2e.bos.redhat.com ansible_user=root
