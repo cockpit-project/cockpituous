@@ -3,12 +3,47 @@
 # You can run against a tasks container tag different than latest by setting "$TASKS_TAG"
 set -eu
 
+DAEMON=
+TASK_SECRETS=
+TOKEN=
+
+while getopts "dhs:t:" opt; do
+    case $opt in
+        h)
+            echo '-d runs the cockpit-tasks container as daemon'
+            echo '-s supply the tasks-secret directory'
+            echo '-t supply a token which will be copied into the webhook secrets'
+            exit 0
+            ;;
+        d)
+            DAEMON="-d"
+            ;;
+        t)
+            if [ ! -e "$OPTARG" ]; then
+                echo $OPTARG does not exist
+                exit 1
+            fi
+            TOKEN="$OPTARG"
+            ;;
+        s)
+            if [ ! -e "$OPTARG" ]; then
+                echo $OPTARG does not exist
+                exit 1
+            fi
+            TASK_SECRETS="-v $OPTARG:/secrets:ro"
+            ;;
+        esac
+done
+
 MYDIR=$(realpath $(dirname $0))
 ROOTDIR=$(dirname $MYDIR)
 DATADIR=$ROOTDIR/local-data
 RABBITMQ_CONFIG=$DATADIR/rabbitmq-config
 SECRETS=$DATADIR/secrets
-trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
+
+if [ -z "$DAEMON" ]; then
+    trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
+fi
 
 # clean up data dir from previous round
 rm -rf "$DATADIR"
@@ -46,6 +81,10 @@ else
     chmod -R go+rX "$SECRETS"/webhook
 fi
 
+if [ -n "$TOKEN" ]; then
+    cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
+fi
+
 # start podman and run RabbitMQ in the background
 podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro -v "$SECRETS"/webhook:/run/secrets/webhook:ro docker.io/rabbitmq:3-management
 
@@ -58,4 +97,4 @@ done
 
 # Run tasks container in the foreground to see the output
 # Press Control-C or let the "30 polls" iteration finish
-podman run -it --name cockpituous-tasks -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+podman run "$DAEMON" -it --name cockpituous-tasks $TASK_SECRETS -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e TEST_PUBLISH=sink -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}
