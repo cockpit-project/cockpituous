@@ -5,8 +5,10 @@ set -eu
 
 MYDIR=$(realpath $(dirname $0))
 RABBITMQ_CONFIG=$(mktemp -dt rabbitmq-config.XXXXXX)
-SECRETS=$(mktemp -dt cockpituous-secrets.XXXXXX)
-trap "rm -rf '$RABBITMQ_CONFIG' '$SECRETS'; podman pod rm -f cockpituous" EXIT INT QUIT PIPE
+# SECRETS=$(mktemp -dt cockpituous-secrets.XXXXXX)
+SECRETS="$MYDIR/secrets"
+mkdir -p "$SECRETS"
+# trap "rm -rf '$RABBITMQ_CONFIG' '$SECRETS'; podman pod rm -f cockpituous" EXIT INT QUIT PIPE
 
 # generate flat files from RabbitMQ config map
 python3 - <<EOF
@@ -40,7 +42,7 @@ else
 fi
 
 # start podman and run RabbitMQ in the background
-podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro -v "$SECRETS"/webhook:/run/secrets/webhook:ro docker.io/rabbitmq:3-management
+podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro -v "$SECRETS"/webhook:/run/secrets/webhook:ro -p 5671:5671 docker.io/rabbitmq:3-management
 
 # wait until AMQP initialized
 sleep 5
@@ -51,4 +53,5 @@ done
 
 # Run tasks container in the foreground to see the output
 # Press Control-C or let the "30 polls" iteration finish
-podman run -it --name cockpituous-tasks -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+# TODO run it in daemon mode so it doesn't block
+podman run -d -it --name cockpituous-tasks -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}

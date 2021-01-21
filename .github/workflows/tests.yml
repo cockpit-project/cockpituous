@@ -27,6 +27,19 @@ jobs:
       - name: Rebase to current master
         run: git rebase origin/master
 
+      - name: Prepare
+        run: |
+          # override GitHub's bind mount from host, we don't want anything from there and it interferes with ssh
+          export HOME=$(getent passwd $(id -u) | cut -f6 -d:)
+          echo '${{ secrets.COCKPITUOUS_TOKEN }}' > ~/.config/github-token
+
+          # TODO pip intsall pika
+          sudo pip3 install pika
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 45
+
       - name: Build and test tasks container if it changed
         run: |
           changes=$(git diff --name-only origin/master..HEAD -- tasks/)
@@ -36,4 +49,23 @@ jobs:
               # This does not do much yet, just iterate to the AMQP queue 30 times and exit
               # TODO: Inject a workload that does not need /dev/kvm
               sudo tasks/run-local.sh
+
+              # clone bots
+              # TODO: figure out how to split this into different steps if possible
+              git clone https://github.com/cockpit-project/bots
+              git -C ./bots fetch origin pull/1567/head
+              git -C ./bots checkout FETCH_HEAD
+
+              # trigger a test
+              PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
+              bots/tests-trigger --repo cockpit-project/cockpituous $PRN host
+              # TODO replace this also probably won't work
+              sudo ln -s $(find /tmp -maxdepth 1 -name "cockpituous-secrets.*" | head -n 1) /run/secrets
+              # some debugging output
+              bots/tests-scan -p "$PRN" -dv
+              # publish
+              bots/tests-scan -p "$PRN" --amqp "localhost:5671"
+
+              # TODO wait until status is green on cockpituous I guess
+              sleep 30
           fi
