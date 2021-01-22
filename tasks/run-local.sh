@@ -4,11 +4,17 @@
 set -eu
 
 MYDIR=$(realpath $(dirname $0))
-RABBITMQ_CONFIG=$(mktemp -dt rabbitmq-config.XXXXXX)
-SECRETS=$(mktemp -dt cockpituous-secrets.XXXXXX)
-trap "rm -rf '$RABBITMQ_CONFIG' '$SECRETS'; podman pod rm -f cockpituous" EXIT INT QUIT PIPE
+ROOTDIR=$(dirname $MYDIR)
+DATADIR=$ROOTDIR/local-data
+RABBITMQ_CONFIG=$DATADIR/rabbitmq-config
+SECRETS=$DATADIR/secrets
+trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
+
+# clean up data dir from previous round
+rm -rf "$DATADIR"
 
 # generate flat files from RabbitMQ config map
+mkdir -p $RABBITMQ_CONFIG
 python3 - <<EOF
 import os.path
 import yaml
@@ -28,7 +34,8 @@ chmod -R go+rX "$RABBITMQ_CONFIG"
 if [ -e "$MYDIR/credentials/webhook/amqp-client.key" ]; then
     SECRETS="$MYDIR/credentials"
 else
-    (cd $SECRETS
+    (mkdir -p "$SECRETS"
+     cd "$SECRETS"
      $MYDIR/credentials/generate-ca.sh
      mkdir -p webhook
      cd webhook
