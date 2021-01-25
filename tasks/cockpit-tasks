@@ -74,3 +74,8 @@ for i in $(seq 1 30); do
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
 done
+
+# Prune old images
+update_repo  "$WORKDIR"/cockpit-project/bots https://github.com/cockpit-project/bots
+cd "$WORKDIR"/cockpit-project/bots
+./image-prune
