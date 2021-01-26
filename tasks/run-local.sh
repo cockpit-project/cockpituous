@@ -1,17 +1,16 @@
 #!/bin/sh
 # Run a local pod with a AMQP and a tasks container
 # You can run against a tasks container tag different than latest by setting "$TASKS_TAG"
+# similar for "$IMAGES_TAG" for images/sink
 set -eu
 
 PR=
-TASK_SECRETS=
 TOKEN=
 
 while getopts "hs:t:p:" opt; do
     case $opt in
         h)
             echo '-p run unit tests in the local deployment against a real PR'
-            echo '-s supply the tasks-secret directory'
             echo '-t supply a token which will be copied into the webhook secrets'
             exit 0
             ;;
@@ -23,13 +22,6 @@ while getopts "hs:t:p:" opt; do
             fi
             TOKEN="$OPTARG"
             ;;
-        s)
-            if [ ! -e "$OPTARG" ]; then
-                echo $OPTARG does not exist
-                exit 1
-            fi
-            TASK_SECRETS="-v $OPTARG:/secrets:ro"
-            ;;
         esac
 done
 
@@ -38,6 +30,8 @@ ROOTDIR=$(dirname $MYDIR)
 DATADIR=$ROOTDIR/local-data
 RABBITMQ_CONFIG=$DATADIR/rabbitmq-config
 SECRETS=$DATADIR/secrets
+IMAGES=$DATADIR/images
+IMAGE_PORT=${IMAGE_PORT:-8080}
 
 trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
 
@@ -68,13 +62,25 @@ else
     (mkdir -p "$SECRETS"
      cd "$SECRETS"
      $MYDIR/credentials/generate-ca.sh
-     mkdir -p webhook
-     cd webhook
-     $MYDIR/credentials/webhook/generate.sh
-     cd ..
+     (mkdir -p webhook; cd webhook; $MYDIR/credentials/webhook/generate.sh)
+     (mkdir -p tasks; cd tasks; $ROOTDIR/images/generate-image-certs.sh)
+
+     ssh-keygen -f tasks/id_rsa -P ''
+     cat <<EOF > tasks/ssh-config
+Host sink-local
+    Hostname cockpituous-images
+    User user
+    Port 8022
+    IdentityFile /secrets/id_rsa
+    UserKnownHostsFile /dev/null
+    # cluster-local, don't bother with host keys
+    StrictHostKeyChecking no
+    CheckHostIP no
+EOF
     )
-    # need to make files world-readable, as rabbitmq container runs as different user
-    chmod -R go+rX "$SECRETS"/webhook
+
+    # need to make files world-readable, as containers run as different user
+    chmod -R go+rX "$SECRETS"
 fi
 
 if [ -n "$TOKEN" ]; then
@@ -82,7 +88,29 @@ if [ -n "$TOKEN" ]; then
 fi
 
 # start podman and run RabbitMQ in the background
-podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro -v "$SECRETS"/webhook:/run/secrets/webhook:ro docker.io/rabbitmq:3-management
+podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
+    --publish $IMAGE_PORT:8080 \
+    -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro \
+    -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    docker.io/rabbitmq:3-management
+
+# start image+sink in the background; see sink/sink-centosci.yaml
+mkdir -p "$IMAGES"
+chmod -R go+w "$IMAGES"  # allow unprivileged sink container to write
+SINK_CONFIG="$DATADIR/sink.cfg"
+cat <<EOF > "$SINK_CONFIG"
+[Sink]
+Url: http://localhost:$IMAGE_PORT/logs/%(identifier)s/
+Logs: /cache/images/logs
+PruneInterval: 0.5
+EOF
+podman run -d --name cockpituous-images --pod=cockpituous --user user \
+    -v "$IMAGES":/cache/images:z \
+    -v "$SINK_CONFIG":/run/config/sink:ro \
+    -v "$SECRETS"/tasks:/secrets:ro \
+    -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    quay.io/cockpit/images:${IMAGES_TAG:-latest} \
+    sh -ec '/usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"'
 
 # wait until AMQP initialized
 sleep 5
@@ -92,7 +120,15 @@ until podman exec -i cockpituous-rabbitmq sh -ec 'ls /var/lib/rabbitmq/mnesia/*.
 done
 
 # Run tasks container in the backgroud
-podman run -d -it --name cockpituous-tasks $TASK_SECRETS -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e TEST_PUBLISH=sink -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+podman run -d -it --name cockpituous-tasks --pod=cockpituous \
+    -v "$SECRETS"/tasks:/secrets:ro \
+    -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    -e AMQP_SERVER=localhost:5671 \
+    -e TEST_PUBLISH=sink-local \
+    quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+
+# Follow the output
+podman logs -f cockpituous-tasks &
 
 # if we have a PR number, run a unit test inside local deployment, and update PR status
 if [ -n "$PR" ]; then
@@ -112,7 +148,30 @@ if [ -n "$PR" ]; then
     done;
     ./tests-scan -p $PR --amqp 'localhost:5671' --repo cockpit-project/cockpituous;
     ./inspect-queue;"
+
+    # wait until the unit-test got run and published
+    for retry in $(seq 60); do
+        [ -e $IMAGES/logs/pull-$PR-*-unit-tests/status ] && break
+        echo waiting for unit-tests run to finish...
+        sleep 10
+    done
+
+    # spot-checks that it produced sensible logs
+    LOG_ID=$(basename $IMAGES/logs/pull-$PR-*-unit-tests)
+    RESULTS_DIR_URL=http://localhost:$IMAGE_PORT/logs/$LOG_ID
+    # download the log from the images server instead of the file system, to validate that the former works properly
+    STATUS=$(curl $RESULTS_DIR_URL/status)
+    LOG=$(curl $RESULTS_DIR_URL/log)
+    LOG_HTML=$(curl $RESULTS_DIR_URL/log.html)
+    echo "--------------- test log -----------------"
+    echo  "$LOG"
+    echo "--------------- test log end -------------"
+    echo "$STATUS" | grep -q '"message": "Tests passed"'
+    echo "$LOG_HTML" | grep -q '<html>'
+    echo "$LOG" | grep -q 'Running on: `cockpituous`'
+    echo "$LOG" | grep -q '^OK'
+    echo "$LOG" | grep -q 'Test run finished, return code: 0'
 fi
 
-# Follow the output; press Control-C or let the "30 polls" iteration finish
-podman logs -f cockpituous-tasks
+# bring logs -f to the foreground; press Control-C or let the "30 polls" iteration finish
+wait

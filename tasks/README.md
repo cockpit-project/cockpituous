@@ -144,19 +144,26 @@ command:
 
 # Deploying locally for development
 
-For hacking on the webhook or task container, or validating new container
+For hacking on the webhook, image/sink, or task container, or validating new container
 images, you can also run a simple [podman pod](http://docs.podman.io/en/latest/pod.html)
-locally with a RabbitMQ and a tasks container:
+locally with  RabbitMQ, webhook, images, sink, and tasks containers:
 
     $ tasks/run-local.sh
 
 This will also generate the secrets in a temporary directory, unless they
 already exist in `tasks/credentials/`. By default this will use the
-`quay.io/cockpit/tasks:latest` container, but you can run a different tag by
-setting `$TASKS_TAG`.
+`quay.io/cockpit/{tasks,images}:latest` containers, but you can run a different
+tag by setting `$TASKS_TAG` and/or `$IMAGES_TAG`.
 
-This currently does not yet have any convenient way to inject jobs into the
-AMQP queue; this will be provided at a later point.
+This currently does not yet have any convenient way to inject arbitrary jobs
+into the AMQP queue; this will be provided at a later point. However, you can
+test the whole GitHub → webhook → tasks → sink/GitHub status workflow on some
+cockpituous PR with specifying the PR number and a GitHub token:
+
+    $ tasks/run-local.sh -p 123 -t ~/.config/github-token
+
+This will run tests-scan/tests-trigger on the given PR and trigger an
+[unit-tests](../.cockpit-ci/run) test which simply does `make check`.
 
 # GitHub webhook integration
 
