@@ -42,16 +42,7 @@ jobs:
       - name: Set up secrets
         if: steps.tasks_changed.outputs.changed
         run: |
-          # Put the /secrets in place which we'll mount to the tasks-container
-          mkdir -p ~/secrets
           echo '${{ secrets.COCKPITUOUS_TOKEN }}' > ~/.config/github-token
-          echo '${{ secrets.SSH_KNOWN_HOSTS }}' > ~/secrets/known_hosts
-          echo '${{ secrets.SINK_SSH_CONFIG }}' > ~/secrets/ssh-config
-          echo '${{ secrets.SINK_ID_RSA }}' > ~/secrets/id_rsa
-          echo '${{ secrets.SINK_ID_RSA_PUB }}' > ~/secrets/id_rsa.pub
-          chmod 400 ~/secrets/*
-          # change permissions to user in cockpit-tasks container
-          sudo chown 1111:1111 ~/secrets/*
 
       - name: Build tasks container if it changed
         if: steps.tasks_changed.outputs.changed
@@ -64,4 +55,4 @@ jobs:
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
 
           # Start the amqp/tasks pod, supply working task secrets, and run unit test on our own PR
-          sudo tasks/run-local.sh -p $PRN -s ~/secrets -t ~/.config/github-token
+          sudo tasks/run-local.sh -p $PRN -t ~/.config/github-token
