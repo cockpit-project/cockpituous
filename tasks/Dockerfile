@@ -72,7 +72,8 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work
     chmod -R ugo+w /cache /secrets /cache /work && \
     chown -R user:user /cache /work && \
     ln -s /app/bin/firefox /usr/bin/firefox && \
-    printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache
+    printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache && \
+    echo 'user ALL=NOPASSWD: /usr/bin/chmod 666 /dev/kvm' > /etc/sudoers.d/user-fix-kvm
 
 ENV LANG=C.UTF-8 \
     TEST_OVERLAY_DIR=/tmp
