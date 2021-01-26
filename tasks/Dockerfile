@@ -74,9 +74,6 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work
     ln -s /app/bin/firefox /usr/bin/firefox && \
     printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache
 
-# Prevent us from screwing around with KVM settings in the container
-RUN touch /etc/modprobe.d/kvm-amd.conf && touch /etc/modprobe.d/kvm-intel.conf
-
 ENV LANG=C.UTF-8 \
     TEST_OVERLAY_DIR=/tmp
 
