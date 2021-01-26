@@ -25,7 +25,10 @@ jobs:
           fetch-depth: 0
 
       - name: Rebase to current master
-        run: git rebase origin/master
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git rebase origin/master
 
       - name: Build and test tasks container if it changed
         run: |
