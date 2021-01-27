@@ -30,7 +30,16 @@ jobs:
           git config user.email github-actions@github.com
           git rebase origin/master
 
-      - name: Prepare
+      - name: Check if tasks container changed
+        id: tasks_changed
+        run: |
+          changes=$(git diff --name-only origin/master..HEAD -- tasks/)
+          # print for debugging
+          echo "$changes"
+          [ -z "$changes" ] || echo "::set-output name=changed::true"
+
+      - name: Set up secrets
+        if: steps.tasks_changed.outputs.changed
         run: |
           # Put the /secrets in place which we'll mount to the tasks-container
           mkdir -p ~/secrets
@@ -43,39 +52,38 @@ jobs:
           # change permissions to user in cockpit-tasks container
           sudo chown 1111:1111 ~/secrets/*
 
-      - name: Build and test tasks container if it changed
+      - name: Build tasks container if it changed
+        if: steps.tasks_changed.outputs.changed
+        # Run podman as root, as podman is missing slirp4netns by default, and does not have overlayfs by default
+        run: sudo make tasks-container
+
+      - name: Test tasks container if it changed
+        if: steps.tasks_changed.outputs.changed
         run: |
-          changes=$(git diff --name-only origin/master..HEAD -- tasks/)
-          if [ -n "${changes}" ]; then
-              # Run podman as root, as podman is missing slirp4netns by default, and does not have overlayfs by default
-              sudo make tasks-container
+          # Start the amqp/tasks pod in the background and supply working task secrets
+          sudo tasks/run-local.sh -d -s ~/secrets -t ~/.config/github-token
 
-              # Start the amqp/tasks pod in the background and supply working task secrets
-              sudo tasks/run-local.sh -d -s ~/secrets -t ~/.config/github-token
+          # trigger a test
+          PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
+          # wait until bots checkout
+          sudo podman exec -i cockpituous-tasks sh -exc "
+          for retry in \$(seq 5); do
+              [ -f cockpit-project/bots/tests-trigger ] && break;
+              sleep 5;
+          done;
+          cd cockpit-project/bots;
+          ./tests-trigger -f --repo cockpit-project/cockpituous $PRN unit-tests;
+          for retry in \$(seq 10); do
+              ./tests-scan --repo cockpit-project/cockpituous -vd;
+              OUT=\$(./tests-scan --repo cockpit-project/cockpituous -p $PRN -dv);
+                [ \"${OUT%unit-tests*}\" = \"$OUT\" ] || break;
+              echo waiting until the status is visible;
+              sleep 10;
+          done;
+          ./tests-scan -p $PRN --amqp 'localhost:5671' --repo cockpit-project/cockpituous;
+          ./inspect-queue;"
 
-              # trigger a test
-              PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
-              # wait until bots checkout
-              sudo podman exec -i cockpituous-tasks sh -exc "
-              for retry in \$(seq 5); do
-                  [ -f cockpit-project/bots/tests-trigger ] && break;
-                  sleep 5;
-              done;
-              cd cockpit-project/bots;
-              ./tests-trigger -f --repo cockpit-project/cockpituous $PRN unit-tests;
-              for retry in \$(seq 10); do
-                  ./tests-scan --repo cockpit-project/cockpituous -vd;
-                  OUT=\$(./tests-scan --repo cockpit-project/cockpituous -p $PRN -dv);
-                   [ \"${OUT%unit-tests*}\" = \"$OUT\" ] || break;
-                  echo waiting until the status is visible;
-                  sleep 10;
-              done;
-              ./tests-scan -p $PRN --amqp 'localhost:5671' --repo cockpit-project/cockpituous;
-              ./inspect-queue;"
-
-
-              # wait until the tasks container has exited
-              sudo sudo podman wait cockpituous-tasks
-              echo -------------------------------------------
-              sudo sudo podman logs cockpituous-tasks
-          fi
+          # wait until the tasks container has exited
+          sudo podman wait cockpituous-tasks
+          echo -------------------------------------------
+          sudo podman logs cockpituous-tasks
