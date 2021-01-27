@@ -3,21 +3,19 @@
 # You can run against a tasks container tag different than latest by setting "$TASKS_TAG"
 set -eu
 
-DAEMON=
+PR=
 TASK_SECRETS=
 TOKEN=
 
-while getopts "dhs:t:" opt; do
+while getopts "hs:t:p:" opt; do
     case $opt in
         h)
-            echo '-d runs the cockpit-tasks container as daemon'
+            echo '-p run unit tests in the local deployment against a real PR'
             echo '-s supply the tasks-secret directory'
             echo '-t supply a token which will be copied into the webhook secrets'
             exit 0
             ;;
-        d)
-            DAEMON="-d"
-            ;;
+        p) PR="$OPTARG" ;;
         t)
             if [ ! -e "$OPTARG" ]; then
                 echo $OPTARG does not exist
@@ -41,9 +39,7 @@ DATADIR=$ROOTDIR/local-data
 RABBITMQ_CONFIG=$DATADIR/rabbitmq-config
 SECRETS=$DATADIR/secrets
 
-if [ -z "$DAEMON" ]; then
-    trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
-fi
+trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
 
 # clean up data dir from previous round
 rm -rf "$DATADIR"
@@ -95,6 +91,28 @@ until podman exec -i cockpituous-rabbitmq sh -ec 'ls /var/lib/rabbitmq/mnesia/*.
     sleep 3
 done
 
-# Run tasks container in the foreground to see the output
-# Press Control-C or let the "30 polls" iteration finish
-podman run "$DAEMON" -it --name cockpituous-tasks $TASK_SECRETS -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e TEST_PUBLISH=sink -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+# Run tasks container in the backgroud
+podman run -d -it --name cockpituous-tasks $TASK_SECRETS -v "$SECRETS"/webhook:/run/secrets/webhook:ro -e TEST_PUBLISH=sink -e AMQP_SERVER=localhost:5671 --pod=cockpituous quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+
+# if we have a PR number, run a unit test inside local deployment, and update PR status
+if [ -n "$PR" ]; then
+    podman exec -i cockpituous-tasks sh -exc "
+    for retry in \$(seq 5); do
+        [ -f cockpit-project/bots/tests-trigger ] && break;
+        sleep 5;
+    done;
+    cd cockpit-project/bots;
+    ./tests-trigger -f --repo cockpit-project/cockpituous $PR unit-tests;
+    for retry in \$(seq 10); do
+        ./tests-scan --repo cockpit-project/cockpituous -vd;
+        OUT=\$(./tests-scan --repo cockpit-project/cockpituous -p $PR -dv);
+        [ \"\${OUT%unit-tests*}\" = \"\$OUT\" ] || break;
+        echo waiting until the status is visible;
+        sleep 10;
+    done;
+    ./tests-scan -p $PR --amqp 'localhost:5671' --repo cockpit-project/cockpituous;
+    ./inspect-queue;"
+fi
+
+# Follow the output; press Control-C or let the "30 polls" iteration finish
+podman logs -f cockpituous-tasks

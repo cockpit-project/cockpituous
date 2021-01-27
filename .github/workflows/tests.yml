@@ -60,30 +60,7 @@ jobs:
       - name: Test tasks container if it changed
         if: steps.tasks_changed.outputs.changed
         run: |
-          # Start the amqp/tasks pod in the background and supply working task secrets
-          sudo tasks/run-local.sh -d -s ~/secrets -t ~/.config/github-token
-
-          # trigger a test
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
-          # wait until bots checkout
-          sudo podman exec -i cockpituous-tasks sh -exc "
-          for retry in \$(seq 5); do
-              [ -f cockpit-project/bots/tests-trigger ] && break;
-              sleep 5;
-          done;
-          cd cockpit-project/bots;
-          ./tests-trigger -f --repo cockpit-project/cockpituous $PRN unit-tests;
-          for retry in \$(seq 10); do
-              ./tests-scan --repo cockpit-project/cockpituous -vd;
-              OUT=\$(./tests-scan --repo cockpit-project/cockpituous -p $PRN -dv);
-                [ \"${OUT%unit-tests*}\" = \"$OUT\" ] || break;
-              echo waiting until the status is visible;
-              sleep 10;
-          done;
-          ./tests-scan -p $PRN --amqp 'localhost:5671' --repo cockpit-project/cockpituous;
-          ./inspect-queue;"
 
-          # wait until the tasks container has exited
-          sudo podman wait cockpituous-tasks
-          echo -------------------------------------------
-          sudo podman logs cockpituous-tasks
+          # Start the amqp/tasks pod, supply working task secrets, and run unit test on our own PR
+          sudo tasks/run-local.sh -p $PRN -s ~/secrets -t ~/.config/github-token
