@@ -30,16 +30,20 @@ jobs:
           git config user.email github-actions@github.com
           git rebase origin/master
 
-      - name: Check if tasks container changed
-        id: tasks_changed
+      - name: Check which containers changed
+        id: containers_changed
         run: |
-          changes=$(git diff --name-only origin/master..HEAD -- tasks/)
+          tasks=$(git diff --name-only origin/master..HEAD -- tasks/)
+          images=$(git diff --name-only origin/master..HEAD -- images/)
           # print for debugging
-          echo "$changes"
-          [ -z "$changes" ] || echo "::set-output name=changed::true"
+          echo "tasks: $tasks"
+          echo "images: $images"
+          [ -z "$tasks" ] || echo "::set-output name=tasks::true"
+          [ -z "$images" ] || echo "::set-output name=images::true"
+          [ -z "$images" -a -z "$tasks" ] || echo "::set-output name=any::true"
 
       - name: Set up secrets
-        if: steps.tasks_changed.outputs.changed
+        if: steps.containers_changed.outputs.any
         run: |
           # Put the /secrets in place which we'll mount to the tasks-container
           mkdir -p ~/secrets
@@ -53,12 +57,16 @@ jobs:
           sudo chown 1111:1111 ~/secrets/*
 
       - name: Build tasks container if it changed
-        if: steps.tasks_changed.outputs.changed
+        if: steps.containers_changed.outputs.tasks
         # Run podman as root, as podman is missing slirp4netns by default, and does not have overlayfs by default
         run: sudo make tasks-container
 
-      - name: Test tasks container if it changed
-        if: steps.tasks_changed.outputs.changed
+      - name: Build images container if it changed
+        if: steps.containers_changed.outputs.images
+        run: sudo make images-container
+
+      - name: Test local deployment if any container changed
+        if: steps.containers_changed.outputs.any
         run: |
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
 
