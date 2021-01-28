@@ -20,6 +20,7 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
     rm -rf /usr/share/nginx/html && \
     ln -snf /cache/images /usr/share/nginx/html && \
+    chmod -R 777 /var/log/nginx /var/lib/nginx && \
     chmod a+x /home/user/sink && \
     chmod g=u /etc/passwd
 
@@ -28,6 +29,7 @@ COPY nginx.conf /etc/nginx/
 
 VOLUME /cache/images
 
+USER user
 EXPOSE 8080 8443
 STOPSIGNAL SIGQUIT
 CMD /usr/sbin/nginx -g "daemon off;"
