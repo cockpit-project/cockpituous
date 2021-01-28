@@ -18,7 +18,7 @@ items:
       spec:
         containers:
           - name: sink
-            image: cockpit/images
+            image: quay.io/cockpit/images
             ports:
               - containerPort: 8080
                 protocol: TCP

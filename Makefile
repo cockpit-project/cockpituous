@@ -29,12 +29,12 @@ images-shell:
         cockpit/images -i
 
 images-container:
-	$(DOCKER) build -t docker.io/cockpit/images:$(TAG) images
-	$(DOCKER) tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
-	$(DOCKER) tag docker.io/cockpit/images:$(TAG) docker.io/cockpit/images:latest
+	$(DOCKER) build -t quay.io/cockpit/images:$(TAG) images
+	$(DOCKER) tag quay.io/cockpit/images:$(TAG) quay.io/cockpit/images:latest
+	$(DOCKER) tag quay.io/cockpit/images:$(TAG) quay.io/cockpit/images:latest
 
 images-push:
-	./push-container docker.io/cockpit/images
+	./push-container quay.io/cockpit/images
 
 release-shell:
 	$(DOCKER) run -ti --rm --entrypoint=/bin/bash ghcr.io/cockpit-project/release
