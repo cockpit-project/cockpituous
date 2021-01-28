@@ -6,12 +6,12 @@ This is an image store for hosting VMs for Cockpit integration tests.
 
 Secrets need to be set up in the same way as for the [tasks container](../tasks/README.md). This container particularly needs the [CA](../tasks/credentials/generate-ca.sh) and [server SSL certificates](./generate-image-certs.sh) and the `htpasswd` file for authenticating users that are allowed to upload.
 
-    $ sudo docker pull cockpit/images
-    $ sudo atomic install cockpit/images
+    $ sudo docker pull quay.io/cockpit/images
+    $ sudo atomic install quay.io/cockpit/images
 
 Or, if the `atomic` command is not available, run
 
-    $ sudo docker inspect --format '{{ index .Config.Labels "INSTALL"}}' cockpit/images  | sed 's_IMAGE_cockpit/images_'
+    $ sudo docker inspect --format '{{ index .Config.Labels "INSTALL"}}' quay.io/cockpit/images  | sed 's_IMAGE_cockpit/images_'
 
 and execute that command.
 

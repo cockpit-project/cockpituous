@@ -1,0 +1,21 @@
+name: build-images
+on:
+  # this is meant to be run on an approved PR branch for convenience
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+
+      # use podman as root, so that it uses overlayfs; user with vfs takes too long and uses too much space
+      - name: Log into container registry
+        run: sudo podman login -u ${{ secrets.QUAY_BOTUSER }} -p ${{ secrets.QUAY_TOKEN }} quay.io
+
+      - name: Build images container
+        run: sudo make images-container
+
+      - name: Push container to registry
+        run: sudo make images-push
