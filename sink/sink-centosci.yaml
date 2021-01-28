@@ -39,12 +39,6 @@ items:
             - name: config
               mountPath: /run/config
               readOnly: true
-            - name: httpd-log
-              mountPath: /var/log/nginx
-            - name: httpd-state
-              mountPath: /var/lib/nginx
-            - name: httpd-state-tmp
-              mountPath: /var/lib/nginx/tmp
         volumes:
         - name: images
           persistentVolumeClaim:
@@ -58,15 +52,6 @@ items:
         - name: config
           configMap:
             name: sink-config
-        - name: httpd-log
-          emptyDir:
-            medium: Memory
-        - name: httpd-state
-          emptyDir:
-            medium: Memory
-        - name: httpd-state-tmp
-          emptyDir:
-            medium: Memory
 
 - kind: Service
   apiVersion: v1
