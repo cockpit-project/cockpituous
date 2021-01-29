@@ -65,6 +65,10 @@ else
      (mkdir -p webhook; cd webhook; $MYDIR/credentials/webhook/generate.sh)
      (mkdir -p tasks; cd tasks; $ROOTDIR/images/generate-image-certs.sh)
 
+    # dummy token, for image-upload
+    echo 0123abc > "$SECRETS"/webhook/.config--github-token
+    echo 'user:$apr1$FzL9bivD$AzG7R8RNjuR.9DQRUrV.k.' > "$SECRETS"/tasks/htpasswd
+
      ssh-keygen -f tasks/id_rsa -P ''
      cat <<EOF > tasks/ssh-config
 Host sink-local
@@ -81,10 +85,6 @@ EOF
 
     # need to make files world-readable, as containers run as different user
     chmod -R go+rX "$SECRETS"
-fi
-
-if [ -n "$TOKEN" ]; then
-    cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
 fi
 
 # start podman and run RabbitMQ in the background
@@ -120,7 +120,7 @@ until podman exec -i cockpituous-rabbitmq sh -ec 'ls /var/lib/rabbitmq/mnesia/*.
 done
 
 # Run tasks container in the backgroud
-podman run -d -it --name cockpituous-tasks --pod=cockpituous \
+podman run -d -it -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem --name cockpituous-tasks --pod=cockpituous \
     -v "$SECRETS"/tasks:/secrets:ro \
     -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
     -e AMQP_SERVER=localhost:5671 \
@@ -130,13 +130,32 @@ podman run -d -it --name cockpituous-tasks --pod=cockpituous \
 # Follow the output
 podman logs -f cockpituous-tasks &
 
+# test image upload (htpasswd credentials setup)
+podman exec -i cockpituous-tasks timeout 30 sh -ec '
+    # wait until tasks container has set up itself and checked out bots
+    until [ -f cockpit-project/bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
+    cd cockpit-project/bots
+
+    # test image-upload
+    echo world  > /cache/images/hello.txt
+    ./image-upload --store https://cockpituous-images:8443 --state hello.txt
+    '
+test "$(cat "$IMAGES/hello.txt")" = "world"
+
+# validate image downloading
+podman exec -i cockpituous-tasks sh -exc '
+    rm /cache/images/hello.txt
+    cd cockpit-project/bots
+    ./image-download --store https://cockpituous-images:8443 --state hello.txt
+    grep -q "^world" /cache/images/hello.txt
+    '
+
 # if we have a PR number, run a unit test inside local deployment, and update PR status
 if [ -n "$PR" ]; then
+    # need to use real GitHub token for this
+    [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
+
     podman exec -i cockpituous-tasks sh -exc "
-    for retry in \$(seq 5); do
-        [ -f cockpit-project/bots/tests-trigger ] && break;
-        sleep 5;
-    done;
     cd cockpit-project/bots;
     ./tests-trigger -f --repo cockpit-project/cockpituous $PR unit-tests;
     for retry in \$(seq 10); do
@@ -171,6 +190,9 @@ if [ -n "$PR" ]; then
     echo "$LOG" | grep -q 'Running on: `cockpituous`'
     echo "$LOG" | grep -q '^OK'
     echo "$LOG" | grep -q 'Test run finished, return code: 0'
+else
+    # clean up dummy token, so that image-prune does not try to use it
+    rm "$SECRETS"/webhook/.config--github-token
 fi
 
 # bring logs -f to the foreground; press Control-C or let the "30 polls" iteration finish
