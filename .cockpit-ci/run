@@ -2,4 +2,7 @@
 
 set -eux
 
+if [ -n "$TEST_ATTACHMENTS" ]; then
+    echo "heisenberg compensator at 99.8% efficiency" > "$TEST_ATTACHMENTS"/bogus.log
+fi
 make check
