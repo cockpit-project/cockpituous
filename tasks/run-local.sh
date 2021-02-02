@@ -120,9 +120,12 @@ until podman exec -i cockpituous-rabbitmq sh -ec 'ls /var/lib/rabbitmq/mnesia/*.
 done
 
 # Run tasks container in the backgroud
-podman run -d -it -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem --name cockpituous-tasks --pod=cockpituous \
+podman run -d -it --name cockpituous-tasks --pod=cockpituous \
     -v "$SECRETS"/tasks:/secrets:ro \
     -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
+    -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
+    -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
     -e AMQP_SERVER=localhost:5671 \
     -e TEST_PUBLISH=sink-local \
     quay.io/cockpit/tasks:${TASKS_TAG:-latest}

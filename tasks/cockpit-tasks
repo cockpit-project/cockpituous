@@ -2,7 +2,8 @@
 
 set -eux
 
-COCKPIT_BOTS_REPO=https://github.com/cockpit-project/bots
+COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-https://github.com/cockpit-project/bots}
+COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-master}
 
 # ensure we have a passwd entry for random UIDs
 # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
@@ -44,7 +45,7 @@ function update_bots() {
         git -C "$BOTS_DIR" fetch origin
         git -C "$BOTS_DIR" reset --hard
         git -C "$BOTS_DIR" clean -dxff
-        git -C "$BOTS_DIR" checkout origin/master
+        git -C "$BOTS_DIR" checkout "origin/$COCKPIT_BOTS_BRANCH"
     fi
 }
 
