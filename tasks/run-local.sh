@@ -5,16 +5,19 @@
 set -eu
 
 PR=
+PR_REPO=cockpit-project/cockpituous
 TOKEN=
 
-while getopts "hs:t:p:" opt; do
+while getopts "hs:t:p:r:" opt; do
     case $opt in
         h)
             echo '-p run unit tests in the local deployment against a real PR'
+            echo "-r run unit tests in the local deployment against an owner/repo other than $PR_REPO"
             echo '-t supply a token which will be copied into the webhook secrets'
             exit 0
             ;;
         p) PR="$OPTARG" ;;
+        r) PR_REPO="$OPTARG" ;;
         t)
             if [ ! -e "$OPTARG" ]; then
                 echo $OPTARG does not exist
@@ -160,15 +163,15 @@ if [ -n "$PR" ]; then
 
     podman exec -i cockpituous-tasks sh -exc "
     cd bots;
-    ./tests-trigger -f --repo cockpit-project/cockpituous $PR unit-tests;
+    ./tests-trigger -f --repo $PR_REPO $PR unit-tests;
     for retry in \$(seq 10); do
-        ./tests-scan --repo cockpit-project/cockpituous -vd;
-        OUT=\$(./tests-scan --repo cockpit-project/cockpituous -p $PR -dv);
+        ./tests-scan --repo $PR_REPO -vd;
+        OUT=\$(./tests-scan --repo $PR_REPO -p $PR -dv);
         [ \"\${OUT%unit-tests*}\" = \"\$OUT\" ] || break;
         echo waiting until the status is visible;
         sleep 10;
     done;
-    ./tests-scan -p $PR --amqp 'localhost:5671' --repo cockpit-project/cockpituous;
+    ./tests-scan -p $PR --amqp 'localhost:5671' --repo $PR_REPO;
     ./inspect-queue;"
 
     # wait until the unit-test got run and published
