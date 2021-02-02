@@ -67,19 +67,3 @@ tasks-push:
 
 tasks-secrets:
 	@cd tasks && ./build-secrets $(TASK_SECRETS)
-
-learn-shell:
-	$(DOCKER) run -ti --rm \
-		--privileged \
-		--publish=8080:8080 \
-		--volume=$(CURDIR)/learn:/learn \
-		--entrypoint=/bin/bash \
-        docker.io/cockpit/learn -i
-
-learn-container:
-	$(DOCKER) build -t docker.io/cockpit/learn:$(TAG) learn
-	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
-	$(DOCKER) tag docker.io/cockpit/learn:$(TAG) docker.io/cockpit/learn:latest
-
-learn-push:
-	./push-container docker.io/cockpit/learn
