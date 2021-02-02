@@ -21,6 +21,8 @@ HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
 SINK = os.getenv('RELEASE_SINK', 'sink-local')
 AMQP_SERVER = os.getenv('AMQP_SERVER', 'amqp.frontdoor.svc:5671')
+COCKPIT_BOTS_REPO = os.getenv('COCKPIT_BOTS_REPO', 'https://github.com/cockpit-project/bots')
+COCKPIT_BOTS_BRANCH = os.getenv('COCKPIT_BOTS_BRANCH', 'master')
 BOTS_CHECKOUT = HOME_DIR + '/bots'
 sys.path.append(BOTS_CHECKOUT)
 
@@ -65,12 +67,11 @@ def setup():
 
 def ensure_bots_checkout():
     if not os.path.isdir(BOTS_CHECKOUT):
-        url = 'https://github.com/cockpit-project/bots'
-        subprocess.check_call(['git', 'clone', url, BOTS_CHECKOUT])
+        subprocess.check_call(['git', 'clone', COCKPIT_BOTS_REPO, BOTS_CHECKOUT])
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'fetch', 'origin'])
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/master'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/' + COCKPIT_BOTS_BRANCH])
 
 
 @contextlib.contextmanager
