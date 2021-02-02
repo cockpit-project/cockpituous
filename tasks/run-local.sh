@@ -133,8 +133,8 @@ podman logs -f cockpituous-tasks &
 # test image upload (htpasswd credentials setup)
 podman exec -i cockpituous-tasks timeout 30 sh -ec '
     # wait until tasks container has set up itself and checked out bots
-    until [ -f cockpit-project/bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
-    cd cockpit-project/bots
+    until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
+    cd bots
 
     # test image-upload
     echo world  > /cache/images/hello.txt
@@ -145,7 +145,7 @@ test "$(cat "$IMAGES/hello.txt")" = "world"
 # validate image downloading
 podman exec -i cockpituous-tasks sh -exc '
     rm /cache/images/hello.txt
-    cd cockpit-project/bots
+    cd bots
     ./image-download --store https://cockpituous-images:8443 --state hello.txt
     grep -q "^world" /cache/images/hello.txt
     '
@@ -156,7 +156,7 @@ if [ -n "$PR" ]; then
     [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
 
     podman exec -i cockpituous-tasks sh -exc "
-    cd cockpit-project/bots;
+    cd bots;
     ./tests-trigger -f --repo cockpit-project/cockpituous $PR unit-tests;
     for retry in \$(seq 10); do
         ./tests-scan --repo cockpit-project/cockpituous -vd;

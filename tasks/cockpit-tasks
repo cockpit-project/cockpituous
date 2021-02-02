@@ -2,6 +2,8 @@
 
 set -eux
 
+COCKPIT_BOTS_REPO=https://github.com/cockpit-project/bots
+
 # ensure we have a passwd entry for random UIDs
 # https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
 if ! whoami && [ -w /etc/passwd ]; then
@@ -20,6 +22,7 @@ fi
 
 # let's just do our work in the current directory
 WORKDIR="$PWD"
+BOTS_DIR="$WORKDIR"/bots
 
 # Set up github user and token
 git config --global credential.helper store
@@ -27,24 +30,21 @@ echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-cre
 
 echo "Starting testing"
 
-function update_repo() {
-    dir=$1
-    repo_url=$2
-
-    if [ ! -d "$dir" ]; then
-        git clone "$repo_url" "$dir"
-    elif [ -f "$dir/.git/shallow" ]; then
+function update_bots() {
+    if [ ! -d "$BOTS_DIR" ]; then
+        git clone "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
+    elif [ -f "$BOTS_DIR/.git/shallow" ]; then
         # if we ended up with a shallow clone from a previous test, start from
         # scratch, as this is brittle to clean up afterwards
-        echo "cockpit-tasks: Shallow commits exist in $dir, cannot reset; re-cloning"
-        rm -rf "$dir"
-        git clone "$repo_url" "$dir"
+        echo "cockpit-tasks: Shallow commits exist in $BOTS_DIR, cannot reset; re-cloning"
+        rm -rf "$BOTS_DIR"
+        git clone "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
     else
         # avoid re-cloning in most cases to save GitHub bandwidth
-        git -C "$dir" fetch origin
-        git -C "$dir" reset --hard
-        git -C "$dir" clean -dxff
-        git -C "$dir" checkout origin/master
+        git -C "$BOTS_DIR" fetch origin
+        git -C "$BOTS_DIR" reset --hard
+        git -C "$BOTS_DIR" clean -dxff
+        git -C "$BOTS_DIR" checkout origin/master
     fi
 }
 
@@ -56,7 +56,7 @@ function slumber() {
 work_done=
 
 function run_from_queue() {
-    cd "$WORKDIR"/cockpit-project/bots
+    cd "$BOTS_DIR"
     if /usr/bin/timeout 12h ./run-queue --amqp "$AMQP_SERVER"; then
         work_done=1
         rm -rf "${TEST_DATA:-/}"/tmp/*
@@ -69,13 +69,13 @@ slumber 0-120
 # Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
     work_done=
-    update_repo  "$WORKDIR"/cockpit-project/bots https://github.com/cockpit-project/bots
+    update_bots
     run_from_queue || true
     # Nothing to do, or failure
     [ -n "$work_done" ] || slumber
 done
 
 # Prune old images
-update_repo  "$WORKDIR"/cockpit-project/bots https://github.com/cockpit-project/bots
-cd "$WORKDIR"/cockpit-project/bots
+update_bots
+cd "$BOTS_DIR"
 ./image-prune
