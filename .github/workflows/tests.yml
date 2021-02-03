@@ -34,19 +34,13 @@ jobs:
       - name: Check which containers changed
         id: containers_changed
         run: |
-          tasks=$(git diff --name-only origin/master..HEAD -- tasks/)
+          tasks=$(git diff --name-only origin/master..HEAD -- tasks/ | grep -v run-local.sh || true)
           images=$(git diff --name-only origin/master..HEAD -- images/)
           # print for debugging
           echo "tasks: $tasks"
           echo "images: $images"
           [ -z "$tasks" ] || echo "::set-output name=tasks::true"
           [ -z "$images" ] || echo "::set-output name=images::true"
-          [ -z "$images" -a -z "$tasks" ] || echo "::set-output name=any::true"
-
-      - name: Set up secrets
-        if: steps.containers_changed.outputs.any
-        run: |
-          echo '${{ secrets.COCKPITUOUS_TOKEN }}' > ~/.config/github-token
 
       - name: Build tasks container if it changed
         if: steps.containers_changed.outputs.tasks
@@ -57,10 +51,8 @@ jobs:
         if: steps.containers_changed.outputs.images
         run: sudo make images-container
 
-      - name: Test local deployment if any container changed
-        if: steps.containers_changed.outputs.any
+      - name: Test local deployment
         run: |
+          echo '${{ secrets.COCKPITUOUS_TOKEN }}' > ~/.config/github-token
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
-
-          # Start the amqp/tasks pod, supply working task secrets, and run unit test on our own PR
           sudo tasks/run-local.sh -p $PRN -t ~/.config/github-token
