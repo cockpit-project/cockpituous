@@ -140,9 +140,15 @@ podman logs -f cockpituous-tasks &
 podman exec -i cockpituous-tasks timeout 30 sh -ec '
     # wait until tasks container has set up itself and checked out bots
     until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
-    cd bots
+
+    for retry in $(seq 10); do
+        echo "waiting for image server to initialize"
+        curl --silent --fail --head --cacert $COCKPIT_CA_PEM https://cockpituous-images:8443 && break
+        sleep 5
+    done
 
     # test image-upload
+    cd bots
     echo world  > /cache/images/hello.txt
     ./image-upload --store https://cockpituous-images:8443 --state hello.txt
     '
