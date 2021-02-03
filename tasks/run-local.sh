@@ -129,6 +129,7 @@ podman run -d -it --name cockpituous-tasks --pod=cockpituous \
     -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
     -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
     -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
+    -e COCKPIT_TESTMAP_INJECT=master/unit-tests \
     -e AMQP_SERVER=localhost:5671 \
     -e TEST_PUBLISH=sink-local \
     quay.io/cockpit/tasks:${TASKS_TAG:-latest}
@@ -169,7 +170,7 @@ if [ -n "$PR" ]; then
 
     podman exec -i cockpituous-tasks sh -exc "
     cd bots;
-    ./tests-trigger -f --repo $PR_REPO $PR unit-tests;
+    ./tests-scan -p $PR --amqp 'localhost:5671' --repo $PR_REPO;
     for retry in \$(seq 10); do
         ./tests-scan --repo $PR_REPO -vd;
         OUT=\$(./tests-scan --repo $PR_REPO -p $PR -dv);
@@ -177,7 +178,6 @@ if [ -n "$PR" ]; then
         echo waiting until the status is visible;
         sleep 10;
     done;
-    ./tests-scan -p $PR --amqp 'localhost:5671' --repo $PR_REPO;
     ./inspect-queue;"
 
     # wait until the unit-test got run and published
