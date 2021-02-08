@@ -17,6 +17,8 @@ mkdir -p $SECRETS $CACHE/images
 chown -R 1111:1111 $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
 
+systemctl stop cockpit-images.service || true
+
 cat <<EOF > /etc/systemd/system/cockpit-images.service
 [Unit]
 Description=Cockpit Images
