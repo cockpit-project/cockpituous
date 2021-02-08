@@ -12,8 +12,8 @@
         image: "{{ aws_rhel_ami }}"
         instance_type: t2.micro
         monitoring: true
-        # persistent network device with stable internal IP 10.29.163.169
-        network_interfaces: eni-0c3e7a5a5757c2d46
+        # persistent network device with stable internal IP 10.29.162.239
+        network_interfaces: eni-0e1ad6012dbbfa1d9
         wait: true
         instance_tags:
           Name: cockpit-images
@@ -34,7 +34,7 @@
       ec2_vol:
         instance: "{{ item.id }}"
         name: cockpit-images
-        region: "{{ region }}"
+        region: "{{ aws_region }}"
         volume_size: 150
         tags:
           ServiceOwner: FrontDoorSST
