@@ -49,7 +49,7 @@ Persistent resources
  * vol-0b18cf9e00b8e8646, aka "cockpit-images": cockpit images cache volume, to be used in image server
  * eni-0c3e7a5a5757c2d46, aka "cockpit-images": network device with stable internal IP 10.29.163.169
  * eni-02f3ebd876eded015, aka "cockpit-tasks": network device with stable internal IP 10.29.163.166
- * eni-0fece6d6c83cd9eca, aka "cockpit-public-sink": network device with stable external IP 54.89.13.31 (DNS: logs.cockpit.org)
+ * eni-0fece6d6c83cd9eca, aka "cockpit-public-sink": network device with stable external IP 54.89.13.31 (DNS: logs.cockpit-project.org)
 
 Image server setup
 ------------------
