@@ -3,10 +3,16 @@
   gather_facts: false
 
   tasks:
+  - name: "Upload images service installation script"
+    copy:
+      src: "{{ playbook_dir }}/../../images/install-service"
+      dest: /run/install-service
+      mode: preserve
+
   - name: "Set up systemd service for cockpit/images"
     # use standard https port instead of 8493
     shell: |
-      curl https://raw.githubusercontent.com/cockpit-project/cockpituous/master/images/install-service | sed 's/8493/443/' | sh -
+      sed 's/8493/443/' /run/install-service | sh -
     args:
       warn: false
 
@@ -49,8 +55,8 @@
       group: sink
 
   - name: "Install sink code"
-    get_url:
-      url: https://raw.githubusercontent.com/cockpit-project/cockpituous/master/sink/sink
+    copy:
+      src: "{{ playbook_dir }}/../../sink/sink"
       dest: ~sink/sink
       owner: sink
       group: sink
