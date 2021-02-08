@@ -47,7 +47,7 @@ Persistent resources
 --------------------
 
  * vol-0b18cf9e00b8e8646, aka "cockpit-images": cockpit images cache volume, to be used in image server
- * eni-0e1ad6012dbbfa1d9, aka "cockpit-images": network device with stable internal IP 10.29.162.239
+ * eni-0e1ad6012dbbfa1d9, aka "cockpit-images": network device with stable internal IP 10.29.162.239 (DNS: internal-images.cockpit-project.org)
  * eni-0fece6d6c83cd9eca, aka "cockpit-public-sink": network device with stable external IP 54.89.13.31 (DNS: logs.cockpit-project.org)
 
 Image server setup
@@ -66,7 +66,8 @@ Image server setup
  * Set up an ssh configuration for convenience:
 
        Host awsimages
-          Hostname 10.29.162.239
+          Hostname internal-images.cockpit-project.org
+          User ec2-user
 
 Tasks runner setup
 ------------------

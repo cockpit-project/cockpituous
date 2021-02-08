@@ -12,7 +12,7 @@
         image: "{{ aws_rhel_ami }}"
         instance_type: t2.micro
         monitoring: true
-        # persistent network device with stable internal IP 10.29.162.239
+        # persistent network device with stable internal IP 10.29.162.239 (DNS internal-images.cockpit-project.org)
         network_interfaces: eni-0e1ad6012dbbfa1d9
         wait: true
         instance_tags:
