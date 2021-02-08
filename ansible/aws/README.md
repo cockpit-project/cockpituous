@@ -97,6 +97,7 @@ Public log sink/server setup
        ansible-playbook -i inventory aws/setup-host.yml
        ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/sink.yml
+       ansible-playbook -i inventory aws/sink-ssh-gateway.yml
 
  * Set up an ssh configuration for convenience:
 
