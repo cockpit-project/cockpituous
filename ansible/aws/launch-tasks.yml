@@ -12,8 +12,8 @@
         image: "{{ aws_rhel_ami }}"
         instance_type: c5.metal
         monitoring: true
-        # persistent network device with stable internal IP 10.29.163.166
-        network_interfaces: eni-02f3ebd876eded015
+        # ARR-US-East-1 (Red Hat internal VPN) InternalB
+        vpc_subnet_id: subnet-05dd25fba5582bb6a
         volumes:
           - device_name: /dev/sda1
             volume_size: 200
