@@ -202,9 +202,11 @@ if [ -n "$PR" ]; then
     echo "$LOG" | grep -q 'Running on: `cockpituous`'
     echo "$LOG" | grep -q '^OK'
     echo "$LOG" | grep -q 'Test run finished, return code: 0'
-    # validate test attachment
-    BOGUS_LOG=$(curl $RESULTS_DIR_URL/bogus.log)
-    echo "$BOGUS_LOG" | grep -q 'heisenberg compensator'
+    # validate test attachment if we ran cockpituous' own tests
+    if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
+        BOGUS_LOG=$(curl $RESULTS_DIR_URL/bogus.log)
+        echo "$BOGUS_LOG" | grep -q 'heisenberg compensator'
+    fi
 else
     # clean up dummy token, so that image-prune does not try to use it
     rm "$SECRETS"/webhook/.config--github-token
