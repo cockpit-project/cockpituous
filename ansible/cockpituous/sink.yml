@@ -74,8 +74,9 @@
     copy:
       dest: ~sink/.config/sink
       mode: 0644
+      # don't use ansible_host here, we want to use our proper DNS name
       content: |
         [Sink]
-        Url: https://{{ ansible_host }}/logs/%(identifier)s/
+        Url: https://logs.cockpit-project.org/logs/%(identifier)s/
         Logs: /var/cache/cockpit-tasks/images/logs
         PruneInterval: 0.5
