@@ -32,20 +32,10 @@ echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-cre
 echo "Starting testing"
 
 function update_bots() {
-    if [ ! -d "$BOTS_DIR" ]; then
-        git clone "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
-    elif [ -f "$BOTS_DIR/.git/shallow" ]; then
-        # if we ended up with a shallow clone from a previous test, start from
-        # scratch, as this is brittle to clean up afterwards
-        echo "cockpit-tasks: Shallow commits exist in $BOTS_DIR, cannot reset; re-cloning"
-        rm -rf "$BOTS_DIR"
-        git clone "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
+    if [ -d "$BOTS_DIR" ]; then
+        git -C "$BOTS_DIR" pull --rebase
     else
-        # avoid re-cloning in most cases to save GitHub bandwidth
-        git -C "$BOTS_DIR" fetch origin
-        git -C "$BOTS_DIR" reset --hard
-        git -C "$BOTS_DIR" clean -dxff
-        git -C "$BOTS_DIR" checkout "origin/$COCKPIT_BOTS_BRANCH"
+        git clone -b "$COCKPIT_BOTS_BRANCH" "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
     fi
 }
 
