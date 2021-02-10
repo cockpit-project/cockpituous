@@ -35,7 +35,7 @@ function update_bots() {
     if [ -d "$BOTS_DIR" ]; then
         git -C "$BOTS_DIR" pull --rebase
     else
-        git clone -b "$COCKPIT_BOTS_BRANCH" "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
+        git clone --quiet -b "$COCKPIT_BOTS_BRANCH" "$COCKPIT_BOTS_REPO" "$BOTS_DIR"
     fi
 }
 
