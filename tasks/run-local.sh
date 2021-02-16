@@ -178,7 +178,7 @@ if [ -n "$PR" ]; then
         echo waiting until the status is visible;
         sleep 10;
     done;
-    ./inspect-queue;"
+    ./inspect-queue --amqp localhost:5671;"
 
     # wait until the unit-test got run and published
     for retry in $(seq 60); do
