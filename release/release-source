@@ -3,13 +3,7 @@
 # release-source
 #
 # A script that takes a git repo in the current working directory and builds
-# a tarball from a tag plus patches for each commit up until
-# the current HEAD, plus another commit/patch for the corresponding build
-# system changes (autotools/webpack) from the previous commits.
-#
-# The output patchset is in git patch format with the intent that it can
-# contain binary patches. The resulting patch file names are placed in the
-# current directory and their names are printed on stdout.
+# a tarball from a tag.
 #
 # $ git tag -as 122
 # $ release-source -o source-output
@@ -99,21 +93,16 @@ output_tarballs()
 }
 
 
-# Use the specified patches to build an input git repo
-# Add another commit with build system changes
+# Build release tarball
 prepare()
 {
-    local workdir stagedir repodir commit archive archives author date name exist
+    local repodir commit archive archives author date name exist
 
-    workdir=$(mktemp --directory source.XXXXXX)
-    repodir=$workdir/repo
-    stagedir=$workdir/stage
-
+    repodir=$(mktemp --directory source.XXXXXX)
     mkdir -p "$SOURCE"
 
     # Clone the repo into our repodir
     git clone -q . $repodir
-    head=$(git -C $repodir rev-parse HEAD)
     git -C $repodir checkout -q --detach $TAG
 
     if [ -x ./autogen.sh ] || [ -x ./configure ]; then
@@ -122,13 +111,13 @@ prepare()
         is_autotools=
     fi
 
-    trace "Creating first tarball"
+    trace "Creating tarball"
 
     if [ -n "$is_autotools" ]; then
         # autotools based projects
         autogen_or_configure $repodir
         $MAKE -C $repodir/_build dist
-        archive="$(output_tarballs $repodir/_build $SOURCE)"
+        output_tarballs $repodir/_build $SOURCE
     else
         # plain Makefile projects
         $MAKE -C $repodir dist || $MAKE -C $repodir dist-gzip
@@ -140,59 +129,7 @@ prepare()
         find "$SOURCE" -maxdepth 1 -name "*-*.tar.*" -delete
         cp "$archive" "$SOURCE"
     fi
-
-    trace "Committing first tarball"
-    mkdir $stagedir
-    git -C $stagedir init -q
-    git -C $stagedir config core.autocrlf false
-    git -C $stagedir config core.safecrlf false
-    git -C $stagedir config gc.auto 0
-
-    # Mark all sorts of extra files as binary for diffing purposes
-    printf "*.min.* binary\n*.map binary\n/dist/** binary\n" > $stagedir/.git/info/attributes
-
-    # HACK: Exclude node_modules/ which was in cockpit tarballs
-    tar -C $stagedir --exclude="node_modules" \
-        --strip-components=1 -xf "$archive"
-    git -C $stagedir add -f .
-    git -C $stagedir commit -q --message="initial"
-    git -C $stagedir tag -a initial --message="initial"
-
-    # If there are commits since $TAG, apply and generate patch for build-system changes
-    # This is only supported for autotools projects, as plain Makefile ones often don't support out-of-tree builds
-    if [ -n "$is_autotools" ] && [ "$(git -C $repodir rev-parse HEAD)" != "$head" ]; then
-        trace "Committing patches"
-        git format-patch --stdout $TAG.. | git -C $stagedir am -
-
-        git -C $repodir checkout -q --detach "$head"
-        trace "Cleaning out build and rebuilding with commits on top of $TAG"
-
-        rm -rf $repodir/_build
-        autogen_or_configure $repodir
-        $MAKE -C $repodir/_build dist-gzip distdir=release-patched
-
-        trace "Committing build system generated changes"
-
-        # Now extract the tarball into our stage directory and commit it
-        # HACK: Exclude node_modules/ which was in cockpit tarballs
-        tar -C $stagedir --exclude="node_modules" --exclude=".tarball" \
-            --strip-components=1 -xzf - < $repodir/_build/release-patched.tar.gz
-        git -C $stagedir add -f .
-
-        if ! git -C $stagedir diff-index --exit-code --quiet HEAD --; then
-            git -C $stagedir commit --author="Cockpitous <cockpituous@cockpit-project.org>" \
-                -m "Build system generated changes from patches"
-        fi
-
-        trace "Extracting tarball expanded patches"
-
-        # Extract patches for everything that was staged and put in right place
-        find "$SOURCE" -maxdepth 1 -name '*.patch' -delete
-        git -C $stagedir format-patch --output-directory=$SOURCE initial..HEAD^
-        git -C $stagedir format-patch --output-directory=$SOURCE --start-number=999 HEAD^..
-    fi
-
-    rm -rf $workdir
+    rm -rf $repodir
 }
 
 while getopts "f:p:qt:vx" opt; do
