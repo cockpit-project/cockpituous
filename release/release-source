@@ -56,19 +56,6 @@ message()
     echo "release-source: $@" >&2
 }
 
-# Runs autogen.sh or configure in the source directory
-# with a $(builddir) subdirectory of '_build'
-#  $1: The source directory
-autogen_or_configure()
-{
-    mkdir -p $1/_build
-    if [ -x $1/autogen.sh ]; then
-        ( cd $1 && NOCONFIGURE=1 ./autogen.sh && cd _build && ../configure )
-    else
-        ( cd $1/_build && ../configure )
-    fi
-}
-
 # Copies all tarballs from build into source directory, clears
 # all previously existing tarballs, and prints name of first tarball
 #  $1: The make build directory
@@ -105,19 +92,12 @@ prepare()
     git clone -q . $repodir
     git -C $repodir checkout -q --detach $TAG
 
-    if [ -x ./autogen.sh ] || [ -x ./configure ]; then
-        is_autotools=1
-    else
-        is_autotools=
-    fi
-
     trace "Creating tarball"
 
-    if [ -n "$is_autotools" ]; then
+    if [ -x ./autogen.sh ]; then
         # autotools based projects
-        autogen_or_configure $repodir
-        $MAKE -C $repodir/_build dist
-        output_tarballs $repodir/_build $SOURCE
+        (cd $repodir; ./autogen.sh && $MAKE dist)
+        output_tarballs $repodir $SOURCE
     else
         # plain Makefile projects
         $MAKE -C $repodir dist || $MAKE -C $repodir dist-gzip
