@@ -75,28 +75,6 @@ autogen_or_configure()
     fi
 }
 
-# Prints out an existing tarball archive for the given version
-#  $1: The tarball version
-#  $2: The directory containing tarballs
-#  $3: The directory containing the temporary repository
-find_and_extract_tarballs()
-{
-    local archive name
-
-    archive=
-    find "$2" -maxdepth 1 -name "*-$1.tar.*" | LC_ALL=C sort | while read name; do
-
-        tar -xf "$name" -C "$3" --strip-components=1
-	git -C "$3" reset --quiet --hard HEAD
-
-        # The first tarball is the main one
-        if [ -z "$archive" ]; then
-            archive="$name"
-            echo "$name"
-	fi
-    done
-}
-
 # Copies all tarballs from build into source directory, clears
 # all previously existing tarballs, and prints name of first tarball
 #  $1: The make build directory
@@ -130,7 +108,6 @@ prepare()
     workdir=$(mktemp --directory source.XXXXXX)
     repodir=$workdir/repo
     stagedir=$workdir/stage
-    archive=""
 
     mkdir -p "$SOURCE"
 
@@ -139,35 +116,29 @@ prepare()
     head=$(git -C $repodir rev-parse HEAD)
     git -C $repodir checkout -q --detach $TAG
 
-    # Find archives in the source directory
-    archive="$(find_and_extract_tarballs $TAG $SOURCE $repodir)"
-
     if [ -x ./autogen.sh ] || [ -x ./configure ]; then
         is_autotools=1
     else
         is_autotools=
     fi
 
-    # If it is missing rebuild the tarball from latest tag and copy into place
-    if [ -z "$archive" ]; then
-        trace "Creating first tarball"
+    trace "Creating first tarball"
 
-        if [ -n "$is_autotools" ]; then
-            # autotools based projects
-            autogen_or_configure $repodir
-            $MAKE -C $repodir/_build dist
-            archive="$(output_tarballs $repodir/_build $SOURCE)"
-        else
-            # plain Makefile projects
-            $MAKE -C $repodir dist || $MAKE -C $repodir dist-gzip
-            archive=$(find $repodir -maxdepth 1 -name "*-${TAG}.tar.*")
-            if [ "$(echo "$archive" | wc -l)" != 1 ]; then
-                echo "ERROR: Expecting exactly one *-${TAG}.tar.*" >&2
-                exit 1
-            fi
-            find "$SOURCE" -maxdepth 1 -name "*-*.tar.*" -delete
-            cp "$archive" "$SOURCE"
+    if [ -n "$is_autotools" ]; then
+        # autotools based projects
+        autogen_or_configure $repodir
+        $MAKE -C $repodir/_build dist
+        archive="$(output_tarballs $repodir/_build $SOURCE)"
+    else
+        # plain Makefile projects
+        $MAKE -C $repodir dist || $MAKE -C $repodir dist-gzip
+        archive=$(find $repodir -maxdepth 1 -name "*-${TAG}.tar.*")
+        if [ "$(echo "$archive" | wc -l)" != 1 ]; then
+            echo "ERROR: Expecting exactly one *-${TAG}.tar.*" >&2
+            exit 1
         fi
+        find "$SOURCE" -maxdepth 1 -name "*-*.tar.*" -delete
+        cp "$archive" "$SOURCE"
     fi
 
     trace "Committing first tarball"
