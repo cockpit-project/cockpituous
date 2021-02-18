@@ -1,11 +1,23 @@
-FROM fedora:latest
+FROM fedora:latest AS builder
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
-RUN dnf -y update && \
-    dnf -y install nginx openssh-server /usr/bin/python && \
-    dnf clean all && \
-    mkdir -p /home/user
+# avoid unnecessary stuff in the container; systemd is a protected package, so apply some extra force
+RUN source /etc/os-release && \
+    dnf install -y --releasever=$VERSION_ID --setopt=install_weak_deps=False --installroot=/build \
+        coreutils-single \
+        glibc-minimal-langpack \
+        nginx \
+        openssh-server \
+        tar \
+        /usr/bin/python3 && \
+    rpm --root=/build --verbose --erase --nodeps systemd && \
+    dnf remove -y --installroot=/build systemd-networkd device-mapper dbus-broker cryptsetup && \
+    rm -r /build/var/cache/dnf /build/var/lib/dnf /build/var/lib/rpm*
 
+FROM scratch
+COPY --from=builder /build /
+
+RUN mkdir -p /home/user
 # can't use ../sink/sink with docker build
 ADD https://raw.githubusercontent.com/cockpit-project/cockpituous/master/sink/sink /home/user/sink
 
