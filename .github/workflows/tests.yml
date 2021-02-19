@@ -17,7 +17,6 @@ jobs:
 
   tasks:
     runs-on: ubuntu-20.04
-    timeout-minutes: 30
     steps:
       - name: Clone repository
         uses: actions/checkout@v2
@@ -31,28 +30,11 @@ jobs:
           git config user.email github-actions@github.com
           git rebase origin/master
 
-      - name: Check which containers changed
-        id: containers_changed
-        run: |
-          tasks=$(git diff --name-only origin/master..HEAD -- tasks/ | grep -v run-local.sh || true)
-          images=$(git diff --name-only origin/master..HEAD -- images/)
-          # print for debugging
-          echo "tasks: $tasks"
-          echo "images: $images"
-          [ -z "$tasks" ] || echo "::set-output name=tasks::true"
-          [ -z "$images" ] || echo "::set-output name=images::true"
-
-      - name: Build tasks container if it changed
-        if: steps.containers_changed.outputs.tasks
-        # Run podman as root, as podman is missing slirp4netns by default, and does not have overlayfs by default
-        run: sudo make tasks-container
-
-      - name: Build images container if it changed
-        if: steps.containers_changed.outputs.images
-        run: sudo make images-container
-
       - name: Test local deployment
         run: |
           echo '${{ secrets.COCKPITUOUS_TOKEN }}' > ~/.config/github-token
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
           sudo tasks/run-local.sh -p $PRN -t ~/.config/github-token
+
+      - uses: mxschmitt/action-tmate@v3
+        if: failure()
