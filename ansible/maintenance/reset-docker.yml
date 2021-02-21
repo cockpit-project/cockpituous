@@ -1,0 +1,19 @@
+---
+# Sometimes docker gets itself into a bad state where containers are bad,
+# undeletable, or starting/stopping them throws weird storage errors. This
+# playbook does a "factory reset". This removes all containers, images,
+# and volumes.
+- hosts: e2e
+  gather_facts: false
+
+  tasks:
+  - name: Reset docker
+    shell: |
+      systemctl stop docker
+      sleep 5
+      docker-storage-setup --reset
+      sleep 5
+      rm -rf /var/lib/docker
+      sleep 5
+      docker-storage-setup
+      systemctl start docker
