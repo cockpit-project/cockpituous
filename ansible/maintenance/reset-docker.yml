@@ -9,11 +9,12 @@
   tasks:
   - name: Reset docker
     shell: |
+      systemctl stop 'cockpit-tasks@*'
+      systemctl stop cockpit-images || true
       systemctl stop docker
-      sleep 5
       docker-storage-setup --reset
-      sleep 5
       rm -rf /var/lib/docker
-      sleep 5
       docker-storage-setup
       systemctl start docker
+      systemctl start --all 'cockpit-tasks@*'
+      systemctl start cockpit-images || true
