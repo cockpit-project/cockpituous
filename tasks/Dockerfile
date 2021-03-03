@@ -1,14 +1,14 @@
 FROM fedora:33
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
-# HACK: chromium 88 crashes with some keyDown commands: https://bugs.chromium.org/p/chromium/issues/detail?id=1170634
+# HACK: chromium-headless 88 crashes with some keyDown commands: https://bugs.chromium.org/p/chromium/issues/detail?id=1170634
+# install full chromium for the time being
 RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
         american-fuzzy-lop \
         byobu \
-        https://kojipkgs.fedoraproject.org//packages/chromium/87.0.4280.141/1.fc33/x86_64/chromium-common-87.0.4280.141-1.fc33.x86_64.rpm \
-        https://kojipkgs.fedoraproject.org//packages/chromium/87.0.4280.141/1.fc33/x86_64/chromium-headless-87.0.4280.141-1.fc33.x86_64.rpm \
+        chromium \
         curl \
         dbus-glib \
         diffstat \
