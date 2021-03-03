@@ -6,7 +6,6 @@ LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
-        american-fuzzy-lop \
         byobu \
         chromium \
         curl \
