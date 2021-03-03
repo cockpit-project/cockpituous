@@ -44,29 +44,20 @@ function slumber() {
     [ -t 0 ] || sleep $(shuf -i ${1:-60-600} -n 1)
 }
 
-work_done=
-
-function run_from_queue() {
-    cd "$BOTS_DIR"
-    if /usr/bin/timeout 12h ./run-queue --amqp "$AMQP_SERVER"; then
-        work_done=1
-        rm -rf "${TEST_DATA:-/}"/tmp/*
-    fi
-}
-
 # on mass deployment, avoid GitHub stampede
 slumber 0-120
 
 # Consume from queue 30 times, then restart
 for i in $(seq 1 30); do
-    work_done=
     update_bots
-    run_from_queue || true
-    # Nothing to do, or failure
-    [ -n "$work_done" ] || slumber
+    cd "$BOTS_DIR"
+
+    # run-queue fails on empty queues; don't poll too often
+    timeout 12h ./run-queue --amqp "$AMQP_SERVER" || slumber
+    # clean up after tests, in particular large qcow overlays
+    rm -rf /tmp/* || true
 done
 
 # Prune old images
 update_bots
-cd "$BOTS_DIR"
 ./image-prune
