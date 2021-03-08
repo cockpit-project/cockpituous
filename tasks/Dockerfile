@@ -34,6 +34,7 @@ RUN dnf -y update && \
         python3 \
         python3-pycodestyle \
         python3-pika \
+        python3-pillow \
         rpm-build \
         rpmdevtools \
         rsync \
