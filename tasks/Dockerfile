@@ -59,13 +59,14 @@ COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work && \
     mkdir -p /usr/local/bin /secrets /cache/images /cache/github && \
-    mkdir -p /work/.config /work/.ssh /work/.cache /work/.rhel && \
+    mkdir -p /work/.config /work/.config/cockpit-dev /work/.ssh /work/.cache /work/.rhel && \
     printf '[user]\n\t\nemail = cockpituous@cockpit-project.org\n\tname = Cockpituous\n[cockpit "bots"]\n\timages-data-dir = /cache/images\n' >/work/.gitconfig && \
     ln -snf /secrets/ssh-config /work/.ssh/config && \
     ln -snf /secrets/image-stores /work/.config/image-stores && \
     ln -snf /secrets/codecov-token /work/.config/codecov-token && \
     ln -snf /secrets/rhel-login /work/.rhel/login && \
     ln -snf /secrets/rhel-password /work/.rhel/pass && \
+    ln -snf /secrets/s3-keys /work/.config/cockpit-dev/s3-keys && \
     ln -snf /secrets/lorax-test-env.sh /work/.config/lorax-test-env && \
     ln -snf /run/secrets/webhook/.config--github-token /work/.config/github-token && \
     chmod g=u /etc/passwd && \
