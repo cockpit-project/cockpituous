@@ -5,7 +5,7 @@ set -eufx
 SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
 INSTANCES=${INSTANCES:-3}
-TMPFS_GB=10
+TMPFS_GB=14
 
 # if the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention;
 # note the *2 as the containers also need actual RAM for themselves
