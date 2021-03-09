@@ -7,6 +7,8 @@ CACHE=/var/cache/cockpit-tasks
 INSTANCES=${INSTANCES:-3}
 TMPFS_GB=14
 
+systemctl stop 'cockpit-tasks@*.service'
+
 # if the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention;
 # note the *2 as the containers also need actual RAM for themselves
 if awk "/MemAvailable:/ { exit (\$2 > ${TMPFS_GB}*1048576*2*${INSTANCES}) ? 0 : 1  }" /proc/meminfo; then
@@ -34,8 +36,6 @@ fi
 mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
-
-systemctl stop 'cockpit-tasks@*.service'
 
 cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 [Unit]
