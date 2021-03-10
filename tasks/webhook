@@ -55,7 +55,7 @@ def setup():
     os.umask(old_umask)
 
     ensure_bots_checkout()
-    from task import testmap
+    from lib import testmap
     for project in testmap.projects():
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
                                AMQP_SERVER, '--repo', project],
