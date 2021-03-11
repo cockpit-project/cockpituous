@@ -95,8 +95,8 @@ fi
 podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
     --publish $IMAGE_PORT:8080 \
     --tmpfs /var/lib/rabbitmq \
-    -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro \
-    -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
+    -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
     docker.io/rabbitmq:3-management
 
 # start image+sink in the background; see sink/sink-centosci.yaml
@@ -111,9 +111,9 @@ PruneInterval: 0.5
 EOF
 podman run -d --name cockpituous-images --pod=cockpituous --user user \
     -v "$IMAGES":/cache/images:z \
-    -v "$SINK_CONFIG":/run/config/sink:ro \
-    -v "$SECRETS"/tasks:/secrets:ro \
-    -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    -v "$SINK_CONFIG":/run/config/sink:ro,z \
+    -v "$SECRETS"/tasks:/secrets:ro,z \
+    -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
     quay.io/cockpit/images:${IMAGES_TAG:-latest} \
     sh -ec '/usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"'
 
@@ -126,8 +126,8 @@ done
 
 # Run tasks container in the backgroud
 podman run -d -it --name cockpituous-tasks --pod=cockpituous \
-    -v "$SECRETS"/tasks:/secrets:ro \
-    -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
+    -v "$SECRETS"/tasks:/secrets:ro,z \
+    -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
     -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
     -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
     -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
