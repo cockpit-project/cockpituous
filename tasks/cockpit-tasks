@@ -41,7 +41,11 @@ function update_bots() {
 
 # wait between 1 and 10 minutes, but not in an interactive terminal (annoying for debugging)
 function slumber() {
-    [ -t 0 ] || sleep $(shuf -i ${1:-60-600} -n 1)
+    if [ -t 0 ]; then
+        sleep 10
+    else
+        sleep $(shuf -i ${1:-60-600} -n 1)
+    fi
 }
 
 # on mass deployment, avoid GitHub stampede
