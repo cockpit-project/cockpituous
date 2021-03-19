@@ -203,10 +203,17 @@ prepare()
             echo "/$file" >> $WORKDIR/.gitignore
         done
 
+        # until FMF has a way to determine the ref dynamically: https://github.com/psss/tmt/issues/585
+        trace "Updating FMF plan refs"
+        if files=$(git -C $WORKDIR grep -l "ref.*$oldver" plans/*.fmf); then
+            (cd $WORKDIR; sed -i "/ref:/ s/\b${oldver}\b/${version}/" "$files")
+            ADD_FMF=plans
+        fi
+
         trace "Committing changes"
 
         # Add the the sources file and spec file
-        git -C $WORKDIR add sources $PACKAGE.spec .gitignore
+        git -C $WORKDIR add sources $PACKAGE.spec .gitignore ${ADD_FMF:-}
 
         # Commit all of that with an appropriate message
         (
