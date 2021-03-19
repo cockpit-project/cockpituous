@@ -72,6 +72,10 @@ else
     echo 0123abc > "$SECRETS"/webhook/.config--github-token
     echo 'user:$apr1$FzL9bivD$AzG7R8RNjuR.9DQRUrV.k.' > "$SECRETS"/tasks/htpasswd
 
+    # dummy S3 keys in OpenShift tasks/build-secrets encoding, for testing their setup
+    echo 'id12 geheim' > tasks/s3-keys--r1.cloud.com
+    echo 'id34 shhht' > tasks/s3-keys--r2.cloud.com
+
      ssh-keygen -f tasks/id_rsa -P ''
      cat <<EOF > tasks/ssh-config
 Host sink-local
@@ -156,6 +160,12 @@ podman exec -i cockpituous-tasks timeout 30 sh -ec '
     ./image-upload --store https://cockpituous-images:8443 --state hello.txt
     '
 test "$(cat "$IMAGES/hello.txt")" = "world"
+
+# validate OpenShift s3 keys secrets setup
+R1=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r1.cloud.com')
+test "$R1" = "id12 geheim"
+R2=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r2.cloud.com')
+test "$R2" = "id34 shhht"
 
 # validate image downloading
 podman exec -i cockpituous-tasks sh -exc '

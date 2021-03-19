@@ -21,6 +21,16 @@ if [ -r /secrets/npm-registry.crt ]; then
     export NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
 fi
 
+# set up S3 keys for OpenShift secrets volume
+if [ ! -d /secrets/s3-keys ]; then
+    # then our container symlink will point into the void, replace it with a directory and set up all files that we can find
+    rm ~/.config/cockpit-dev/s3-keys
+    mkdir ~/.config/cockpit-dev/s3-keys
+    find /secrets/ -name 's3-keys--*' | while read f; do
+        ln -s "$f" ~/.config/cockpit-dev/s3-keys/"${f#*--}"
+    done
+fi
+
 # let's just do our work in the current directory
 WORKDIR="$PWD"
 BOTS_DIR="$WORKDIR"/bots
