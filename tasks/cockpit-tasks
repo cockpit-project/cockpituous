@@ -61,8 +61,12 @@ function slumber() {
 # on mass deployment, avoid GitHub stampede
 slumber 0-120
 
-# Consume from queue 30 times, then restart
+# Consume from queue 30 times, then restart; listen to SIGTERM for orderly shutdown
+shutdown=
+trap "echo 'received SIGTERM, stopping main loop'; shutdown=1" TERM
+
 for i in $(seq 1 30); do
+    [ -z "$shutdown" ] || break
     update_bots
     cd "$BOTS_DIR"
 
