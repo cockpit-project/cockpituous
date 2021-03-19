@@ -73,8 +73,11 @@ else
     echo 'user:$apr1$FzL9bivD$AzG7R8RNjuR.9DQRUrV.k.' > "$SECRETS"/tasks/htpasswd
 
     # dummy S3 keys in OpenShift tasks/build-secrets encoding, for testing their setup
-    echo 'id12 geheim' > tasks/s3-keys--r1.cloud.com
-    echo 'id34 shhht' > tasks/s3-keys--r2.cloud.com
+    mkdir tasks/..data
+    echo 'id12 geheim' > tasks/..data/s3-keys--r1.cloud.com
+    echo 'id34 shhht' > tasks/..data/s3-keys--r2.cloud.com
+    ln -s ..data/s3-keys--r1.cloud.com tasks/s3-keys--r1.cloud.com
+    ln -s ..data/s3-keys--r2.cloud.com tasks/s3-keys--r2.cloud.com
 
      ssh-keygen -f tasks/id_rsa -P ''
      cat <<EOF > tasks/ssh-config
