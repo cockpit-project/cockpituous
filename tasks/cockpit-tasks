@@ -26,7 +26,8 @@ if [ ! -d /secrets/s3-keys ]; then
     # then our container symlink will point into the void, replace it with a directory and set up all files that we can find
     rm ~/.config/cockpit-dev/s3-keys
     mkdir ~/.config/cockpit-dev/s3-keys
-    find /secrets/ -name 's3-keys--*' | while read f; do
+    for f in /secrets/s3-keys--*; do
+        [ -e "$f" ] || continue # non-matching glob
         ln -s "$f" ~/.config/cockpit-dev/s3-keys/"${f#*--}"
     done
 fi
