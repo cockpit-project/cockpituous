@@ -224,5 +224,8 @@ else
     rm "$SECRETS"/webhook/.config--github-token
 fi
 
-# bring logs -f to the foreground; press Control-C or let the "30 polls" iteration finish
+# tell the tasks container iteration that we are done
+podman exec cockpituous-tasks kill -TERM 1
+
+# bring logs -f to the foreground
 wait
