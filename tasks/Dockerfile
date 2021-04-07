@@ -16,6 +16,7 @@ RUN dnf -y update && \
         fpaste \
         gcc-c++ \
         git \
+        git-lfs \
         gnupg \
         intltool \
         jq \
