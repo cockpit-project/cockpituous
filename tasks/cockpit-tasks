@@ -80,3 +80,8 @@ done
 # Prune old images
 update_bots
 ./image-prune
+
+# Clean up S3
+for region in eu-central-1 us-east-1; do
+    ./image-prune --s3 "https://cockpit-images.${region}.linodeobjects.com/" || true
+done
