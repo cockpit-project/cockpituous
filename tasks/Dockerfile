@@ -3,6 +3,7 @@ LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 # HACK: chromium-headless 88 crashes with some keyDown commands: https://bugs.chromium.org/p/chromium/issues/detail?id=1170634
 # install full chromium for the time being
+# HACK: Install selinux-policy manually as it will be pulled in through dependencies only once https://github.com/cockpit-project/cockpit/pull/15707 lands
 RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
@@ -49,6 +50,7 @@ RUN dnf -y update && \
     curl -s -o /tmp/cockpit.spec https://raw.githubusercontent.com/cockpit-project/cockpit/master/tools/cockpit.spec && \
     sed -i 's/%{npm-version:.*}/0/' /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
+    dnf -y install selinux-policy selinux-policy-devel && \
     dnf clean all
 
 # Install nightly firefox, as neither the betas nor Fedora distro builds have the remote debugger
