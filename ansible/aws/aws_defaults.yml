@@ -1,5 +1,5 @@
 ---
 aws_region: us-east-1
 # current RHEL 8
-aws_rhel_ami: ami-098f16afa9edf40be
+aws_rhel_ami: ami-07eeb4db5f7e5a8fb
 aws_key_name: "cockpit-{{ lookup('env', 'USER') }}"
