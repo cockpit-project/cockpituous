@@ -1,0 +1,93 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - kind: Deployment
+    apiVersion: apps/v1
+    metadata:
+      name: metrics
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          infra: metrics
+      template:
+        metadata:
+          labels:
+            infra: metrics
+        spec:
+          containers:
+          - name: prometheus
+            image: quay.io/prometheus/prometheus:latest
+            ports:
+            - containerPort: 9090
+              protocol: TCP
+              name: prom
+            volumeMounts:
+              - name: prometheus-config
+                mountPath: /etc/prometheus/
+                readOnly: true
+              - name: prometheus-db
+                mountPath: /prometheus
+
+          volumes:
+            - name: prometheus-config
+              configMap:
+                name: prometheus-config
+            - name: prometheus-db
+              # from ./prometheus-claim.yaml
+              persistentVolumeClaim:
+                claimName: prometheus-db
+
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: prometheus-config
+    data:
+      prometheus.yml: |
+        global:
+          scrape_interval: 15m
+          scrape_timeout: 30s
+          evaluation_interval: 15m
+        alerting:
+          alertmanagers:
+          - static_configs:
+            - targets: []
+            scheme: http
+            timeout: 10s
+            api_version: v1
+        scrape_configs:
+        - job_name: ci
+          honor_timestamps: true
+          metrics_path: /prometheus
+          scheme: http
+          static_configs:
+          - targets: ['sink-http.frontdoor.svc.cluster.local:8080']
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: prometheus
+    spec:
+      clusterIP: None
+      selector:
+        infra: metrics
+      ports:
+      - name: prom
+        port: 9090
+        targetPort: 9090
+        protocol: TCP
+
+# don't deply this to production! prometheus has no authentication at all; only for quick testing
+#  - kind: Route
+#    apiVersion: route.openshift.io/v1
+#    metadata:
+#      name: prometheus-https
+#    spec:
+#      to:
+#        kind: Service
+#        name: prometheus
+#      port:
+#        targetPort: 9090
+#      tls:
+#        termination: edge
