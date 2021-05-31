@@ -31,7 +31,6 @@ images-shell:
 images-container:
 	$(DOCKER) build -t quay.io/cockpit/images:$(TAG) images
 	$(DOCKER) tag quay.io/cockpit/images:$(TAG) quay.io/cockpit/images:latest
-	$(DOCKER) tag quay.io/cockpit/images:$(TAG) quay.io/cockpit/images:latest
 
 images-push:
 	./push-container quay.io/cockpit/images
@@ -41,7 +40,6 @@ release-shell:
 
 release-container:
 	$(DOCKER) build -t ghcr.io/cockpit-project/release:$(TAG) release
-	$(DOCKER) tag ghcr.io/cockpit-project/release:$(TAG) ghcr.io/cockpit-project/release:latest
 	$(DOCKER) tag ghcr.io/cockpit-project/release:$(TAG) ghcr.io/cockpit-project/release:latest
 
 release-push:
@@ -59,7 +57,6 @@ tasks-shell:
 
 tasks-container:
 	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks
-	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
 	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
 
 tasks-push:
