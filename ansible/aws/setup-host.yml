@@ -13,6 +13,6 @@
     yum:
       name:
         - podman
-        - git
+        - git-core
         - python3
       state: latest
