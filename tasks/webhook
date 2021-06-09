@@ -48,6 +48,8 @@ def setup():
         if f.startswith('..'):
             continue  # secrets volume internal files
         src = os.path.join(WEBHOOK_SECRETS, f)
+        if os.path.isdir(src):
+            continue  # happens with real directory instead of k8s secrets volumes
         dest = os.path.join(HOME_DIR, f.replace('--', '/'))
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         shutil.copyfile(src, dest)
