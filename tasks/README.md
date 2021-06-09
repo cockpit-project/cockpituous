@@ -187,7 +187,7 @@ for more information.
 ## Set up bot as collaborator
 
  * On your project's "Settings → Manage Access" page, invite the [cockpituous user](https://github.com/cockpituous) as a collaborator.
- * Once you see the "Pending invite", in the list, the clipboard symbol copies the corresponding `/invitations` URL to the clipboard. Send that to Martin Pitt (`pitti` in `#cockpit` on FreeNode IRC) or Marius Vollmer (`mvollmer` on IRC), who will log into GitHub as `cockpituous` user and accept the invite.
+ * Once you see the "Pending invite", in the list, the clipboard symbol copies the corresponding `/invitations` URL to the clipboard. Send that to Martin Pitt (`pitti` in `#cockpit` on [libera.chat IRC](https://libera.chat/)) or Marius Vollmer (`mvollmer` on IRC), who will log into GitHub as `cockpituous` user and accept the invite.
 
 ## Set up automatic test triggering
 
