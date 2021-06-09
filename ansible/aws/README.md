@@ -47,6 +47,7 @@ Persistent resources
 --------------------
 
  * eni-0fece6d6c83cd9eca, aka "cockpit-public-sink": network device with stable external IP 54.89.13.31 (DNS: logs.cockpit-project.org)
+ * eni-004f5b4f714f3fda9, aka "cockpit-public-webhook": network device with stable external IP 3.228.126.27 (DNS: ec2-3-228-126-27.compute-1.amazonaws.com)
 
 Tasks runner setup
 ------------------
@@ -87,6 +88,24 @@ Public log sink/server setup
 
 The logs.cockpit-project.org domain (managed by Red Hat, ask sgallagh about it)
 points to the stable IP 54.89.13.31 of that instance.
+
+Webhook setup
+-------------
+Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), but for times when this is down we can spin up a webhook in AWS.
+
+ * Create the instance:
+
+       ansible-playbook -i inventory aws/launch-webhook.yml
+
+ * Run the setup playbooks:
+
+       ansible-playbook -i inventory aws/setup-host.yml
+       ansible-playbook -i inventory maintenance/sync-secrets.yml
+       ansible-playbook -i inventory cockpituous/webhook.yml
+
+Using this deployment requires changing all the GitHub project webhooks to
+https://ec2-3-228-126-27.compute-1.amazonaws.com and changing `DEFAULT_AMQP_SERVER` in
+[bots](https://github.com/cockpit-project/bots/blob/master/task/distributed_queue.py).
 
 Cockpit demo setup
 ------------------
