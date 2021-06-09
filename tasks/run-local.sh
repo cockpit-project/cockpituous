@@ -104,7 +104,7 @@ podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
     --tmpfs /var/lib/rabbitmq \
     -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
     -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
-    docker.io/rabbitmq:3-management
+    quay.io/cockpit/rabbitmq-server
 
 # start image+sink in the background; see sink/sink-centosci.yaml
 mkdir -p "$IMAGES"

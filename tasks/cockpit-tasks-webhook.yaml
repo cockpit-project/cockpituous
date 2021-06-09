@@ -18,7 +18,7 @@ items:
       spec:
         containers:
           - name: amqp
-            image: docker.io/rabbitmq:3-management
+            image: quay.io/cockpit/rabbitmq-server
             ports:
             - containerPort: 5671
               protocol: TCP
