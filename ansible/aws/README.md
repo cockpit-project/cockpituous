@@ -63,7 +63,7 @@ Tasks runner setup
 
  * Enable more runners to fill up the 96 CPUs/188 GiB RAM:
 
-       ansible -i inventory -m shell -a 'systemctl enable --now cockpit-tasks@{5..12}' tag_ServiceComponent_Tasks
+       ansible -i inventory -m shell -a 'systemctl enable --now cockpit-tasks@{5..15}' tag_ServiceComponent_Tasks
 
 Public log sink/server setup
 ----------------------------
