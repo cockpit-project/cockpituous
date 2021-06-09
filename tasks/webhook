@@ -19,7 +19,7 @@ logging.getLogger("pika").propagate = False
 
 HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
-AMQP_SERVER = os.getenv('AMQP_SERVER', 'amqp.frontdoor.svc:5671')
+AMQP_SERVER = None  # initialized in setup()
 COCKPIT_BOTS_REPO = os.getenv('COCKPIT_BOTS_REPO', 'https://github.com/cockpit-project/bots')
 COCKPIT_BOTS_BRANCH = os.getenv('COCKPIT_BOTS_BRANCH', 'master')
 BOTS_CHECKOUT = HOME_DIR + '/bots'
@@ -35,6 +35,7 @@ fi
 
 def setup():
     '''Prepare temporary home directory from secrets'''
+    global AMQP_SERVER
 
     if os.path.isdir(HOME_DIR):
         return
@@ -57,6 +58,9 @@ def setup():
 
     ensure_bots_checkout()
     from lib import testmap
+    from task.distributed_queue import DEFAULT_AMQP_SERVER
+    AMQP_SERVER = os.getenv('AMQP_SERVER', DEFAULT_AMQP_SERVER)
+
     for project in testmap.projects():
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
                                AMQP_SERVER, '--repo', project],
