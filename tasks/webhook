@@ -19,7 +19,6 @@ logging.getLogger("pika").propagate = False
 
 HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
-SINK = os.getenv('RELEASE_SINK', 'sink-local')
 AMQP_SERVER = os.getenv('AMQP_SERVER', 'amqp.frontdoor.svc:5671')
 COCKPIT_BOTS_REPO = os.getenv('COCKPIT_BOTS_REPO', 'https://github.com/cockpit-project/bots')
 COCKPIT_BOTS_BRANCH = os.getenv('COCKPIT_BOTS_BRANCH', 'master')
