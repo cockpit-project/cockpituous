@@ -37,10 +37,6 @@
     - name: Wait for SSH to come up
       delegate_to: "{{ item.private_ip }}"
       wait_for_connection:
-        # metal instances take a long time to initialize
-        delay: 120
-        sleep: 30
-        timeout: 1800
       loop: "{{ ec2.instances }}"
 
 - name: Configure instances

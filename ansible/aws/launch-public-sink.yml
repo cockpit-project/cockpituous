@@ -37,8 +37,6 @@
     - name: Wait for SSH to come up
       delegate_to: "{{ item.private_ip }}"
       wait_for_connection:
-        delay: 60
-        timeout: 320
       loop: "{{ ec2.instances }}"
 
 - name: Configure instances
