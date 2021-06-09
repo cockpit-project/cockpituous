@@ -1,0 +1,45 @@
+---
+- name: Create public webhook EC2 instance
+  hosts: localhost
+  gather_facts: false
+  vars_files: aws_defaults.yml
+
+  tasks:
+    - name: Create EC2 instance
+      ec2:
+        key_name: "{{ aws_key_name }}"
+        region: "{{ aws_region }}"
+        image: "{{ aws_rhel_ami }}"
+        instance_type: t2.small
+        monitoring: true
+        # persistent network device with stable external IP 3.228.126.27
+        network_interfaces: eni-004f5b4f714f3fda9
+        wait: true
+        instance_tags:
+          Name: cockpit-webhook
+          ServiceOwner: FrontDoorSST
+          ServiceName: FrontDoorCI
+          ServiceComponent: Webhook
+          ServicePhase: Prod
+          AppCode: ARR-001
+      register: ec2
+
+    - name: Add new instance to host group
+      add_host:
+        hostname: "{{ item.dns_name }}"
+        groupname: launched
+      loop: "{{ ec2.instances }}"
+
+    - name: Wait for SSH to come up
+      wait_for_connection:
+      delegate_to: "{{ item.dns_name }}"
+      loop: "{{ ec2.instances }}"
+
+- name: Configure instances
+  hosts: launched
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Set host name
+      hostname:
+        name: aws-webhook
