@@ -72,7 +72,7 @@ for i in $(seq 1 30); do
     cd "$BOTS_DIR"
 
     # run-queue fails on empty queues; don't poll too often
-    timeout 12h ./run-queue --amqp "$AMQP_SERVER" || slumber
+    timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || slumber
     # clean up after tests, in particular large qcow overlays
     rm -rf /tmp/* || true
 done

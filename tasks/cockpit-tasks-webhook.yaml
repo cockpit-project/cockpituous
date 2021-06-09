@@ -40,9 +40,6 @@ items:
             - name: webhook-secrets
               mountPath: /run/secrets/webhook
               readOnly: true
-            env:
-            - name: AMQP_SERVER
-              value: 'amqp.frontdoor.svc:5671'
         volumes:
         - name: webhook-secrets
           secret:
