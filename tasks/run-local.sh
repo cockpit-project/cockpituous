@@ -225,6 +225,10 @@ if [ -n "$PR" ]; then
 else
     # clean up dummy token, so that image-prune does not try to use it
     rm "$SECRETS"/webhook/.config--github-token
+
+    # tasks can connect to queue
+    OUT=$(podman exec -i cockpituous-tasks bots/inspect-queue --amqp localhost:5671)
+    echo "$OUT" | grep -q 'queue public is empty'
 fi
 
 # tell the tasks container iteration that we are done
