@@ -126,7 +126,7 @@ podman run -d --name cockpituous-images --pod=cockpituous --user user \
 
 # wait until AMQP initialized
 sleep 5
-until podman exec -i cockpituous-rabbitmq sh -ec 'ls /var/lib/rabbitmq/mnesia/*.pid'; do
+until podman exec -i cockpituous-rabbitmq timeout 5 rabbitmqctl list_queues; do
     echo "waiting for RabbitMQ to come up..."
     sleep 3
 done
