@@ -58,7 +58,6 @@ Tasks runner setup
 
  * Run the setup playbooks:
 
-       ansible-playbook -i inventory aws/setup-host.yml
        ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/tasks-systemd.yml
 
@@ -75,7 +74,6 @@ Public log sink/server setup
 
  * Run the setup playbooks:
 
-       ansible-playbook -i inventory aws/setup-host.yml
        ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/sink.yml
        ansible-playbook -i inventory aws/sink-ssh-gateway.yml
@@ -99,7 +97,6 @@ Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), b
 
  * Run the setup playbooks:
 
-       ansible-playbook -i inventory aws/setup-host.yml
        ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/webhook.yml
 
