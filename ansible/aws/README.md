@@ -56,6 +56,8 @@ Tasks runner setup
 
        ansible-playbook -i inventory aws/launch-tasks.yml
 
+   If you run more than one at a time, set a custom host name with `-e aws2` or similar, so that GitHub test statuses remain useful to identify where a test runs.
+
  * Enable more runners to fill up the 96 CPUs/188 GiB RAM:
 
        ansible -i inventory -m shell -a 'systemctl enable --now cockpit-tasks@{5..15}' tag_ServiceComponent_Tasks

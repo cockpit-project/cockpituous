@@ -56,4 +56,4 @@
   tasks:
     - name: Set useful host name
       hostname:
-        name: aws-tasks
+        name: "{{ hostname | default('aws-tasks') }}"
