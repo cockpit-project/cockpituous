@@ -56,10 +56,6 @@ Tasks runner setup
 
        ansible-playbook -i inventory aws/launch-tasks.yml
 
- * Run the setup playbook:
-
-       ansible-playbook -i inventory cockpituous/tasks-systemd.yml
-
  * Enable more runners to fill up the 96 CPUs/188 GiB RAM:
 
        ansible -i inventory -m shell -a 'systemctl enable --now cockpit-tasks@{5..15}' tag_ServiceComponent_Tasks
