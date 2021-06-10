@@ -52,6 +52,7 @@
     - nested-kvm
     - required-packages
     - install-secrets-dir
+    - tasks-systemd
   tasks:
     - name: Set useful host name
       hostname:
