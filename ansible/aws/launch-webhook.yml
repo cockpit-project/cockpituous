@@ -45,6 +45,7 @@
         user: ec2-user
     - system-upgrade
     - required-packages
+    - install-secrets-dir
   tasks:
     - name: Set host name
       hostname:
