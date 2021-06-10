@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: local-secrets-archive
