@@ -7,12 +7,4 @@
   - system-upgrade
   - ci-data-cache
   - nested-kvm
-
-  tasks:
-  - name: Install required packages
-    yum:
-      name:
-        - podman
-        - git-core
-        - python3
-      state: latest
+  - required-packages

@@ -1,0 +1,8 @@
+---
+  - name: Install required packages
+    yum:
+      name:
+        - podman
+        - git-core
+        - python3
+      state: latest
