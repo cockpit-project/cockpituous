@@ -1,0 +1,47 @@
+---
+ - name: Upload secrets
+   copy:
+     src: "{{ lookup('env', 'XDG_RUNTIME_DIR') }}/ci-secrets.tar.gz"
+     dest: /tmp/secrets.tar.gz
+     mode: '0600'
+
+ - name: Clean up old secrets directory
+   file:
+     path: /var/lib/cockpit-secrets
+     state: absent
+
+ - name: Set up secrets dir
+   file:
+     path: /var/lib/cockpit-secrets
+     owner: '1111'
+     group: '1111'
+     state: directory
+     setype: container_file_t
+
+ - name: Unarchive secrets
+   unarchive:
+     src: /tmp/secrets.tar.gz
+     remote_src: true
+     dest: /var/lib/cockpit-secrets/
+     owner: '1111'
+     group: '1111'
+     setype: container_file_t
+
+ # otherwise ssh bitterly complains: Permissions 0644 for '/secrets/id_rsa' are too open
+ - name: Fix permissions of private SSH key file
+   file:
+     path: /var/lib/cockpit-secrets/tasks/id_rsa
+     mode: '0600'
+
+ - name: Clean up secrets archive
+   file:
+     path: /tmp/secrets.tar.gz
+     state: absent
+
+ # the above empties the /secrets volume for running containers
+ - name: Restart image containers to pick up changed secrets
+   # The glob avoids failure on machines which are not running cockpit-images
+   command: systemctl restart cockpit-images*.service
+
+ - name: Restart systemd controlled tasks containers to pick up changed secrets
+   command: systemctl restart cockpit-tasks@*

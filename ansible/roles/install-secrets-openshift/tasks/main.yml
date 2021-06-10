@@ -1,0 +1,17 @@
+---
+ - name: Build OpenShift secrets
+   command: "{{ playbook_dir }}/../../tasks/build-secrets {{ lookup('env', 'XDG_RUNTIME_DIR') }}/ci-secrets"
+   register: build_secrets
+
+ - name: Delete old OpenShift secrets
+   command:
+     cmd: "{{ oc_command }} delete --ignore-not-found=true -f -"
+     stdin: "{{ build_secrets.stdout }}"
+
+ - name: Create new secrets
+   command:
+     cmd: "{{ oc_command }} create -f -"
+     stdin: "{{ build_secrets.stdout }}"
+
+ - name: Restart all containers to pick up new secrets
+   shell: "{{ oc_command }} get -o name pods | xargs -l -r {{ oc_command }} delete --wait=false"
