@@ -51,6 +51,7 @@
     - ci-data-cache
     - nested-kvm
     - required-packages
+    - install-secrets-dir
   tasks:
     - name: Set useful host name
       hostname:

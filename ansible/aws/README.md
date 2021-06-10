@@ -52,13 +52,12 @@ Persistent resources
 Tasks runner setup
 ------------------
 
- * Create the instance:
+ * Create and configure the instance:
 
        ansible-playbook -i inventory aws/launch-tasks.yml
 
- * Run the setup playbooks:
+ * Run the setup playbook:
 
-       ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/tasks-systemd.yml
 
  * Enable more runners to fill up the 96 CPUs/188 GiB RAM:
@@ -68,13 +67,12 @@ Tasks runner setup
 Public log sink/server setup
 ----------------------------
 
- * Create the instance:
+ * Create and configure the instance:
 
        ansible-playbook -i inventory aws/launch-public-sink.yml
 
  * Run the setup playbooks:
 
-       ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/sink.yml
        ansible-playbook -i inventory aws/sink-ssh-gateway.yml
 
@@ -91,13 +89,12 @@ Webhook setup
 -------------
 Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), but for times when this is down we can spin up a webhook in AWS.
 
- * Create the instance:
+ * Create and configure the instance:
 
        ansible-playbook -i inventory aws/launch-webhook.yml
 
  * Run the setup playbooks:
 
-       ansible-playbook -i inventory maintenance/sync-secrets.yml
        ansible-playbook -i inventory cockpituous/webhook.yml
 
 Using this deployment requires changing all the GitHub project webhooks to
