@@ -52,7 +52,10 @@
     - nested-kvm
     - required-packages
     - install-secrets-dir
-    - tasks-systemd
+    - role: tasks-systemd
+      vars:
+        # fill up the 96 CPUs/188 GiB RAM
+        instances: 18
   tasks:
     - name: Set useful host name
       hostname:

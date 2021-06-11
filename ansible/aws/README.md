@@ -52,15 +52,11 @@ Persistent resources
 Tasks runner setup
 ------------------
 
- * Create and configure the instance:
+Create and configure the instance:
 
-       ansible-playbook -i inventory aws/launch-tasks.yml
+    ansible-playbook -i inventory aws/launch-tasks.yml
 
-   If you run more than one at a time, set a custom host name with `-e hostname=cockpit-aws-tasks-2` or similar, so that GitHub test statuses remain useful to identify where a test runs.
-
- * Enable more runners to fill up the 96 CPUs/188 GiB RAM:
-
-       ansible -i inventory -m shell -a 'systemctl enable --now cockpit-tasks@{5..15}' tag_ServiceComponent_Tasks
+If you run more than one at a time, set a custom host name with `-e hostname=cockpit-aws-tasks-2` or similar, so that GitHub test statuses remain useful to identify where a test runs.
 
 Public log sink/server setup
 ----------------------------
