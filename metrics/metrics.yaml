@@ -30,6 +30,25 @@ items:
               - name: prometheus-db
                 mountPath: /prometheus
 
+          - name: grafana
+            image: quay.io/bitnami/grafana:latest
+            env:
+            - name: GF_PATHS_CONFIG
+              value: /grafana-config/grafana.ini
+            - name: GF_PATHS_PROVISIONING
+              value: /etc/grafana/provisioning
+            ports:
+            - containerPort: 3000
+              protocol: TCP
+              name: grafana
+            volumeMounts:
+            - name: grafana-config
+              mountPath: /grafana-config
+              readOnly: true
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+
           volumes:
             - name: prometheus-config
               configMap:
@@ -38,6 +57,12 @@ items:
               # from ./prometheus-claim.yaml
               persistentVolumeClaim:
                 claimName: prometheus-db
+            - name: grafana-config
+              configMap:
+                name: grafana-config
+            - name: grafana-datasources
+              configMap:
+                name: grafana-datasources
 
   - kind: ConfigMap
     apiVersion: v1
@@ -64,6 +89,30 @@ items:
           static_configs:
           - targets: ['sink-http.frontdoor.svc.cluster.local:8080']
 
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: grafana-datasources
+    data:
+      datasource.yaml: |
+        apiVersion: 1
+        datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://localhost:9090
+          isDefault: true
+          access: proxy
+          editable: true
+
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: grafana-config
+    data:
+      grafana.ini: |
+        [auth.anonymous]
+        enabled = true
+
   - kind: Service
     apiVersion: v1
     metadata:
@@ -78,16 +127,29 @@ items:
         targetPort: 9090
         protocol: TCP
 
-# don't deply this to production! prometheus has no authentication at all; only for quick testing
-#  - kind: Route
-#    apiVersion: route.openshift.io/v1
-#    metadata:
-#      name: prometheus-https
-#    spec:
-#      to:
-#        kind: Service
-#        name: prometheus
-#      port:
-#        targetPort: 9090
-#      tls:
-#        termination: edge
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: grafana
+    spec:
+      clusterIP: None
+      selector:
+        infra: metrics
+      ports:
+      - name: grafana
+        port: 3000
+        targetPort: 3000
+        protocol: TCP
+
+  - kind: Route
+    apiVersion: route.openshift.io/v1
+    metadata:
+      name: grafana
+    spec:
+      to:
+        kind: Service
+        name: grafana
+      port:
+        targetPort: 3000
+      tls:
+        termination: edge
