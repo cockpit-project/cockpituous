@@ -168,6 +168,16 @@ class ReleaseHandler(github_handler.GithubHandler):
         publish_to_queue('webhook', event, request)
         return None
 
+    def do_GET(self):
+        if self.path == '/inspect-queue':
+            self.wfile.write(b'HTTP/1.1 200\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n')
+            try:
+                subprocess.check_call([f'{BOTS_CHECKOUT}/inspect-queue'], stdout=self.wfile)
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                self.wfile.write(b'Failed: ' + bytes(str(e), 'utf-8'))
+        else:
+            self.wfile.write(b'HTTP/1.1 404\r\n\r\nNot found')
+
 
 #
 # main
