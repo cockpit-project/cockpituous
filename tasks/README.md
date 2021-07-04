@@ -193,7 +193,7 @@ for more information.
 
  * In the [Cockpit bots project](https://github.com/cockpit-project/bots), add your project to the [test map](https://github.com/cockpit-project/bots/blob/master/task/testmap.py). Start with `_manual` tests.
  * Send a first PR to your project and use [bots/tests-trigger](https://github.com/cockpit-project/bots/blob/master/tests-trigger) to trigger the contexts that you want. They should be picked up and run.
- * Once you fix your tests to succeed, adjust the test map again to move them to the "master" branch. From now on, every PR against master will automatically trigger these tests.
+ * Once you fix your tests to succeed, adjust the test map again to move them to the "main" branch. From now on, every PR against main will automatically trigger these tests.
 
 ## Automated testing
 
