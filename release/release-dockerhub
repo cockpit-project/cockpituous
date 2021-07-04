@@ -104,7 +104,7 @@ prepare()
     git -C $WORKDIR commit --message="Update to version $version-$release" $gitfiles
     git -C $WORKDIR tag --annotate --message="Version $version-$release" "$version-$release"
 
-    PUSH="master $version-$release"
+    PUSH="main $version-$release"
     CLEANUP="$CLEANUP $tmpfile"
 }
 
