@@ -22,20 +22,20 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v2
         with:
-          # need this to get origin/master for git diff
+          # need this to get origin/main for git diff
           fetch-depth: 0
 
-      - name: Rebase to current master
+      - name: Rebase to current main
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git rebase origin/master
+          git rebase origin/main
 
       - name: Check which containers changed
         id: containers_changed
         run: |
-          tasks=$(git diff --name-only origin/master..HEAD -- tasks/ | grep -v run-local.sh || true)
-          images=$(git diff --name-only origin/master..HEAD -- images/)
+          tasks=$(git diff --name-only origin/main..HEAD -- tasks/ | grep -v run-local.sh || true)
+          images=$(git diff --name-only origin/main..HEAD -- images/)
           # print for debugging
           echo "tasks: $tasks"
           echo "images: $images"
