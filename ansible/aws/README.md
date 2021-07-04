@@ -93,7 +93,7 @@ Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), b
 
 Using this deployment requires changing all the GitHub project webhooks to
 https://ec2-3-228-126-27.compute-1.amazonaws.com and changing `DEFAULT_AMQP_SERVER` in
-[bots](https://github.com/cockpit-project/bots/blob/master/task/distributed_queue.py).
+[bots](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py).
 
 Cockpit demo setup
 ------------------

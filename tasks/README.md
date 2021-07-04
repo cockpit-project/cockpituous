@@ -191,8 +191,8 @@ for more information.
 
 ## Set up automatic test triggering
 
- * In the [Cockpit bots project](https://github.com/cockpit-project/bots), add your project to the [test map](https://github.com/cockpit-project/bots/blob/master/task/testmap.py). Start with `_manual` tests.
- * Send a first PR to your project and use [bots/tests-trigger](https://github.com/cockpit-project/bots/blob/master/tests-trigger) to trigger the contexts that you want. They should be picked up and run.
+ * In the [Cockpit bots project](https://github.com/cockpit-project/bots), add your project to the [test map](https://github.com/cockpit-project/bots/blob/main/task/testmap.py). Start with `_manual` tests.
+ * Send a first PR to your project and use [bots/tests-trigger](https://github.com/cockpit-project/bots/blob/main/tests-trigger) to trigger the contexts that you want. They should be picked up and run.
  * Once you fix your tests to succeed, adjust the test map again to move them to the "main" branch. From now on, every PR against main will automatically trigger these tests.
 
 ## Automated testing
@@ -251,19 +251,19 @@ the scheduling for free, and is really easy to set up.
 
  * Then all real test/release/etc. worker bots also connect to the same AMQP
    container (locally through the service or remotely through the route).
-   [run-queue](https://github.com/cockpit-project/bots/tree/master/run-queue)
+   [run-queue](https://github.com/cockpit-project/bots/tree/main/run-queue)
    consumes a queue entry, does its thing (see below), and once everything is done it
    acks the entry back to the AMQP server. If anything goes wrong in between
    and the worker crashes, AMQP automatically puts the item back into the
    queue.
 
    Authentication to AMQP happens through client-side SSL certificates; we have a
-   [distributed_queue.py](https://github.com/cockpit-project/bots/blob/master/task/distributed_queue.py)
+   [distributed_queue.py](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py)
    convenience wrapper for this.
 
  * Some cockpit/tasks bot picks up the event payload from the "webhook" queue,
-   and interprets it with [tests-scan](https://github.com/cockpit-project/bots/blob/master/tests-scan)
-   or [issue-scan](https://github.com/cockpit-project/bots/blob/master/issue-scan)
+   and interprets it with [tests-scan](https://github.com/cockpit-project/bots/blob/main/tests-scan)
+   or [issue-scan](https://github.com/cockpit-project/bots/blob/main/issue-scan)
    depending on the event type. This results in a shell command like
    `tests-invoke [...]`, `npm-update [...]`, or similar. If this involves any
    Red Hat internal resources, like RHEL or Windows images, that command gets

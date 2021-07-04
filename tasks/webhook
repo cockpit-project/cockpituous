@@ -21,7 +21,7 @@ HOME_DIR = '/tmp/home'
 WEBHOOK_SECRETS = '/run/secrets/webhook'
 AMQP_SERVER = None  # initialized in setup()
 COCKPIT_BOTS_REPO = os.getenv('COCKPIT_BOTS_REPO', 'https://github.com/cockpit-project/bots')
-COCKPIT_BOTS_BRANCH = os.getenv('COCKPIT_BOTS_BRANCH', 'master')
+COCKPIT_BOTS_BRANCH = os.getenv('COCKPIT_BOTS_BRANCH', 'main')
 BOTS_CHECKOUT = HOME_DIR + '/bots'
 sys.path.append(BOTS_CHECKOUT)
 
