@@ -232,9 +232,9 @@ the scheduling for free, and is really easy to set up.
    This is a route/service that gets that HTTP request to a pod that has (1) an
    off-the-shelf [RabbitMQ container](https://hub.docker.com/_/rabbitmq), and
    (2) a cockpit/tasks container that runs the actual
-   [webhook](https://github.com/cockpit-project/cockpituous/blob/master/tasks/webhook).
+   [webhook](https://github.com/cockpit-project/cockpituous/blob/main/tasks/webhook).
 
-   See the [Kubernetes resources](https://github.com/cockpit-project/cockpituous/blob/master/tasks/cockpit-tasks-webhook.yaml)
+   See the [Kubernetes resources](https://github.com/cockpit-project/cockpituous/blob/main/tasks/cockpit-tasks-webhook.yaml)
    for details about the route, service, and pod.
 
    That webhook is a fairly straightforward piece of Python that routes the

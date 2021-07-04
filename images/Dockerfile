@@ -19,7 +19,7 @@ COPY --from=builder /build /
 
 RUN mkdir -p /home/user
 # can't use ../sink/sink with docker build
-ADD https://raw.githubusercontent.com/cockpit-project/cockpituous/master/sink/sink /home/user/sink
+ADD https://raw.githubusercontent.com/cockpit-project/cockpituous/main/sink/sink /home/user/sink
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     mkdir -p /home/user/.ssh && ln -sf /secrets/id_rsa.pub /home/user/.ssh/authorized_keys && \
