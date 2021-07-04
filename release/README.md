@@ -40,7 +40,7 @@ Fedora, COPR, Ubuntu PPA, etc.) the release should be done.
 These delivery scripts are run by [release-runner](./release-runner) in such a
 way that they all prepare their steps, and then commit them after everything
 has been prepared. See the delivery scripts of
-[cockpit](https://github.com/cockpit-project/cockpit/blob/master/tools/cockpituous-release)
+[cockpit](https://github.com/cockpit-project/cockpit/blob/main/tools/cockpituous-release)
 and
 [cockpit-composer](https://github.com/osbuild/cockpit-composer/blob/master/utils/cockpituous-release)
 as examples.

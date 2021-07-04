@@ -138,7 +138,7 @@ podman run -d -it --name cockpituous-tasks --pod=cockpituous \
     -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
     -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
     -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
-    -e COCKPIT_TESTMAP_INJECT=master/unit-tests \
+    -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
     -e AMQP_SERVER=localhost:5671 \
     -e TEST_PUBLISH=sink-local \
     quay.io/cockpit/tasks:${TASKS_TAG:-latest}
