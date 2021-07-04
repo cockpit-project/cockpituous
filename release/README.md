@@ -73,7 +73,7 @@ this:
 ## Deploying for your project
 
 Once delivery scripts work locally, make sure that it is present in your
-`master` and every other branch from which you want to make releases. Releases
+`main` and every other branch from which you want to make releases. Releases
 are triggered by pushing a signed tag, which corresponds to the "Branch or
 tag creation" GitHub webhook event.
 
