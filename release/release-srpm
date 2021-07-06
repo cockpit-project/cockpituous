@@ -62,13 +62,6 @@ dash_bullets()
             -e 's/^[^ *-]/- /'
 }
 
-# Trim tag message on stdio
-trim_tag()
-{
-    # Remove line with just tag name. Remove signature
-    sed -e '/^\s*'$TAG'\s*$/d' -e '/-----BEGIN/,/-----END/d'
-}
-
 # Format a date for a changelog
 #  $1: The date to format
 changelog_date()
@@ -95,7 +88,7 @@ tagdate=%(taggerdate:short)
 tagauthor=%(taggername)
 tagemail=%(taggeremail)' "refs/tags/$1")
         tagdate="$(changelog_date $tagdate)"
-        tagbody="$(git for-each-ref --format='%(contents)' "refs/tags/$1" | trim_tag | dash_bullets)"
+        tagbody="$(git for-each-ref --format='%(contents:body)' "refs/tags/$1" | dash_bullets)"
     fi
 
     if [ -z "$tagdate" ]; then
