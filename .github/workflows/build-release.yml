@@ -6,12 +6,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Clone repository
         uses: actions/checkout@v2
 
       - name: Log into container registry
-        run: podman login -u cockpituous -p ${{ secrets.COCKPITUOUS_GHCR_TOKEN }} ghcr.io
+        run: podman login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io
 
       - name: Build release container
         run: make release-container
