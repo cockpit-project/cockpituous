@@ -55,13 +55,6 @@ message()
     echo "release-srpm: $@" >&2
 }
 
-dash_bullets()
-{
-        sed -e 's/^\* /- /' \
-            -e 's/^ \* /- /' \
-            -e 's/^[^ *-]/- /'
-}
-
 # Format a date for a changelog
 #  $1: The date to format
 changelog_date()
@@ -88,7 +81,7 @@ tagdate=%(taggerdate:short)
 tagauthor=%(taggername)
 tagemail=%(taggeremail)' "refs/tags/$1")
         tagdate="$(changelog_date $tagdate)"
-        tagbody="$(git for-each-ref --format='%(contents:body)' "refs/tags/$1" | dash_bullets)"
+        tagbody="$(git for-each-ref --format='%(contents:body)' "refs/tags/$1")"
     fi
 
     if [ -z "$tagdate" ]; then
@@ -102,6 +95,12 @@ tagemail=%(taggeremail)' "refs/tags/$1")
 
     if [ -z "$tagbody" ]; then
         tagbody="- Update to upstream $TAG release"
+    fi
+
+    # ensure that the body only contains point form
+    if printf "%s\n" "$tagbody" | grep -v '^- ' >&2; then
+        echo '*** tag body not in point form (see above)' >&2
+        exit 1
     fi
 
     printf "* %s %s %s - %s-%s\n" "$tagdate" "$tagauthor" "$tagemail" "$1" "$2"
