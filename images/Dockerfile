@@ -23,7 +23,7 @@ ADD https://raw.githubusercontent.com/cockpit-project/cockpituous/main/sink/sink
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user && \
     mkdir -p /home/user/.ssh && ln -sf /secrets/id_rsa.pub /home/user/.ssh/authorized_keys && \
-    mkdir -p /home/user/.config && ln -sf /run/secrets/webhook/.config/github-token /home/user/.config/github-token && \
+    mkdir -p /home/user/.config && ln -sf /run/secrets/webhook/.config--github-token /home/user/.config/github-token && \
     ln -sf /run/config/sink /home/user/.config/sink && \
     ssh-keygen -A && \
     chmod -R ga+r /etc/ssh /home/user && \

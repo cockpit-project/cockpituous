@@ -178,6 +178,9 @@ podman exec -i cockpituous-tasks sh -exc '
     grep -q "^world" /cache/images/hello.txt
     '
 
+# validate that sink has the GitHub token to do status updates
+podman exec -i cockpituous-images cat /home/user/.config/github-token | grep -q ^0123abc
+
 # if we have a PR number, run a unit test inside local deployment, and update PR status
 if [ -n "$PR" ]; then
     # need to use real GitHub token for this
