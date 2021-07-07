@@ -549,6 +549,13 @@ def check_prune(config, logs, dry_run):
                 sys.exit(0)
 
 
+def strip_secrets(line):
+    # Strip out GitHub-style secrets
+    line = re.sub(b'gh[a-z]_[0-9A-Za-z]*', b'gh*_***', line)
+
+    return line
+
+
 def main():
     parser = argparse.ArgumentParser(description="Sink logs from distributed processes")
     parser.add_argument('-d', '--dry-run', dest='dry_run', action="store_true",
@@ -616,9 +623,9 @@ def main():
             if count == 1:
                 if status.begin(line, log):
                     continue
-            stdout.write(line)
+            stdout.write(strip_secrets(line))
     if not status.finish(last, log):
-        stdout.write(last)
+        stdout.write(strip_secrets(last))
 
     if attached:
         tar = subprocess.Popen(["tar", "-xzf", "-"], stdin=subprocess.PIPE)
