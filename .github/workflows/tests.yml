@@ -17,6 +17,10 @@ jobs:
 
   tasks:
     runs-on: ubuntu-20.04
+    permissions:
+      # enough permissions for tests-scan to work
+      pull-requests: read
+      statuses: write
     timeout-minutes: 30
     steps:
       - name: Clone repository
@@ -53,6 +57,6 @@ jobs:
 
       - name: Test local deployment
         run: |
-          echo '${{ secrets.COCKPITUOUS_TOKEN }}' > ~/.config/github-token
+          echo '${{ secrets.GITHUB_TOKEN }}' > ~/.config/github-token
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
           sudo tasks/run-local.sh -p $PRN -t ~/.config/github-token
