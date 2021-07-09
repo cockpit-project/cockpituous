@@ -15,24 +15,17 @@ regularly read these metrics and store them in a database, and [Grafana](https:/
    Once this gets bound, it is ready to use. If that does not happen
    automatically, file a support ticket like [#341](https://pagure.io/centos-infra/issue/341).
 
- - Whenever the YAML resources change, first clean up all old resources and re-deploy everything:
+ - Whenever the YAML resources or the dashboards change, this script cleans up all old resources and re-deploys everything:
 
-       oc delete -f metrics.yaml
-       oc create -f metrics.yaml
+       metrics/deploy.sh
 
-   After that, Grafana should be available at https://grafana-frontdoor.apps.ocp.ci.centos.org
+   After that, Grafana should be available at https://grafana-frontdoor.apps.ocp.ci.centos.org and show the Cockpit CI dashboard at https://grafana-frontdoor.apps.ocp.ci.centos.org/d/ci/cockpit-ci
 
 ## Configuration
 
 These steps are not automated yet, but should be at some point:
 
- - On Grafana, choose "Sign in" from the left menu bar at the bottom, log in as `admin` with the initial password "admin", and immediately change it to the password mentioned in the [internal CI secrets repository](https://gitlab.cee.redhat.com/front-door-ci-wranglers/ci-secrets/-/blob/master/cockpituous.txt).
-
- - On Dashboards → Manage, click "Import", paste in the contents of [cockpit-ci.json](./cockpit-ci.json) (e.g. with `wl-copy < metrics/cockpit-ci.json` under Wayland) and confirm the loading.
-
- - Sign out again.
-
- - Confirm that https://grafana-frontdoor.apps.ocp.ci.centos.org/d/ci/cockpit-ci exists and shows the metrics.
+ - On Grafana, choose "Sign in" from the left menu bar at the bottom, log in as `admin` with the initial password "admin", and immediately change it to the password mentioned in the [internal CI secrets repository](https://gitlab.cee.redhat.com/front-door-ci-wranglers/ci-secrets/-/blob/master/cockpituous.txt). Then sign out again.
 
 ## Dashboard maintenance
 

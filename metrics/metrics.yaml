@@ -45,8 +45,14 @@ items:
             - name: grafana-config
               mountPath: /grafana-config
               readOnly: true
-            - name: grafana-datasources
+            - name: grafana-provisioning-datasources
               mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: grafana-provisioning-dashboards
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: grafana-dashboards
+              mountPath: /dashboards
               readOnly: true
 
           volumes:
@@ -60,9 +66,16 @@ items:
             - name: grafana-config
               configMap:
                 name: grafana-config
-            - name: grafana-datasources
+            - name: grafana-provisioning-datasources
               configMap:
-                name: grafana-datasources
+                name: grafana-provisioning-datasources
+            - name: grafana-provisioning-dashboards
+              configMap:
+                name: grafana-provisioning-dashboards
+            - name: grafana-dashboards
+              configMap:
+                # this is not defined here, but gets built from *.json files in ./deploy.sh
+                name: grafana-dashboards
 
   - kind: ConfigMap
     apiVersion: v1
@@ -92,7 +105,7 @@ items:
   - kind: ConfigMap
     apiVersion: v1
     metadata:
-      name: grafana-datasources
+      name: grafana-provisioning-datasources
     data:
       datasource.yaml: |
         apiVersion: 1
@@ -103,6 +116,18 @@ items:
           isDefault: true
           access: proxy
           editable: true
+
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: grafana-provisioning-dashboards
+    data:
+      all.yaml: |
+        apiVersion: 1
+        providers:
+        - name: default
+          options:
+            path: /dashboards/
 
   - kind: ConfigMap
     apiVersion: v1
