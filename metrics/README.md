@@ -21,13 +21,10 @@ regularly read these metrics and store them in a database, and [Grafana](https:/
 
    After that, Grafana should be available at https://grafana-frontdoor.apps.ocp.ci.centos.org and show the Cockpit CI dashboard at https://grafana-frontdoor.apps.ocp.ci.centos.org/d/ci/cockpit-ci
 
-## Configuration
-
-These steps are not automated yet, but should be at some point:
-
- - On Grafana, choose "Sign in" from the left menu bar at the bottom, log in as `admin` with the initial password "admin", and immediately change it to the password mentioned in the [internal CI secrets repository](https://gitlab.cee.redhat.com/front-door-ci-wranglers/ci-secrets/-/blob/master/cockpituous.txt). Then sign out again.
 
 ## Dashboard maintenance
+
+You can log into Grafana with "Sign in" from the left menu bar at the bottom, as user `admin`. The password is in the [internal CI secrets repository](https://gitlab.cee.redhat.com/front-door-ci-wranglers/ci-secrets/-/blob/master/metrics/grafana-admin).
 
 The metrics are meant to implement and measure our [Service Level objectives](https://github.com/cockpit-project/cockpit/wiki/DevelopmentPrinciples#our-testsci-error-budget). They are not complete yet.
 
