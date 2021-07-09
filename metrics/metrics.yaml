@@ -37,6 +37,11 @@ items:
               value: /grafana-config/grafana.ini
             - name: GF_PATHS_PROVISIONING
               value: /etc/grafana/provisioning
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: metrics-secrets
+                  key: grafana-admin
             ports:
             - containerPort: 3000
               protocol: TCP
