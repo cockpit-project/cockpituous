@@ -7,5 +7,9 @@ MYDIR=$(realpath -m "$0"/..)
 kubectl delete configmap/grafana-dashboards || true
 kubectl delete -f $MYDIR/metrics.yaml || true
 
-kubectl create configmap grafana-dashboards --from-file $MYDIR/cockpit-ci.json
+filearg=""
+for f in $MYDIR/*.json; do
+    filearg="$filearg --from-file $f"
+done
+kubectl create configmap grafana-dashboards $filearg
 kubectl create -f $MYDIR/metrics.yaml
