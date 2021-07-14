@@ -142,6 +142,8 @@ items:
       grafana.ini: |
         [auth.anonymous]
         enabled = true
+        [users]
+        default_theme = light
 
   - kind: Service
     apiVersion: v1
