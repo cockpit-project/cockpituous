@@ -148,3 +148,4 @@ items:
         auth_mechanisms.1 = EXTERNAL
         ssl_cert_login_from = common_name
         management.load_definitions = /etc/rabbitmq/definitions.json
+        consumer_timeout = 9000000
