@@ -16,5 +16,6 @@
       rm -rf /var/lib/docker
       docker-storage-setup
       systemctl start docker
-      systemctl start --all 'cockpit-tasks@*'
-      systemctl start cockpit-images || true
+
+  - name: Reboot machines
+    reboot:
