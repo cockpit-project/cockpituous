@@ -16,18 +16,21 @@ IMAGE_PORT=${IMAGE_PORT:-8080}
 PR=
 PR_REPO=cockpit-project/cockpituous
 TOKEN=
+INTERACTIVE=
 
 parse_options() {
-    while getopts "hs:t:p:r:" opt "$@"; do
+    while getopts "his:t:p:r:" opt "$@"; do
         case $opt in
             h)
                 echo '-p run unit tests in the local deployment against a real PR'
                 echo "-r run unit tests in the local deployment against an owner/repo other than $PR_REPO"
                 echo '-t supply a token which will be copied into the webhook secrets'
+                echo "-i interactive mode: disable cockpit-tasks script, no automatic shutdown"
                 exit 0
                 ;;
             p) PR="$OPTARG" ;;
             r) PR_REPO="$OPTARG" ;;
+            i) INTERACTIVE="1" ;;
             t)
                 if [ ! -e "$OPTARG" ]; then
                     echo $OPTARG does not exist
@@ -148,15 +151,21 @@ EOF
         -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
         -e AMQP_SERVER=localhost:5671 \
         -e TEST_PUBLISH=sink-local \
-        quay.io/cockpit/tasks:${TASKS_TAG:-latest}
+        quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
 }
 
 cleanup_containers() {
+    echo "Cleaning up..."
+
     # clean up dummy token, so that image-prune does not try to use it
     rm "$SECRETS"/webhook/.config--github-token
 
-    # tell the tasks container iteration that we are done
-    podman exec cockpituous-tasks kill -TERM 1
+    if [ -n "$INTERACTIVE" ]; then
+        podman stop cockpituous-tasks
+    else
+        # tell the tasks container iteration that we are done
+        podman exec cockpituous-tasks kill -TERM 1
+    fi
 }
 
 test_image() {
@@ -258,12 +267,20 @@ launch_containers
 # Follow the output
 podman logs -f cockpituous-tasks &
 
-# tests which don't need GitHub interaction
-test_image
-test_queue
+if [ -n "$INTERACTIVE" ]; then
+    # check out the correct bots, as part of what cockpit-tasks would usually do
+    podman exec cockpituous-tasks sh -ec \
+        'git clone --quiet --depth=1 -b "${COCKPIT_BOTS_BRANCH:-main}" "${COCKPIT_BOTS_REPO:-https://github.com/cockpit-project/bots}"'
 
-# if we have a PR number, run a unit test inside local deployment, and update PR status
-[ -z "$PR" ] || test_pr
+    echo "Starting a tasks container shell; exit it to clean up the deployment"
+    podman exec -it cockpituous-tasks bash
+else
+    # tests which don't need GitHub interaction
+    test_image
+    test_queue
+    # if we have a PR number, run a unit test inside local deployment, and update PR status
+    [ -z "$PR" ] || test_pr
+fi
 
 cleanup_containers
 # bring logs -f to the foreground
