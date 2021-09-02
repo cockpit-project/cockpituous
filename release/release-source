@@ -101,13 +101,12 @@ prepare()
     else
         # plain Makefile projects
         $MAKE -C $repodir dist || $MAKE -C $repodir dist-gzip
-        archive=$(find $repodir -maxdepth 1 -name "*-${TAG}.tar.*")
-        if [ "$(echo "$archive" | wc -l)" != 1 ]; then
-            echo "ERROR: Expecting exactly one *-${TAG}.tar.*" >&2
-            exit 1
+        if grep -q '^node-cache:' Makefile; then
+            $MAKE -C $repodir node-cache
         fi
+        archive=$(find $repodir -maxdepth 1 -name "*-${TAG}.tar.*")
         find "$SOURCE" -maxdepth 1 -name "*-*.tar.*" -delete
-        cp "$archive" "$SOURCE"
+        cp $archive "$SOURCE"
     fi
     rm -rf $repodir
 }
