@@ -25,6 +25,7 @@
      dest: /var/lib/cockpit-secrets/
      owner: '1111'
      group: '1111'
+     mode: 'u=rwX,g=rX,o=rX'
      setype: container_file_t
 
  # otherwise ssh bitterly complains: Permissions 0644 for '/secrets/id_rsa' are too open
