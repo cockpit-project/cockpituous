@@ -27,6 +27,7 @@ RUN dnf -y update && \
         libXt \
         nc \
         net-tools \
+        nodejs-devel \
         npm \
         origin-clients \
         psmisc \
