@@ -1,0 +1,127 @@
+---
+- hosts: tag_ServiceComponent_Demo
+  gather_facts: false
+
+  tasks:
+    - name: Set hostname
+      hostname:
+        name: metrics-demo
+
+    - name: Install packages
+      dnf:
+        name:
+          - cockpit-pcp
+          - cockpit-podman
+        state: latest
+
+    - name: Enable PCP metrics collection
+      service:
+        name: pmlogger
+        enabled: yes
+        state: started
+
+    - name: Enable podman API service
+      service:
+        name: podman.socket
+        enabled: yes
+        state: started
+
+    - name: Create memory eating service
+      copy:
+        dest: /etc/systemd/system/big-brain.service
+        mode: 0644
+        content: |
+          [Unit]
+          Description=uncritical service that needs a lot of RAM
+
+          [Service]
+          ExecStartPre=/usr/bin/logger 'starting big-brain operation'
+          ExecStart=/usr/bin/awk 'BEGIN { x = sprintf("%%600000000s", ""); system("sleep infinity") }'
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Create dummy network interface so that the list looks a bit more interesting
+      shell: |
+        nmcli con add type dummy con-name fake ifname fake0 ip4 172.16.42.1/24
+
+    - name: Create network eating service
+      copy:
+        dest: /etc/systemd/system/chatty.service
+        mode: 0644
+        content: |
+          [Unit]
+          Description=uncritical service that spews on the network
+
+          [Service]
+          ExecStart=/sbin/ping -s 65000 -i 0.01 -n -q _gateway
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Create disk eating service
+      copy:
+        dest: /etc/systemd/system/index-files.service
+        mode: 0644
+        content: |
+          [Unit]
+          Description=Index all files, uses lots of disk I/O
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/timeout 150 sh -ec 'while true; do echo 3 > /proc/sys/vm/drop_caches; grep -r . /usr >/dev/null; done'
+          SuccessExitStatus=124
+
+    - name: Create timer for disk eating service
+      copy:
+        dest: /etc/systemd/system/index-files.timer
+        mode: 0644
+        content: |
+          [Unit]
+          Description=Timer for indexing all files, uses lots of disk I/O
+
+          [Timer]
+          OnCalendar=*-*-* *:05:00
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable idex-files.timer
+      service:
+        name: index-files.timer
+        enabled: yes
+        state: started
+
+    - name: Create preparation script
+      copy:
+        dest: /home/admin/demo-prep.sh
+        mode: 0755
+        owner: admin
+        content: |
+          #!/bin/sh -ex
+
+          [ $(id -u) = 0 ] || {
+            echo "Run me through sudo" >&2
+            exit 1
+          }
+
+          # avoid sudo messages from this script to leak into journal
+          sleep 80
+
+          # memory hog
+          systemctl enable --now big-brain.service
+
+          sleep 180
+
+          # CPU using container
+          # fake podman logs, 8.4's podman does not yet do this
+          podman pull quay.io/libpod/busybox
+          logger -t podman 'container create crypto-miner'
+          sleep 1
+          logger -t podman 'container start crypto-miner'
+          podman run --rm -d --name crypto-miner --cpu-quota=50000 quay.io/libpod/busybox dd if=/dev/urandom of=/dev/zero
+
+          sleep 180
+
+          # network chatter
+          systemctl start chatty
