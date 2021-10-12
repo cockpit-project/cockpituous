@@ -1,4 +1,4 @@
-FROM fedora:34
+FROM fedora:35
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 # HACK: chromium-headless 88 crashes with some keyDown commands: https://bugs.chromium.org/p/chromium/issues/detail?id=1170634
