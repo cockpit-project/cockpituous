@@ -213,8 +213,8 @@ test_pr() {
     cd bots;
     ./tests-scan -p $PR --amqp 'localhost:5671' --repo $PR_REPO;
     for retry in \$(seq 10); do
-        ./tests-scan --repo $PR_REPO -vd;
-        OUT=\$(./tests-scan --repo $PR_REPO -p $PR -dv);
+        ./tests-scan --repo $PR_REPO --human-readable --dry;
+        OUT=\$(./tests-scan --repo $PR_REPO -p $PR --human-readable --dry);
         [ \"\${OUT%unit-tests*}\" = \"\$OUT\" ] || break;
         echo waiting until the status is visible;
         sleep 10;
