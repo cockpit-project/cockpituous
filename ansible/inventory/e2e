@@ -1,9 +1,9 @@
 [e2e]
-cockpit-7.e2e.bos.redhat.com ansible_user=root
-cockpit-8.e2e.bos.redhat.com ansible_user=root
-cockpit-9.e2e.bos.redhat.com ansible_user=root
-cockpit-10.e2e.bos.redhat.com ansible_user=root
-cockpit-11.e2e.bos.redhat.com ansible_user=root
+cockpit-7.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
+cockpit-8.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
+cockpit-9.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
+cockpit-10.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
+cockpit-11.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
 ci-srv-01.e2e.bos.redhat.com ansible_user=root
 ci-srv-02.e2e.bos.redhat.com ansible_user=root
 ci-srv-03.e2e.bos.redhat.com ansible_user=root
