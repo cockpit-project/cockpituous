@@ -88,7 +88,7 @@ EOF
         ssh-keygen -f tasks/id_rsa -P ''
         cat <<EOF > tasks/ssh-config
 Host sink-local
-    Hostname cockpituous-images
+    Hostname cockpituous
     User user
     Port 8022
     IdentityFile /secrets/id_rsa
@@ -176,14 +176,14 @@ test_image() {
 
         for retry in $(seq 10); do
             echo "waiting for image server to initialize"
-            curl --silent --fail --head --cacert $COCKPIT_CA_PEM https://cockpituous-images:8443 && break
+            curl --silent --fail --head --cacert $COCKPIT_CA_PEM https://cockpituous:8443 && break
             sleep 5
         done
 
         # test image-upload
         cd bots
         echo world  > /cache/images/hello.txt
-        ./image-upload --store https://cockpituous-images:8443 --state hello.txt
+        ./image-upload --store https://cockpituous:8443 --state hello.txt
         '
     test "$(cat "$IMAGES/hello.txt")" = "world"
 
@@ -197,7 +197,7 @@ test_image() {
     podman exec -i cockpituous-tasks sh -exc '
         rm /cache/images/hello.txt
         cd bots
-        ./image-download --store https://cockpituous-images:8443 --state hello.txt
+        ./image-download --store https://cockpituous:8443 --state hello.txt
         grep -q "^world" /cache/images/hello.txt
         '
 
