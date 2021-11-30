@@ -8,5 +8,5 @@
      cmd: "{{ oc_command }} apply -f -"
      stdin: "{{ build_secrets.stdout }}"
 
-- name: Restart all containers to pick up new secrets
-  shell: "{{ oc_command }} get -o name pods | xargs -l -r {{ oc_command }} delete --wait=false"
+ - name: Restart all containers to pick up new secrets
+   shell: "{{ oc_command }} get -o name pods | xargs -l -r {{ oc_command }} delete --wait=false"
