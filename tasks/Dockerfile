@@ -1,19 +1,17 @@
 FROM fedora:35
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
-# HACK: chromium-headless 88 crashes with some keyDown commands: https://bugs.chromium.org/p/chromium/issues/detail?id=1170634, install full chromium for the time being
-# HACK: chromium 94 crashes left and right: https://bugzilla.redhat.com/show_bug.cgi?id=2013095, downgrade to 93
 RUN dnf -y update && \
     dnf -y install \
         'dnf-command(builddep)' \
         byobu \
-        https://kojipkgs.fedoraproject.org//packages/chromium/93.0.4577.63/1.fc35/x86_64/chromium-common-93.0.4577.63-1.fc35.x86_64.rpm \
-        https://kojipkgs.fedoraproject.org//packages/chromium/93.0.4577.63/1.fc35/x86_64/chromium-headless-93.0.4577.63-1.fc35.x86_64.rpm \
+        chromium-headless \
         curl \
         dbus-glib \
         diffstat \
         expect \
         fedpkg \
+        firefox \
         fpaste \
         gcc-c++ \
         git \
@@ -53,11 +51,6 @@ RUN dnf -y update && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
-# Install nightly firefox, as neither the betas nor Fedora distro builds have the remote debugger
-RUN curl --location 'https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64&lang=en-US' | \
-        tar -C /usr/local/lib/ -xj && \
-    ln -s /usr/local/lib/firefox/firefox /usr/local/bin/
-
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work && \
@@ -75,7 +68,6 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work
     chmod g=u /etc/passwd && \
     chmod -R ugo+w /cache /secrets /cache /work && \
     chown -R user:user /cache /work && \
-    ln -s /app/bin/firefox /usr/bin/firefox && \
     printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache && \
     echo 'user ALL=NOPASSWD: /usr/bin/chmod 666 /dev/kvm' > /etc/sudoers.d/user-fix-kvm
 
