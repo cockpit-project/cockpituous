@@ -218,8 +218,7 @@ the scheduling for free, and is really easy to set up.
 ![Event flow diagram](doc/event-flow.png)
 
  * Project configures a webhook for the interesting bits; most importantly
-   "pull request opened or pushed" and "issue changed". (We use "branch or tag
-   creation as well, but releases have a different flow not shown here).
+   "pull request opened or pushed" and "issue changed".
 
  * A PR is opened/changed in a project, or an issue gets a bot-related task
    (e. g. "fetch new translations" or "check for NPM updates"). GitHub sends a
@@ -227,7 +226,7 @@ the scheduling for free, and is really easy to set up.
 
  * The webhook calls an OpenShift route, e. g.
 
-      http://webhook-cockpit.apps.ci.centos.org/cockpituous-release
+      http://webhook-cockpit.apps.ci.centos.org/
 
    This is a route/service that gets that HTTP request to a pod that has (1) an
    off-the-shelf [RabbitMQ container](https://hub.docker.com/_/rabbitmq), and
@@ -238,7 +237,7 @@ the scheduling for free, and is really easy to set up.
    for details about the route, service, and pod.
 
    That webhook is a fairly straightforward piece of Python that routes the
-   various event types to `handle_{pull_request,create,issues,...}()` handlers
+   various event types to `handle_{pull_request,issues,...}()` handlers
    and essentially just connect to the AMQP pod next to it
    (amqp.frontdoor.svc:5671) and put the payload into the "webhook" queue.
 
@@ -249,8 +248,8 @@ the scheduling for free, and is really easy to set up.
    up to 10 seconds and can fail, and HTTP requests ought to be replied fast
    and reliably.
 
- * Then all real test/release/etc. worker bots also connect to the same AMQP
-   container (locally through the service or remotely through the route).
+ * Then all worker bots also connect to the same AMQP container (locally
+   through the service or remotely through the route).
    [run-queue](https://github.com/cockpit-project/bots/tree/main/run-queue)
    consumes a queue entry, does its thing (see below), and once everything is done it
    acks the entry back to the AMQP server. If anything goes wrong in between
