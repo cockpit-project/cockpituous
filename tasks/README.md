@@ -14,7 +14,7 @@ The container has optional mounts:
 
  * `/secrets`: A directory for tasks specific secrets, with at least the following files:
    * `ssh-config`: SSH configuration file containing a 'sink' host
-   * `image-stores`: Non default locations to try downloading images from (optional)
+   * The SSH config usually goes along with an SSH key `id_rsa{,.pub}` and a `known_hosts` file
  * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
    * `.config--github-token`: GitHub token to create and update issues and PRs
    * `amqp-{client,server}.{pem,key}`: TLS certificates for RabbitMQ
