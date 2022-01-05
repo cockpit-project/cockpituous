@@ -273,13 +273,13 @@ the scheduling for free, and is really easy to set up.
    infrastructure), executes it, publishes the log, updates the GitHub status,
    and finally acks the queue item.
 
-# Using with toolbox
+# Using with toolbx
 
 This container can also be used for local development with
-[toolbox](https://github.com/containers/toolbox), to get an "official" Cockpit
+[toolbx](https://containertoolbx.org/), to get an "official" Cockpit
 development environment that's independent from the host:
 
 ```sh
-toolbox create --image quay.io/cockpit/tasks -c cockpit
+toolbox create --image quay.io/cockpit/tasks cockpit
 toolbox enter cockpit
 ```
