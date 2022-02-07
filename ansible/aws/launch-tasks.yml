@@ -47,7 +47,6 @@
     - role: users
       vars:
         user: ec2-user
-    - system-upgrade
     - ci-data-cache
     - nested-kvm
     - required-packages
