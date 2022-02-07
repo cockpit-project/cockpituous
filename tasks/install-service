@@ -21,6 +21,7 @@ if RUNC=$(which podman 2>/dev/null); then
     NETWORK='--net=slirp4netns'  # isolate containers from each other
     NETWORK_SETUP=''
     NETWORK_TEARDOWN=''
+    STORAGE=''
 else
     RUNC=$(which docker)
     # rely on oci-kvm-hook for /dev/kvm; but avoid stat failure on Fedora ≥ 33 guests on RHEL 7
@@ -29,6 +30,7 @@ else
     NETWORK_SETUP="ExecStartPre=-$RUNC network rm cockpit-tasks-%i
 ExecStartPre=$RUNC network create --driver bridge cockpit-tasks-%i"
     NETWORK_TEARDOWN="ExecStop=$RUNC network rm cockpit-tasks-%i"
+    STORAGE='--storage-opt size=50G'
     UNIT_DEPS="Requires=docker.service
 After=docker.service"
 fi
@@ -57,7 +59,7 @@ TimeoutStartSec=10min
 ExecStartPre=-$RUNC rm -f cockpit-tasks-%i
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull $RUNC pull quay.io/cockpit/tasks
 $NETWORK_SETUP
-ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK --storage-opt size=50G --memory=24g --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
+ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK $STORAGE --memory=24g --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
 ExecStop=$RUNC rm -f cockpit-tasks-%i
 $NETWORK_TEARDOWN
 
