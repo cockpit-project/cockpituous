@@ -113,7 +113,7 @@ def publish_to_queue(routing_key, event, request):
                             properties=pika.BasicProperties(content_type='application/json'))
 
 
-class ReleaseHandler(github_handler.GithubHandler):
+class CockpituousHandler(github_handler.GithubHandler):
     def handle_event(self, event, request):
         logging.info('Handling %s event', event)
         if event == 'pull_request':
@@ -192,4 +192,4 @@ subprocess.check_call(PASSWD_ENTRY_SCRIPT, shell=True)
 os.environ['HOME'] = HOME_DIR
 
 setup()
-http.server.HTTPServer(('', 8080), ReleaseHandler).serve_forever()
+http.server.HTTPServer(('', 8080), CockpituousHandler).serve_forever()
