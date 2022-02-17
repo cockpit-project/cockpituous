@@ -215,7 +215,23 @@ So we put the webhook events into
 AMQP provides a distributed, transactional, and fail-safe work queue, provides
 the scheduling for free, and is really easy to set up.
 
-![Event flow diagram](doc/event-flow.png)
+<!-- you can edit this interactively on https://mermaid.live -->
+```mermaid
+sequenceDiagram
+  GitHub ->>+ webhook pod: webhook event<br>(JSON payload)
+  webhook pod ->>+ RabbitMQ pod: AMQP with raw<br>JSON payload<br>→ webhook queue
+  RabbitMQ pod ->>+ webhook pod: queue put success
+  webhook pod ->>+ GitHub: Finish HTTP webhook request
+  RabbitMQ pod ->>+ tasks pod: run-queue<br>pick from webhook queue
+  note right of tasks pod: checks event type field,<br>calls {tests,issue}-scan
+  tasks pod ->>+ RabbitMQ pod: shell command into<br>internal or public<br>tasks queue
+  tasks pod ->>+ RabbitMQ pod: ACK webhook queue item
+  RabbitMQ pod ->>+ tasks pod: run-queue<br>pick from tasks queues
+  tasks pod ->>+ GitHub: update issue/PR to "in progress"
+  note right of tasks pod: execute shell command<br>(test, image refresh)
+  tasks pod ->>+ GitHub: update issue/PR to "pass" or "fail"
+  tasks pod ->>+ RabbitMQ pod: ACK tasks queue item
+```
 
  * Project configures a webhook for the interesting bits; most importantly
    "pull request opened or pushed" and "issue changed".
