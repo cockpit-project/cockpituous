@@ -92,8 +92,12 @@ Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), b
        ansible-playbook -i inventory cockpituous/webhook.yml
 
 Using this deployment requires changing all the GitHub project webhooks to
-https://ec2-3-228-126-27.compute-1.amazonaws.com and changing `DEFAULT_AMQP_SERVER` in
+http://ec2-INSTANCENAME.compute-1.amazonaws.com and changing `DEFAULT_AMQP_SERVER` in
 [bots](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py).
+
+Once you don't need this any more, revert the bots change, set the webhook back
+to http://webhook-frontdoor.apps.ocp.ci.centos.org/ and delete the webhook AWS
+instance.
 
 Cockpit demo setup
 ------------------
