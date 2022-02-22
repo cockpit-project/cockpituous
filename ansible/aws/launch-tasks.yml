@@ -31,7 +31,7 @@
     - role: tasks-systemd
       vars:
         # fill up the 96 CPUs/188 GiB RAM
-        instances: 18
+        instances: 12
   tasks:
     - name: Set useful host name
       hostname:
