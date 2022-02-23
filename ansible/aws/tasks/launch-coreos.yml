@@ -1,0 +1,59 @@
+# Launch a FrontDoorCI CoreOS instance in EC2, with the parameters from aws_defaults.yml
+# The instance gets added to the dynamic "launched" host group
+# Required variables:
+# - tag_name
+# - tag_service_component
+# Optional variables:
+# - instance_type
+# - network_interfaces
+
+- name: Get all matching AMIs
+  ec2_ami_info:
+    owner: "{{ aws_coreos_owner }}"
+    filters:
+      name: "{{ aws_coreos_filter }}"
+      architecture: "x86_64"
+      virtualization-type: "hvm"
+  register: ami_list
+
+- name: Get newest AMI
+  set_fact:
+    ami_coreos: "{{ ami_list.images | sort(attribute='creation_date') | last }}"
+
+- name: Create EC2 instance
+  ec2:
+    key_name: "{{ aws_key_name }}"
+    region: "{{ aws_region }}"
+    image: "{{ ami_coreos.image_id }}"
+    instance_type: "{{ instance_type | default('t2.small') }}"
+    monitoring: true
+    network_interfaces: "{{ network_interfaces | default(omit) }}"
+    wait: true
+    instance_tags:
+      Name: "{{ tag_name }}"
+      ServiceOwner: FrontDoorSST
+      ServiceName: FrontDoorCI
+      ServiceComponent: "{{ tag_service_component }}"
+      ServicePhase: Prod
+      AppCode: ARR-001
+  register: ec2
+
+- name: Add new instance to host group
+  add_host:
+    hostname: "{{ item.dns_name }}"
+    groupname: launched
+    ansible_user: "{{ aws_coreos_defaultuser }}"
+    ansible_become: true
+  loop: "{{ ec2.instances }}"
+
+# we can't run Ansible yet (no Python!), so just ping port
+- name: Wait for SSH to come up
+  wait_for:
+    host: "{{ item.dns_name }}"
+    port: 22
+  loop: "{{ ec2.instances }}"
+
+- name: Install Python for Ansible
+  raw: rpm-ostree install --apply-live python3 python3-libselinux python3-pyyaml
+  delegate_to: "{{ item.dns_name }}"
+  loop: "{{ ec2.instances }}"

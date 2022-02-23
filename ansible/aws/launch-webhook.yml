@@ -5,46 +5,21 @@
   vars_files: aws_defaults.yml
 
   tasks:
-    - name: Create EC2 instance
-      ec2:
-        key_name: "{{ aws_key_name }}"
-        region: "{{ aws_region }}"
-        image: "{{ aws_rhel_ami }}"
-        instance_type: t2.small
-        monitoring: true
+    - import_tasks: tasks/launch-coreos.yml
+      vars:
+        tag_name: cockpit-webhook
+        tag_service_component: Webhook
         # persistent network device with stable external IP 3.228.126.27
         network_interfaces: eni-004f5b4f714f3fda9
-        wait: true
-        instance_tags:
-          Name: cockpit-webhook
-          ServiceOwner: FrontDoorSST
-          ServiceName: FrontDoorCI
-          ServiceComponent: Webhook
-          ServicePhase: Prod
-          AppCode: ARR-001
-      register: ec2
-
-    - name: Add new instance to host group
-      add_host:
-        hostname: "{{ item.dns_name }}"
-        groupname: launched
-      loop: "{{ ec2.instances }}"
-
-    - name: Wait for SSH to come up
-      wait_for_connection:
-      delegate_to: "{{ item.dns_name }}"
-      loop: "{{ ec2.instances }}"
 
 - name: Configure instances
   hosts: launched
-  become: true
+  vars_files: aws_defaults.yml
   gather_facts: true
   roles:
     - role: users
       vars:
-        user: ec2-user
-    - system-upgrade
-    - required-packages
+        user: "{{ aws_coreos_defaultuser }}"
     - install-secrets-dir
     - webhook
 
