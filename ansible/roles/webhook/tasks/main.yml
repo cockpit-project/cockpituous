@@ -1,0 +1,43 @@
+---
+- name: Upload RabbitMQ k8s resource
+  copy:
+    src: "{{ role_path }}/../../../tasks/cockpit-tasks-webhook.yaml"
+    dest: /run/cockpit-tasks-webhook.yaml
+    mode: preserve
+
+# keep this in sync with tasks/run-local.sh
+- name: Generate flat files from RabbitMQ config map
+  shell: |
+    rm -r /etc/rabbitmq
+    mkdir -p /etc/rabbitmq
+    python3 - <<EOF
+    import os.path
+    import yaml
+    with open("/run/cockpit-tasks-webhook.yaml") as f:
+        y = yaml.load(f)
+    files = [item for item in y["items"] if item["metadata"]["name"] == "amqp-config"][0]["data"]
+    for name, contents in files.items():
+        with open(os.path.join('/etc/rabbitmq', name), 'w') as f:
+            f.write(contents)
+    EOF
+
+- name: Clean up existing pod
+  shell: |
+    podman pod rm -f cockpituous || true
+
+# FIXME: wrap into systemd to survive reboots, convert to YAML resource
+- name: Launch pod with RabbitMQ
+  shell: |
+    podman run -d --rm --name cockpituous-rabbitmq --pod=new:cockpituous \
+        --publish 5671:5671 --publish 80:8080 \
+        --tmpfs /var/lib/rabbitmq \
+        -v /etc/rabbitmq:/etc/rabbitmq:ro,z \
+        -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
+        quay.io/cockpit/rabbitmq-server
+
+- name: Launch webhook container in pod
+  shell: |
+    podman run -d --rm --name cockpituous-webhook --pod=cockpituous \
+        -e AMQP_SERVER=localhost:5671 \
+        -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
+        quay.io/cockpit/tasks webhook
