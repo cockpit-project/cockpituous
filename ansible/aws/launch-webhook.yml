@@ -10,7 +10,9 @@
         tag_name: cockpit-webhook
         tag_service_component: Webhook
         # persistent network device with stable external IP 3.228.126.27
-        network_interfaces: eni-004f5b4f714f3fda9
+        network:
+          interfaces:
+            - eni-004f5b4f714f3fda9
 
 - name: Configure instances
   hosts: launched
