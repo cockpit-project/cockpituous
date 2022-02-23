@@ -81,15 +81,9 @@ points to the stable IP 54.89.13.31 of that instance.
 
 Webhook setup
 -------------
-Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), but for times when this is down we can spin up a webhook in AWS.
+Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), but for times when this is down we can spin up a webhook in AWS:
 
- * Create and configure the instance:
-
-       ansible-playbook -i inventory aws/launch-webhook.yml
-
- * Run the setup playbooks:
-
-       ansible-playbook -i inventory cockpituous/webhook.yml
+    ansible-playbook -i inventory aws/launch-webhook.yml
 
 Using this deployment requires changing all the GitHub project webhooks to
 http://ec2-3-228-126-27.compute-1.amazonaws.com and changing `DEFAULT_AMQP_SERVER` in

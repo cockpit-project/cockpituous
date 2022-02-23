@@ -46,6 +46,8 @@
     - system-upgrade
     - required-packages
     - install-secrets-dir
+    - webhook
+
   tasks:
     - name: Set host name
       hostname:
