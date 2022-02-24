@@ -66,11 +66,6 @@ Public log sink/server setup
 
        ansible-playbook -i inventory aws/launch-public-sink.yml
 
- * Run the setup playbooks:
-
-       ansible-playbook -i inventory cockpituous/sink.yml
-       ansible-playbook -i inventory aws/sink-ssh-gateway.yml
-
  * Set up an ssh configuration for convenience:
 
        Host awssink
