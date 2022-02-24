@@ -75,7 +75,7 @@ Public log sink/server setup
 
        Host awssink
           Hostname logs.cockpit-project.org
-          User ec2-user
+          User core
 
 The logs.cockpit-project.org domain (managed by Red Hat, ask sgallagh about it)
 points to the stable IP 54.89.13.31 of that instance.

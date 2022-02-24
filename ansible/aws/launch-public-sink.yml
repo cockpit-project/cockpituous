@@ -5,35 +5,14 @@
   vars_files: aws_defaults.yml
 
   tasks:
-    - name: Create EC2 instance
-      ec2:
-        key_name: "{{ aws_key_name }}"
-        region: "{{ aws_region }}"
-        image: "{{ aws_rhel_ami }}"
-        instance_type: t2.small
-        monitoring: true
+    - import_tasks: tasks/launch-coreos.yml
+      vars:
+        tag_name: cockpit-public-sink
+        tag_service_component: Logs
         # persistent network device with stable external IP 54.89.13.31 (DNS logs.cockpit-project.org)
-        network_interfaces: eni-0fece6d6c83cd9eca
-        wait: true
-        instance_tags:
-          Name: cockpit-public-sink
-          ServiceOwner: FrontDoorSST
-          ServiceName: FrontDoorCI
-          ServiceComponent: Logs
-          ServicePhase: Prod
-          AppCode: ARR-001
-      register: ec2
-
-    - name: Add new instance to host group
-      add_host:
-        hostname: "{{ item.private_ip }}"
-        groupname: launched
-      loop: "{{ ec2.instances }}"
-
-    - name: Wait for SSH to come up
-      delegate_to: "{{ item.private_ip }}"
-      wait_for_connection:
-      loop: "{{ ec2.instances }}"
+        network:
+          interfaces:
+            - eni-0fece6d6c83cd9eca
 
     - name: Attach persistent log volume
       ec2_vol:
@@ -44,14 +23,11 @@
 
 - name: Configure instances
   hosts: launched
-  become: true
-  gather_facts: true
+  vars_files: aws_defaults.yml
   roles:
     - role: users
       vars:
-        user: ec2-user
-    - system-upgrade
-    - required-packages
+        user: "{{ aws_coreos_defaultuser }}"
     - install-secrets-dir
   tasks:
     - name: Set host name
