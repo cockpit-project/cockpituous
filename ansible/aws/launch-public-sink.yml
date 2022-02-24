@@ -14,10 +14,6 @@
         monitoring: true
         # persistent network device with stable external IP 54.89.13.31 (DNS logs.cockpit-project.org)
         network_interfaces: eni-0fece6d6c83cd9eca
-        volumes:
-          - device_name: /dev/sda1
-            volume_size: 50
-            delete_on_termination: true
         wait: true
         instance_tags:
           Name: cockpit-public-sink
@@ -37,6 +33,13 @@
     - name: Wait for SSH to come up
       delegate_to: "{{ item.private_ip }}"
       wait_for_connection:
+      loop: "{{ ec2.instances }}"
+
+    - name: Attach persistent log volume
+      ec2_vol:
+        id: vol-082d93e22206389e6
+        region: "{{ aws_region }}"
+        instance: "{{ item.instance_id }}"
       loop: "{{ ec2.instances }}"
 
 - name: Configure instances

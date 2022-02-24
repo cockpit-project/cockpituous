@@ -3,6 +3,18 @@
   gather_facts: false
 
   tasks:
+  - name: Set up logs volume mount
+    shell: |
+      set -e
+      mkdir -p /var/cache/cockpit-tasks/images
+      if [ -e /dev/disk/by-label/cockpitlogs ]; then
+          echo 'LABEL=cockpitlogs /var/cache/cockpit-tasks/images   xfs     defaults,noatime        1 2' >> /etc/fstab
+          systemctl daemon-reload
+          mount -a
+      fi
+    args:
+      creates: /var/cache/cockpit-tasks/images
+
   - name: "Upload images service installation script"
     copy:
       src: "{{ playbook_dir }}/../../images/install-service"
@@ -17,9 +29,11 @@
       warn: false
 
   # intentionally *not* 1111, so that it does not have access to most secrets
+  # hardcoded as 1001 as that's the uid on our persistent volume
   - name: "Create sink user"
     user:
       name: sink
+      uid: 1001
       comment: Cockpit sink ssh user
 
   - name: "Create ~sink/.config dir"

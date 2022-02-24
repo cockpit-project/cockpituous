@@ -48,6 +48,7 @@ Persistent resources
 
  * eni-0fece6d6c83cd9eca, aka "cockpit-public-sink": network device with stable external IP 54.89.13.31 (DNS: logs.cockpit-project.org)
  * eni-004f5b4f714f3fda9, aka "cockpit-public-webhook": network device with stable external IP 3.228.126.27 (DNS: ec2-3-228-126-27.compute-1.amazonaws.com)
+ * vol-082d93e22206389e6, aka "cockpit-logs": persistent volume for the public log sink
 
 Tasks runner setup
 ------------------
