@@ -89,10 +89,19 @@ run_curl()
         arg=""
     fi
 
-    if ! curl $arg -S --fail -H "Authorization: token $TOKEN" "$@"; then
-        message "github api call failed"
-        exit 1
-    fi
+    # tarball uploads are particularly brittle and often fail with "OpenSSL SSL_read: Connection reset by peer"
+    # retry a few times, with exponential back-off
+    retrysleep=2
+    for retry in $(seq 5); do
+        if curl $arg -S --fail -H "Authorization: token $TOKEN" "$@"; then
+            return
+        fi
+        message "github api call attempt #$retry failed, retrying in $retrysleep seconds"
+        sleep $retrysleep
+        retrysleep=$((sleep*2))
+    done
+    message "github api call failed repeatedly, aborting"
+    exit 1
 }
 
 check()
@@ -106,6 +115,8 @@ prepare()
     local tmpfile body upload uplog base progress tarball
 
     tmpfile=$(mktemp .github-draft.XXXXXX.json)
+    # Remove this file later
+    CLEANUP="$CLEANUP $tmpfile"
 
     # Check if the release exists
     if curl -s --fail --output $tmpfile -H "Authorization: token $TOKEN" \
@@ -120,12 +131,11 @@ prepare()
     trace "Creating release draft: $TAG"
 
     # Create the release via the Github API
+    req=$(mktemp .github-request.XXXXXX.json)
+    CLEANUP="$CLEANUP $req"
     printf '{"tag_name": "%s", "name": "%s", "draft": true, "body": "%s" }\n' \
-        "$TAG" "$TAG" "$body" |
-        run_curl -s --data @- --output $tmpfile https://api.github.com$REPO/releases
-
-    # Remove this file later
-    CLEANUP="$CLEANUP $tmpfile"
+        "$TAG" "$TAG" "$body" > "$req"
+        run_curl -s --data @"$req" --output $tmpfile https://api.github.com$REPO/releases
 
     # The release URL for later commit
     RELEASE=$(sed -n 's/.*"url"\s*:\s*"\([^"]*\).*/\1/p' $tmpfile | head -n 1)
@@ -160,8 +170,7 @@ commit()
 
     trace "Publishing draft: $TAG"
 
-    printf '{"draft": false}\n' |
-        run_curl -s --data @- --output $tmpfile --request PATCH $RELEASE
+    run_curl -s --data '{"draft": false}' --output $tmpfile --request PATCH $RELEASE
 
     # Remove all the temporary files on success
     rm $CLEANUP $tmpfile
