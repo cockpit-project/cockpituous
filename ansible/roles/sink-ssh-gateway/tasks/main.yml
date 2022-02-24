@@ -1,0 +1,33 @@
+---
+- name: Create sshgw user
+  user:
+    name: sshgw
+    comment: Cockpit CI ssh gateway
+
+- name: Create ~sshgw/.ssh dir
+  file:
+    state: directory
+    path: ~sshgw/.ssh
+    owner: sshgw
+    group: sshgw
+    mode: 0700
+
+- name: Set up sshgw authorized_keys
+  become_user: sshgw
+  shell: |
+    (echo -n 'command="sleep infinity" '; cat /var/lib/cockpit-secrets/tasks/id_sshgw.pub) > ~sshgw/.ssh/authorized_keys
+    chmod 0600 ~sshgw/.ssh/authorized_keys
+
+- name: Enable SSH gateway ports
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^GatewayPorts '
+    insertafter: '^#GatewayPorts '
+    line: 'GatewayPorts yes'
+  register: sshd_config
+
+- name: Restart sshd on changes
+  service:
+    name: sshd
+    state: restarted
+  when: sshd_config.changed
