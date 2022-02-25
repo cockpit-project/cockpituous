@@ -34,7 +34,8 @@ which \
 dnf-utils \
     && \
     dnf -y install 'dnf-command(builddep)' && \
-    curl https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec | sed 's/%{npm-version:.*}/0/' > /tmp/cockpit.spec && \
+    curl -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec.in | \
+    sed 's/@[A-Z_]*@/0/g' > /tmp/cockpit.spec && \
     dnf -y builddep /tmp/cockpit.spec && \
     dnf clean all
 
