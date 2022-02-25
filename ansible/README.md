@@ -6,4 +6,3 @@ Setup/maintenance Ansible playbooks for Front Door CI
  * [e2e](./e2e/): Playbooks for configuring CI on e2e machines
  * [roles](./roles/): Ansible roles for common setup steps
  * [maintenance](./maintenance/): Ansible playbooks for maintenance tasks on all CI machines
- * [cockpituous](./cockpituous/): Ansible playbooks for setting up [Cockpituous](https://github.com/cockpit-project/cockpituous/) services on nodes
