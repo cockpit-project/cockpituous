@@ -30,6 +30,13 @@ items:
             - name: amqp-config
               mountPath: /etc/rabbitmq
               readOnly: true
+            resources:
+              limits:
+                memory: 1G
+                cpu: 1
+              requests:
+                memory: 300M
+                cpu: 200m
           - name: webhook
             image: quay.io/cockpit/tasks
             ports:
@@ -40,6 +47,13 @@ items:
             - name: webhook-secrets
               mountPath: /run/secrets/webhook
               readOnly: true
+            resources:
+              limits:
+                memory: 1G
+                cpu: 2
+              requests:
+                memory: 200M
+                cpu: 100m
         volumes:
         - name: webhook-secrets
           secret:
