@@ -1,7 +1,7 @@
 ---
 - name: "Upload tasks service installation script"
   copy:
-    src: "{{ playbook_dir }}/../../tasks/install-service"
+    src: "{{ role_path }}/../../../tasks/install-service"
     dest: /run/install-service
     mode: preserve
 

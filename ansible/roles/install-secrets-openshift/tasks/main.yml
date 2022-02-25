@@ -1,6 +1,6 @@
 ---
  - name: Build OpenShift secrets
-   command: "{{ playbook_dir }}/../../tasks/build-secrets {{ lookup('env', 'XDG_RUNTIME_DIR') }}/ci-secrets"
+   command: "{{ role_path }}/../../../tasks/build-secrets {{ lookup('env', 'XDG_RUNTIME_DIR') }}/ci-secrets"
    register: build_secrets
 
  - name: Update deployed secrets
