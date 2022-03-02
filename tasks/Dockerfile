@@ -19,6 +19,7 @@ RUN dnf -y update && \
         gnupg \
         intltool \
         jq \
+        lcov \
         libappstream-glib \
         libvirt-daemon-kvm \
         libvirt-client \
