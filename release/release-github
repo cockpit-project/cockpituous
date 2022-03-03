@@ -98,7 +98,7 @@ run_curl()
         fi
         message "github api call attempt #$retry failed, retrying in $retrysleep seconds"
         sleep $retrysleep
-        retrysleep=$((sleep*2))
+        retrysleep=$((retrysleep*2))
     done
     message "github api call failed repeatedly, aborting"
     exit 1
