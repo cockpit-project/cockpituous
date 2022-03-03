@@ -1,7 +1,8 @@
-#!/bin/sh -e
+#!/bin/sh
+set -eu
 
 IMAGE=$1
-DOCKER=$(which podman docker 2>/dev/null | head -n1)
+[ -n "${DOCKER:-}" ] || DOCKER=$(which podman docker 2>/dev/null | head -n1)
 ID=$($DOCKER images -q $IMAGE:latest | head -n1)
 
 TAGS=$($DOCKER images --format '{{.Tag}}   {{.ID}}' $IMAGE | sort -u | grep $ID | awk '{print $1}')
