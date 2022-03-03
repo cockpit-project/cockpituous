@@ -16,7 +16,7 @@ TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
 WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
 TASK_CACHE := /var/cache/cockpit-tasks
-DOCKER := $(shell which podman docker 2>/dev/null | head -n1)
+DOCKER ?= $(shell which podman docker 2>/dev/null | head -n1)
 
 containers: images-container release-container tests-container
 	@true

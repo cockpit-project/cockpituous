@@ -7,16 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: quay.io
     timeout-minutes: 30
+    # needs to use docker, as podman-built images are not accepted to RHEL 8's docker any more
+    env:
+      DOCKER: docker
     steps:
       - name: Clone repository
         uses: actions/checkout@v2
 
-      # use podman as root, so that it uses overlayfs; user with vfs takes too long and uses too much space
       - name: Log into container registry
-        run: sudo podman login -u ${{ secrets.QUAY_BOTUSER }} -p ${{ secrets.QUAY_TOKEN }} quay.io
+        run: docker login -u ${{ secrets.QUAY_BOTUSER }} -p ${{ secrets.QUAY_TOKEN }} quay.io
 
       - name: Build tasks container
-        run: sudo make tasks-container
+        run: make tasks-container
 
       - name: Push container to registry
-        run: sudo make tasks-push
+        run: make tasks-push
