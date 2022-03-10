@@ -4,7 +4,7 @@ kind: ReplicationController
 metadata:
   name: centosci-tasks
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     infra: cockpit-tasks
   template:
