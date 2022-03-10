@@ -1,7 +1,8 @@
 #!/bin/sh
 
 # deploy changes to this script with:
-# ansible -v -i inventory -m include_role -a name=tasks-systemd e2e tag_ServiceComponent_Tasks
+# ansible -i inventory -m include_role -a name=tasks-systemd e2e
+# ansible -i inventory -m include_role -a name=tasks-systemd tag_ServiceComponent_Tasks
 
 set -eufx
 
