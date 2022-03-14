@@ -21,7 +21,7 @@ RUN dnf -y update && \
         jq \
         lcov \
         libappstream-glib \
-        libvirt-daemon-kvm \
+        libvirt-daemon-driver-qemu \
         libvirt-client \
         libvirt-python3 \
         libXt \
@@ -37,6 +37,7 @@ RUN dnf -y update && \
         python3-pycodestyle \
         python3-pika \
         python3-pillow \
+        qemu-kvm-core \
         rpm-build \
         rpmdevtools \
         rsync \
