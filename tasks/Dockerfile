@@ -21,6 +21,7 @@ RUN dnf -y update && \
         jq \
         lcov \
         libappstream-glib \
+        libvirt-daemon-driver-storage-core \
         libvirt-daemon-driver-qemu \
         libvirt-client \
         libvirt-python3 \
