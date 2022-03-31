@@ -40,6 +40,7 @@
     - docker
     - screen
     - oci-kvm-hook
+    - dnsmasq
 
   # /home LV usually takes up all available space, and we don't need it
   - name: Set up LVM
@@ -79,3 +80,26 @@
       chain: FORWARD
       source: 2606:4700::6810:0/112
       jump: REJECT
+
+  # github.com has an obnoxiously short TTL of a minute
+  - name: set minimum TTL for local DNS cache
+    copy:
+      dest: /etc/NetworkManager/dnsmasq.d/longer-cache.conf
+      mode: 0644
+      content: |
+        min-cache-ttl=3600
+
+  - name: enable dnsmasq in NetworkManager
+    copy:
+      dest: /etc/NetworkManager/conf.d/dns.conf
+      mode: 0644
+      content: |
+        [main]
+        dns=dnsmasq
+    register: nm_dnsmasq
+
+  - name: Reload NetworkManager for dnsmasq configuration change
+    service:
+      name: NetworkManager
+      state: reloaded
+    when: nm_dnsmasq.changed
