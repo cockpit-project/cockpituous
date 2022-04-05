@@ -30,7 +30,6 @@
         user: "{{ aws_coreos_defaultuser }}"
     - install-secrets-dir
     - sink
-    - sink-ssh-gateway
   tasks:
     - name: Set host name
       hostname:
