@@ -44,6 +44,7 @@ Description=Cockpit Tasks %i
 $UNIT_DEPS
 
 [Service]
+Slice=idle-poweroff.slice
 Environment="TEST_JOBS=${TEST_JOBS:-8}"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
@@ -52,6 +53,10 @@ Environment="TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}"
 Environment="TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}"
 Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
 Restart=always
+# 100 means "all iterations were idle, no work done"
+SuccessExitStatus=100
+# with IDLE_POWEROFF, don't auto-restart idle services
+${IDLE_POWEROFF:+RestartPreventExitStatus=100}
 RestartSec=60
 # give image pull enough time
 TimeoutStartSec=10min
@@ -65,6 +70,16 @@ $NETWORK_TEARDOWN
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# mode for elastic cloud runners; all cockpit-tasks*@.service run in this slice
+if [ -n "${IDLE_POWEROFF:-}" ]; then
+    mkdir -p /etc/systemd/system/idle-poweroff.slice.d
+    cat <<EOF > /etc/systemd/system/idle-poweroff.slice.d/poweroff.conf
+    [Unit]
+    StopWhenUnneeded=yes
+    SuccessAction=poweroff-immediate
+EOF
+fi
 
 systemctl daemon-reload
 

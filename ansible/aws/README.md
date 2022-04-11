@@ -59,6 +59,8 @@ Create and configure the instance:
 
 If you run more than one at a time, set a custom host name with `-e hostname=cockpit-aws-tasks-2` or similar, so that GitHub test statuses remain useful to identify where a test runs.
 
+There is also an "elastic" mode where the tasks bots keep running until they all run out of work (i.e. all iterations had an empty queue). Use that for situations where AWS instances act as extra high-demand capacity instead of being the primary runners. Enable that mode with `-e idle_poweroff=1`.
+
 Public log sink/server setup
 ----------------------------
 

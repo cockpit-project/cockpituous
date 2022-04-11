@@ -62,6 +62,8 @@ function slumber() {
 # on mass deployment, avoid GitHub stampede
 slumber 0-120
 
+work_done=
+
 # Consume from queue 30 times, then restart; listen to SIGTERM for orderly shutdown
 shutdown=
 trap "echo 'received SIGTERM, stopping main loop'; shutdown=1" TERM
@@ -76,8 +78,12 @@ for i in $(seq 1 30); do
     pkill -9 virtqemud || true
     while pgrep virtqemud >/dev/null; do sleep 0.5; done
 
-    # run-queue fails on empty queues; don't poll too often
-    timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || slumber
+    if timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-}; then
+       work_done=1
+    else
+        # run-queue fails on empty queues; don't poll too often
+        slumber
+    fi
     # clean up after tests, in particular large qcow overlays
     rm -rf /tmp/* || true
 done
@@ -90,3 +96,6 @@ update_bots
 for region in eu-central-1 us-east-1; do
     ./image-prune --s3 "https://cockpit-images.${region}.linodeobjects.com/" || true
 done
+
+# no work done at all? signal that to our systemd unit
+[ -n "$work_done" ] || exit 100
