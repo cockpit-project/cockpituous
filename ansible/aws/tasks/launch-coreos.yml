@@ -30,6 +30,7 @@
       id: "{{ ami_coreos.image_id }}"
     instance_type: "{{ instance_type | default('t2.small') }}"
     detailed_monitoring: yes
+    instance_initiated_shutdown_behavior: terminate
     network: "{{ network | default(omit) }}"
     vpc_subnet_id: "{{ vpc_subnet_id | default(omit) }}"
     volumes: "{{ volumes | default(omit) }}"
