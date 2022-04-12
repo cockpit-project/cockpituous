@@ -17,6 +17,8 @@ systemctl stop 'cockpit-tasks@*.service'
 if RUNC=$(which podman 2>/dev/null); then
     UNIT_DEPS=''
     DEVICES="--device=/dev/kvm"
+    # HACK: https://bugzilla.redhat.com/show_bug.cgi?id=2074402
+    DEVICES="$DEVICES --privileged"
     NETWORK='--net=slirp4netns'  # isolate containers from each other
     NETWORK_SETUP=''
     NETWORK_TEARDOWN=''
