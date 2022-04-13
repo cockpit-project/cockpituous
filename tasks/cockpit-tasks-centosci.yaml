@@ -12,6 +12,7 @@ spec:
       labels:
         infra: cockpit-tasks
     spec:
+      terminationGracePeriodSeconds: 3600
       containers:
       - name: cockpit-tasks
         image: quay.io/cockpit/tasks
