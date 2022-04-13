@@ -20,5 +20,5 @@
     # avoid docker_image module, that requires python-docker
     command: docker pull quay.io/cockpit/tasks
 
-  - name: Restart systemd controlled tasks containers
-    command: systemctl restart cockpit-tasks@*
+  - name: Tell tasks containers to drain and restart
+    command: pkill -ex cockpit-tasks
