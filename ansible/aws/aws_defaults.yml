@@ -3,7 +3,9 @@ aws_region: us-east-1
 aws_key_name: "cockpit-{{ lookup('env', 'USER') }}"
 
 # current RHEL 8
-aws_rhel_ami: ami-03a454637e4aa453d
+aws_rhel8_owner: "309956199498"
+aws_rhel8_filter: "RHEL-8.6*"
+aws_rhel8_defaultuser: "ec2-user"
 
 # CoreOS image for container workloads
 aws_coreos_owner: "125523088429"

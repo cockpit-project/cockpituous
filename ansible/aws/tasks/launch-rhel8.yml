@@ -1,0 +1,58 @@
+# Launch a FrontDoorCI CentOS 8 instance in EC2, with the parameters from aws_defaults.yml
+# The instance gets added to the dynamic "launched" host group
+# Required variables:
+# - tag_name
+# - tag_service_component
+# Optional variables:
+# - instance_type
+# - network
+# - vpc_subnet_id
+# - volumes
+
+- name: Get all matching AMIs
+  ec2_ami_info:
+    owner: "{{ aws_rhel8_owner }}"
+    filters:
+      name: "{{ aws_rhel8_filter }}"
+      architecture: "x86_64"
+      virtualization-type: "hvm"
+  register: ami_list
+
+- name: Get newest AMI
+  set_fact:
+    ami_rhel8: "{{ ami_list.images | sort(attribute='creation_date') | last }}"
+
+- name: Create EC2 instance
+  ec2_instance:
+    count: "{{ count | default(omit) }}"
+    key_name: "{{ aws_key_name }}"
+    region: "{{ aws_region }}"
+    image:
+      id: "{{ ami_rhel8.image_id }}"
+    instance_type: "{{ instance_type | default('t2.small') }}"
+    detailed_monitoring: yes
+    instance_initiated_shutdown_behavior: terminate
+    network: "{{ network | default(omit) }}"
+    vpc_subnet_id: "{{ vpc_subnet_id | default(omit) }}"
+    volumes: "{{ volumes | default(omit) }}"
+    tags:
+      Name: "{{ tag_name }}"
+      ServiceOwner: FrontDoorSST
+      ServiceName: FrontDoorCI
+      ServiceComponent: "{{ tag_service_component }}"
+      ServicePhase: Prod
+      AppCode: ARR-001
+  register: ec2
+
+- name: Add new instance to host group
+  add_host:
+    hostname: "{{ item.public_dns_name | default(item.private_ip_address, true) }}"
+    groupname: launched
+    ansible_user: "{{ aws_rhel8_defaultuser }}"
+    ansible_become: true
+  loop: "{{ ec2.instances }}"
+
+- name: Wait for SSH to come up
+  delegate_to: "{{ item.public_dns_name | default(item.private_ip_address, true) }}"
+  wait_for_connection:
+  loop: "{{ ec2.instances }}"
