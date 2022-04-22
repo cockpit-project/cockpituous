@@ -31,7 +31,7 @@ items:
                 mountPath: /prometheus
 
           - name: grafana
-            image: quay.io/bitnami/grafana:latest
+            image: docker.io/grafana/grafana
             env:
             - name: GF_PATHS_CONFIG
               value: /grafana-config/grafana.ini
