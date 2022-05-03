@@ -134,6 +134,15 @@ EOF
         quay.io/cockpit/images:${IMAGES_TAG:-latest} \
         sh -ec '/usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"'
 
+    # scanning actual cockpit PRs interferes with automatic tests; but do this in interactive mode to have a complete deployment
+    if [ -n "$INTERACTIVE" ]; then
+        [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
+        podman run -d --name cockpituous-webhook --pod=cockpituous --user user \
+            -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
+            -e AMQP_SERVER=localhost:5671 \
+            quay.io/cockpit/tasks:${TASKS_TAG:-latest} webhook
+    fi
+
     # wait until AMQP initialized
     sleep 5
     until podman exec -i cockpituous-rabbitmq timeout 5 rabbitmqctl list_queues; do

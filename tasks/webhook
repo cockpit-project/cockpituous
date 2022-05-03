@@ -9,6 +9,7 @@ import http.server
 import json
 import contextlib
 import ssl
+import time
 
 import pika
 
@@ -65,23 +66,6 @@ def ensure_bots_checkout():
     subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/' + COCKPIT_BOTS_BRANCH])
 
 
-def scan_tasks():
-    '''scan project PRs and issues to (re)build the tasks queue'''
-
-    from lib import testmap
-    from task.distributed_queue import DEFAULT_AMQP_SERVER
-    global AMQP_SERVER
-    AMQP_SERVER = os.getenv('AMQP_SERVER', DEFAULT_AMQP_SERVER)
-
-    for project in testmap.projects():
-        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
-                               AMQP_SERVER, '--repo', project],
-                              cwd=BOTS_CHECKOUT)
-        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'issue-scan'), '--amqp',
-                               AMQP_SERVER, '--repo', project],
-                              cwd=BOTS_CHECKOUT)
-
-
 @contextlib.contextmanager
 def distributed_queue(amqp_server):
     try:
@@ -104,6 +88,32 @@ def distributed_queue(amqp_server):
     channel.queue_declare(queue='webhook', auto_delete=False)
     yield channel
     connection.close()
+
+
+def scan_tasks():
+    '''scan project PRs and issues to (re)build the tasks queue'''
+
+    from lib import testmap
+    from task.distributed_queue import DEFAULT_AMQP_SERVER
+    global AMQP_SERVER
+    AMQP_SERVER = os.getenv('AMQP_SERVER', DEFAULT_AMQP_SERVER)
+
+    # wait a bit for AMQP server to start up, on the infra it is started together with webhook
+    for retry in range(10):
+        try:
+            with distributed_queue(AMQP_SERVER):
+                break
+        except pika.exceptions.AMQPError as e:
+            logging.info(f"Failed to connect to AMQP, attempt #{retry}: {e}")
+            time.sleep(5)
+
+    for project in testmap.projects():
+        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
+                               AMQP_SERVER, '--repo', project],
+                              cwd=BOTS_CHECKOUT)
+        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'issue-scan'), '--amqp',
+                               AMQP_SERVER, '--repo', project],
+                              cwd=BOTS_CHECKOUT)
 
 
 def publish_to_queue(routing_key, event, request):
