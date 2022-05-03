@@ -33,9 +33,8 @@ fi
 '''
 
 
-def setup():
+def setup_home():
     '''Prepare temporary home directory from secrets'''
-    global AMQP_SERVER
 
     if os.path.isdir(HOME_DIR):
         return
@@ -56,9 +55,22 @@ def setup():
         shutil.copyfile(src, dest)
     os.umask(old_umask)
 
-    ensure_bots_checkout()
+
+def ensure_bots_checkout():
+    if not os.path.isdir(BOTS_CHECKOUT):
+        subprocess.check_call(['git', 'clone', COCKPIT_BOTS_REPO, BOTS_CHECKOUT])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'fetch', 'origin'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
+    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/' + COCKPIT_BOTS_BRANCH])
+
+
+def scan_tasks():
+    '''scan project PRs and issues to (re)build the tasks queue'''
+
     from lib import testmap
     from task.distributed_queue import DEFAULT_AMQP_SERVER
+    global AMQP_SERVER
     AMQP_SERVER = os.getenv('AMQP_SERVER', DEFAULT_AMQP_SERVER)
 
     for project in testmap.projects():
@@ -68,15 +80,6 @@ def setup():
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'issue-scan'), '--amqp',
                                AMQP_SERVER, '--repo', project],
                               cwd=BOTS_CHECKOUT)
-
-
-def ensure_bots_checkout():
-    if not os.path.isdir(BOTS_CHECKOUT):
-        subprocess.check_call(['git', 'clone', COCKPIT_BOTS_REPO, BOTS_CHECKOUT])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'fetch', 'origin'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'reset', '--hard'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'clean', '-dxff'])
-    subprocess.check_call(['git', '-C', BOTS_CHECKOUT, 'checkout', 'origin/' + COCKPIT_BOTS_BRANCH])
 
 
 @contextlib.contextmanager
@@ -191,5 +194,8 @@ subprocess.check_call(PASSWD_ENTRY_SCRIPT, shell=True)
 
 os.environ['HOME'] = HOME_DIR
 
-setup()
+setup_home()
+ensure_bots_checkout()
+scan_tasks()
+
 http.server.HTTPServer(('', 8080), CockpituousHandler).serve_forever()
