@@ -2,20 +2,6 @@
 - hosts: e2e
 
   tasks:
-  - name: Open firewall for NTP
-    iptables:
-      chain: OS_FIREWALL_ALLOW
-      protocol: udp
-      destination_port: 123
-      jump: ACCEPT
-
-  - name: Change iptables config for NTP
-    lineinfile:
-      path: /etc/sysconfig/iptables
-      regexp: 'OS_FIREWALL_ALLOW.*123'
-      insertafter: 'OS_FIREWALL_ALLOW.*443'
-      line: '-A OS_FIREWALL_ALLOW -p udp -m udp --dport 123 -j ACCEPT'
-
   - name: Setup NTP config
     template: src=ntp.conf.j2 dest=/etc/ntp.conf
     notify:
