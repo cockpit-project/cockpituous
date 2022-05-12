@@ -7,6 +7,12 @@
     notify:
       restart ntpd
 
+  - name: Enable ntpd
+    service:
+      name: ntpd
+      enabled: yes
+      state: started
+
   handlers:
   - name: restart ntpd
     service: name=ntpd state=restarted
