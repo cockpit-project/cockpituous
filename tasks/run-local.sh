@@ -189,12 +189,18 @@ test_image() {
             sleep 5
         done
 
-        # test image-upload
         cd bots
-        echo world  > /cache/images/hello.txt
-        ./image-upload --store https://cockpituous:8443 --state hello.txt
+
+        # fake an image
+        echo world  > /cache/images/testimage
+        NAME="testimage-$(sha256sum /cache/images/testimage | cut -f1 -d\ ).qcow2"
+        mv /cache/images/testimage /cache/images/$NAME
+        ln -s $NAME images/testimage
+
+        # test image-upload
+        ./image-upload --store https://cockpituous:8443 testimage
         '
-    test "$(cat "$IMAGES/hello.txt")" = "world"
+    test "$(cat "$IMAGES"/testimage-*.qcow2)" = "world"
 
     # validate OpenShift s3 keys secrets setup
     R1=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r1.cloud.com')
@@ -204,10 +210,10 @@ test_image() {
 
     # validate image downloading
     podman exec -i cockpituous-tasks sh -exc '
-        rm /cache/images/hello.txt
+        rm --verbose /cache/images/testimage*
         cd bots
-        ./image-download --store https://cockpituous:8443 --state hello.txt
-        grep -q "^world" /cache/images/hello.txt
+        ./image-download --store https://cockpituous:8443 testimage
+        grep -q "^world" /cache/images/testimage-*.qcow2
         '
 
     # validate that sink has the GitHub token to do status updates
