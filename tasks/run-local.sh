@@ -145,7 +145,9 @@ EOF
     podman run -d --name cockpituous-s3 --pod=cockpituous \
         docker.io/minio/minio server /data --console-address :9001
     # wait until it started, create bucket
-    podman run -i --rm --entrypoint /bin/sh --network host docker.io/minio/mc <<EOF
+    podman run -d --interactive --name cockpituous-mc --pod=cockpituous \
+        --entrypoint /bin/sh docker.io/minio/mc
+    podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
 until mc alias set minio http://127.0.0.1:9000  minioadmin minioadmin; do sleep 1; done
 mc mb minio/images
