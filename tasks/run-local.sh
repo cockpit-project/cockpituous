@@ -219,6 +219,8 @@ test_image() {
 
         # test image-upload to S3
         ./image-upload --store http://localhost.localdomain:9000/images/ testimage
+        # S3 store received this
+        curl http://localhost.localdomain:9000/images/ | grep -q "testimage.*qcow"
 
         # test image-upload to cockpit/image container (htpasswd credentials setup)
         ./image-upload --store https://cockpituous:8443 testimage
