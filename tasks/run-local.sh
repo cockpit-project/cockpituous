@@ -11,6 +11,7 @@ RABBITMQ_CONFIG=$DATADIR/rabbitmq-config
 SECRETS=$DATADIR/secrets
 IMAGES=$DATADIR/images
 IMAGE_PORT=${IMAGE_PORT:-8080}
+S3_PORT=${S3_PORT:-9000}
 
 # CLI option defaults/values
 PR=
@@ -85,6 +86,10 @@ EOF
         ln -s ..data/s3-keys--r1.cloud.com tasks/s3-keys--r1.cloud.com
         ln -s ..data/s3-keys--r2.cloud.com tasks/s3-keys--r2.cloud.com
 
+        # minio S3 key
+        echo 'minioadmin minioadmin' > tasks/..data/s3-keys--localhost.localdomain
+        ln -s ..data/s3-keys--localhost.localdomain tasks/s3-keys--localhost.localdomain
+
         ssh-keygen -f tasks/id_rsa -P ''
         cat <<EOF > tasks/ssh-config
 Host sink-local
@@ -111,6 +116,8 @@ launch_containers() {
     # HACK: put data into a tmpfs instead of anonymous volume, see https://github.com/containers/podman/issues/9432
     podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
         --publish $IMAGE_PORT:8080 \
+        --publish $S3_PORT:9000 \
+        --publish 9001:9001 \
         --tmpfs /var/lib/rabbitmq \
         -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
@@ -133,6 +140,17 @@ EOF
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
         quay.io/cockpit/images:${IMAGES_TAG:-latest} \
         sh -ec '/usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"'
+
+    # S3
+    podman run -d --name cockpituous-s3 --pod=cockpituous \
+        docker.io/minio/minio server /data --console-address :9001
+    # wait until it started, create bucket
+    podman run -i --rm --entrypoint /bin/sh --network host docker.io/minio/mc <<EOF
+set -e
+until mc alias set minio http://127.0.0.1:9000  minioadmin minioadmin; do sleep 1; done
+mc mb minio/images
+mc policy set download minio/images
+EOF
 
     # scanning actual cockpit PRs interferes with automatic tests; but do this in interactive mode to have a complete deployment
     if [ -n "$INTERACTIVE" ]; then
@@ -178,7 +196,7 @@ cleanup_containers() {
 }
 
 test_image() {
-    # test image upload (htpasswd credentials setup)
+    # test image upload
     podman exec -i cockpituous-tasks timeout 30 sh -ec '
         # wait until tasks container has set up itself and checked out bots
         until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
@@ -197,9 +215,13 @@ test_image() {
         mv /cache/images/testimage /cache/images/$NAME
         ln -s $NAME images/testimage
 
-        # test image-upload
+        # test image-upload to S3
+        ./image-upload --store http://localhost.localdomain:9000/images/ testimage
+
+        # test image-upload to cockpit/image container (htpasswd credentials setup)
         ./image-upload --store https://cockpituous:8443 testimage
         '
+    # image container received this
     test "$(cat "$IMAGES"/testimage-*.qcow2)" = "world"
 
     # validate OpenShift s3 keys secrets setup
@@ -208,11 +230,15 @@ test_image() {
     R2=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r2.cloud.com')
     test "$R2" = "id34 shhht"
 
-    # validate image downloading
-    podman exec -i cockpituous-tasks sh -exc '
+    # validate cockpit/image downloading
+    podman exec -i cockpituous-tasks sh -ec '
         rm --verbose /cache/images/testimage*
         cd bots
         ./image-download --store https://cockpituous:8443 testimage
+        grep -q "^world" /cache/images/testimage-*.qcow2
+        rm /cache/images/testimage*
+
+        ./image-download --store http://localhost.localdomain:9000/images/ testimage
         grep -q "^world" /cache/images/testimage-*.qcow2
         '
 
