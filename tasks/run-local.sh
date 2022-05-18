@@ -151,7 +151,9 @@ EOF
 set -e
 until mc alias set minio http://127.0.0.1:9000  minioadmin minioadmin; do sleep 1; done
 mc mb minio/images
+mc mb minio/logs
 mc policy set download minio/images
+mc policy set download minio/logs
 EOF
 
     # scanning actual cockpit PRs interferes with automatic tests; but do this in interactive mode to have a complete deployment
@@ -180,6 +182,7 @@ EOF
         -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
         -e AMQP_SERVER=localhost:5671 \
         -e TEST_PUBLISH=sink-local \
+        -e S3_LOGS_URL=http://localhost.localdomain:9000/logs/ \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
 }
 
@@ -266,31 +269,31 @@ test_pr() {
     done;
     ./inspect-queue --amqp localhost:5671;"
 
-    # wait until the unit-test got run and published
+    LOGS_URL=http://localhost.localdomain:$S3_PORT/logs/
+
+    # wait until the unit-test got run and published, i.e. until the non-chunked raw log file exists
     for retry in $(seq 60); do
-        [ -e $IMAGES/logs/pull-$PR-*-unit-tests/status ] && break
+        LOG_MATCH="$(curl --silent --show-error $LOGS_URL| grep -o "pull-${PR}-[[:alnum:]-]*-unit-tests/log<")" && break
         echo waiting for unit-tests run to finish...
         sleep 10
     done
+    LOG_PATH="${LOG_MATCH%<}"
 
-    # spot-checks that it produced sensible logs
-    LOG_ID=$(basename $IMAGES/logs/pull-$PR-*-unit-tests)
-    RESULTS_DIR_URL=http://localhost:$IMAGE_PORT/logs/$LOG_ID
+    # spot-checks that it produced sensible logs in S3
+    LOG_URL="$LOGS_URL$LOG_PATH"
     # download the log from the images server instead of the file system, to validate that the former works properly
-    STATUS=$(curl $RESULTS_DIR_URL/status)
-    LOG=$(curl $RESULTS_DIR_URL/log)
-    LOG_HTML=$(curl $RESULTS_DIR_URL/log.html)
+    LOG="$(curl $LOG_URL)"
+    LOG_HTML="$(curl ${LOG_URL}.html)"
     echo "--------------- test log -----------------"
     echo  "$LOG"
     echo "--------------- test log end -------------"
-    echo "$STATUS" | grep -q '"message": "Tests passed"'
     echo "$LOG_HTML" | grep -q '<html>'
-    echo "$LOG" | grep -q 'Running on: `cockpituous`'
+    echo "$LOG" | grep -q 'Running on:.*cockpituous'
     echo "$LOG" | grep -q '^OK'
     echo "$LOG" | grep -q 'Test run finished, return code: 0'
     # validate test attachment if we ran cockpituous' own tests
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
-        BOGUS_LOG=$(curl $RESULTS_DIR_URL/bogus.log)
+        BOGUS_LOG=$(curl ${LOG_URL%/log}/bogus.log)
         echo "$BOGUS_LOG" | grep -q 'heisenberg compensator'
     fi
 }
