@@ -121,7 +121,7 @@ launch_containers() {
         --tmpfs /var/lib/rabbitmq \
         -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
-        quay.io/cockpit/rabbitmq-server
+        docker.io/rabbitmq
 
     # start image+sink in the background; see sink/sink-centosci.yaml
     mkdir -p "$IMAGES"

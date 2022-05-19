@@ -33,7 +33,7 @@
         --tmpfs /var/lib/rabbitmq \
         -v /etc/rabbitmq:/etc/rabbitmq:ro,z \
         -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
-        quay.io/cockpit/rabbitmq-server
+        docker.io/rabbitmq
 
 - name: Launch webhook container in pod
   shell: |
