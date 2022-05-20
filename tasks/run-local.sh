@@ -87,7 +87,7 @@ EOF
         ln -s ..data/s3-keys--r2.cloud.com tasks/s3-keys--r2.cloud.com
 
         # minio S3 key
-        echo 'minioadmin minioadmin' > tasks/..data/s3-keys--localhost.localdomain
+        echo 'cockpituous foobarfoo' > tasks/..data/s3-keys--localhost.localdomain
         ln -s ..data/s3-keys--localhost.localdomain tasks/s3-keys--localhost.localdomain
 
         ssh-keygen -f tasks/id_rsa -P ''
@@ -142,19 +142,26 @@ EOF
         sh -ec '/usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"'
 
     # S3
+    local admin_password="$(dd if=/dev/urandom bs=10 count=1 status=none | base64)"
     podman run -d --name cockpituous-s3 --pod=cockpituous \
+        -e MINIO_ROOT_USER="minioadmin" \
+        -e MINIO_ROOT_PASSWORD="$admin_password" \
         docker.io/minio/minio server /data --console-address :9001
     # wait until it started, create bucket
     podman run -d --interactive --name cockpituous-mc --pod=cockpituous \
         --entrypoint /bin/sh docker.io/minio/mc
+    read s3user s3key < "$SECRETS/tasks/..data/s3-keys--localhost.localdomain"
     podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
-until mc alias set minio http://127.0.0.1:9000  minioadmin minioadmin; do sleep 1; done
+until mc alias set minio http://127.0.0.1:9000  minioadmin '$admin_password'; do sleep 1; done
 mc mb minio/images
 mc mb minio/logs
 mc policy set download minio/images
 mc policy set download minio/logs
+mc admin user add minio/ $s3user $s3key
+mc admin policy set minio/ readwrite user=$s3user
 EOF
+    unset s3key
 
     # scanning actual cockpit PRs interferes with automatic tests; but do this in interactive mode to have a complete deployment
     if [ -n "$INTERACTIVE" ]; then
