@@ -281,7 +281,6 @@ test_pr() {
 
     # spot-checks that it produced sensible logs in S3
     LOG_URL="$LOGS_URL$LOG_PATH"
-    # download the log from the images server instead of the file system, to validate that the former works properly
     LOG="$(curl $LOG_URL)"
     LOG_HTML="$(curl ${LOG_URL}.html)"
     echo "--------------- test log -----------------"
