@@ -1,18 +1,14 @@
 # Cockpit Continuous Integration tasks
 
-This is the staging container and configuration for the Cockpit integration
-tests and automated maintenance tasks. This documentation is for deployment on
-Fedora 22+ or RHEL 7+.
-
-Use the following commands to run the tasks container as a one off:
-
-    $ sudo yum -y install docker atomic oci-kvm-hook
-    $ sudo systemctl start docker
-    $ sudo atomic run cockpit/tasks
+This is the container and configuration for the Cockpit integration tests and
+automated maintenance tasks. This documentation is for deployment on Fedora
+35+, Fedora CoreOS, or RHEL 8+.
 
 The container has optional mounts:
 
  * `/secrets`: A directory for tasks specific secrets, with at least the following files:
+   * `s3-keys/*`: files with S3 access tokens for image upload/download and task log bucket
+   * `server.{pem,key}`: TLS certificate for cockpit/image container, for image upload/download and log sink
    * `ssh-config`: SSH configuration file containing a 'sink' host
    * The SSH config usually goes along with an SSH key `id_rsa{,.pub}` and a `known_hosts` file
  * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
@@ -31,39 +27,9 @@ don't have that yet, run [credentials/generate-ca.sh](./credentials/generate-ca.
 Run either script in the target directory (e.g.
 `/var/lib/cockpit-secrets/webhook/`).
 
-# Deploying on a host
+# Deploying/updating on our own machines
 
-For testing machines that publish back results create a file called
-`/var/lib/cockpit-secrets/tasks/ssh-config` as follows, and place `id_rsa`
-`id_rsa.pub` `authorized_keys` and a `github-token` in the same directory.
-
-    UserKnownHostsFile /secrets/authorized_keys
-    Host sink
-        HostName fedorapeople.org
-        IdentityFile /secrets/id_rsa
-        User cockpit
-
-To transfer secrets from one host to another, you would do something like:
-
-    $ SRC=user@source.example.com
-    $ DEST=user@source.example.com
-    $ ssh $SRC sudo tar -czhf - /var/lib/cockpit-secrets/tasks/ | ssh $DEST sudo tar -C / -xzvf -
-
-Make sure docker and atomic are installed and running:
-
-    $ sudo systemctl enable docker
-    $ sudo atomic install cockpit/tasks
-
-You may want to customize things like the operating system to test or number of jobs:
-
-    $ sudo mkdir -p /etc/systemd/system/cockpit-tasks@.service.d
-    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_JOBS=4\n" > /etc/systemd/system/cockpit-tasks@.service.d/jobs.conf'
-    $ sudo sh -c 'printf "[Service]\nEnvironment=TEST_CACHE=/mnt/nfs/share/cache\n" > /etc/systemd/system/cockpit-tasks@.service.d/cache.conf'
-    $ sudo systemctl daemon-reload
-
-And now you can restart the service:
-
-    $ sudo systemctl restart cockpit-tasks@*
+This happens through [Ansible](../ansible/).
 
 ## Troubleshooting
 
@@ -71,13 +37,6 @@ Some helpful commands:
 
     # journalctl -fu cockpit-tasks@*
     # systemctl stop cockpit-tasks@*
-
-## Updates
-
-To update, just pull the new container and restart the cockpit-tasks service.
-It will restart automatically when it finds a pause in the verification work.
-
-    # docker pull quay.io/cockpit/tasks
 
 # Deploying on OpenShift
 
@@ -106,29 +65,6 @@ Some helpful commands:
     $ oc describe rc
     $ oc describe pods
     $ oc log -f cockpit-tasks-xxxx
-
-The tests need `/dev/kvm` to be accessible to non-root users on each node:
-
-    $ sudo modprobe kvm
-    $ printf 'kvm\n' | sudo tee /etc/modules-load.d/kvm.conf
-    $ sudo chmod 666 /dev/kvm
-    $ printf 'KERNEL=="kvm", GROUP="kvm", MODE="0666"\n' | sudo tee /etc/udev/rules.d/80-kvm.rules
-
-Some of the older tests need ip6_tables to be loaded:
-
-    $ sudo modprobe ip6_tables
-    $ printf 'ip6_tables\n' | sudo tee /etc/modules-load.d/ip6_tables.conf
-
-Some tests need nested virtualization enabled:
-
-    $ sudo -s
-    # echo "options kvm-intel nested=1" > /etc/modprobe.d/kvm-intel.conf
-    # echo "options kvm-amd nested=1" > /etc/modprobe.d/kvm-amd.conf
-    # ( rmmod kvm-intel && modprobe kvm-intel ) || ( rmmod kvm-amd && modprobe kvm-amd )
-
-SELinux needs to know about the caching directories:
-
-    # chcon -Rt svirt_sandbox_file_t /var/cache/cockpit-tasks/
 
 Service affinity currently wants all the cockpit-tasks pods to be in the same region.
 If you have your own cluster make sure all the nodes are in the same region:
