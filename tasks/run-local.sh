@@ -1,7 +1,6 @@
 #!/bin/sh
 # Run a local pod with a AMQP and a tasks container
 # You can run against a tasks container tag different than latest by setting "$TASKS_TAG"
-# similar for "$IMAGES_TAG" for images/sink
 set -eu
 
 MYDIR=$(realpath $(dirname $0))
@@ -9,14 +8,12 @@ ROOTDIR=$(dirname $MYDIR)
 DATADIR=$ROOTDIR/local-data
 RABBITMQ_CONFIG=$DATADIR/rabbitmq-config
 SECRETS=$DATADIR/secrets
-IMAGES=$DATADIR/images
 IMAGE_PORT=${IMAGE_PORT:-8080}
 S3_PORT=${S3_PORT:-9000}
 # S3 address from inside cockpituous pod
 S3_URL_POD=https://localhost.localdomain:9000
 # S3 address from host
 S3_URL_HOST=https://localhost.localdomain:$S3_PORT
-IMAGES_URL_POD=https://cockpituous:8443
 
 # CLI option defaults/values
 PR=
@@ -80,9 +77,8 @@ EOF
         (mkdir -p webhook; cd webhook; $MYDIR/credentials/webhook/generate.sh)
         (mkdir -p tasks; cd tasks; $ROOTDIR/images/generate-image-certs.sh)
 
-        # dummy token, for image-upload
+        # dummy token
         echo 0123abc > "$SECRETS"/webhook/.config--github-token
-        echo 'user:$apr1$FzL9bivD$AzG7R8RNjuR.9DQRUrV.k.' > "$SECRETS"/tasks/htpasswd
 
         # dummy S3 keys in OpenShift tasks/build-secrets encoding, for testing their setup
         mkdir tasks/..data
@@ -94,19 +90,6 @@ EOF
         # minio S3 key
         echo 'cockpituous foobarfoo' > tasks/..data/s3-keys--localhost.localdomain
         ln -s ..data/s3-keys--localhost.localdomain tasks/s3-keys--localhost.localdomain
-
-        ssh-keygen -f tasks/id_rsa -P ''
-        cat <<EOF > tasks/ssh-config
-Host sink-local
-    Hostname cockpituous
-    User user
-    Port 8022
-    IdentityFile /secrets/id_rsa
-    UserKnownHostsFile /dev/null
-    # cluster-local, don't bother with host keys
-    StrictHostKeyChecking no
-    CheckHostIP no
-EOF
         )
 
         # need to make files world-readable, as containers run as different user
@@ -127,24 +110,6 @@ launch_containers() {
         -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
         docker.io/rabbitmq
-
-    # start image+sink in the background; see sink/sink-centosci.yaml
-    mkdir -p "$IMAGES"
-    chmod -R go+w "$IMAGES"  # allow unprivileged sink container to write
-    SINK_CONFIG="$DATADIR/sink.cfg"
-    cat <<EOF > "$SINK_CONFIG"
-[Sink]
-Url: $IMAGES_URL_POD/logs/%(identifier)s/
-Logs: /cache/images/logs
-PruneInterval: 0.5
-EOF
-    podman run -d --name cockpituous-images --pod=cockpituous --user user \
-        -v "$IMAGES":/cache/images:z \
-        -v "$SINK_CONFIG":/run/config/sink:ro,z \
-        -v "$SECRETS"/tasks:/secrets:ro,z \
-        -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
-        quay.io/cockpit/images:${IMAGES_TAG:-latest} \
-        sh -ec '/usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"'
 
     # S3
     local admin_password="$(dd if=/dev/urandom bs=10 count=1 status=none | base64)"
@@ -223,12 +188,6 @@ test_image() {
         # wait until tasks container has set up itself and checked out bots
         until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
 
-        for retry in $(seq 10); do
-            echo "waiting for image server to initialize"
-            curl --silent --fail --head --cacert $COCKPIT_CA_PEM '$IMAGES_URL_POD' && break
-            sleep 5
-        done
-
         cd bots
 
         # fake an image
@@ -241,12 +200,7 @@ test_image() {
         ./image-upload --store '$S3_URL_POD'/images/ testimage
         # S3 store received this
         python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep -q "testimage.*qcow"
-
-        # test image-upload to cockpit/image container (htpasswd credentials setup)
-        ./image-upload --store '$IMAGES_URL_POD' testimage
         '
-    # image container received this
-    test "$(cat "$IMAGES"/testimage-*.qcow2)" = "world"
 
     # validate OpenShift s3 keys secrets setup
     R1=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r1.cloud.com')
@@ -258,16 +212,9 @@ test_image() {
     podman exec -i cockpituous-tasks sh -euxc '
         rm --verbose /cache/images/testimage*
         cd bots
-        ./image-download --store '$IMAGES_URL_POD' testimage
-        grep -q "^world" /cache/images/testimage-*.qcow2
-        rm /cache/images/testimage*
-
         ./image-download --store '$S3_URL_POD'/images/ testimage
         grep -q "^world" /cache/images/testimage-*.qcow2
         '
-
-    # validate that sink has the GitHub token to do status updates
-    podman exec -i cockpituous-images cat /home/user/.config/github-token | grep -q ^0123abc
 }
 
 test_pr() {
