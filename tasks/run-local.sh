@@ -12,6 +12,11 @@ SECRETS=$DATADIR/secrets
 IMAGES=$DATADIR/images
 IMAGE_PORT=${IMAGE_PORT:-8080}
 S3_PORT=${S3_PORT:-9000}
+# S3 address from inside cockpituous pod
+S3_URL_POD=http://localhost.localdomain:9000
+# S3 address from host
+S3_URL_HOST=http://localhost.localdomain:$S3_PORT
+IMAGES_URL_POD=https://cockpituous:8443
 
 # CLI option defaults/values
 PR=
@@ -129,7 +134,7 @@ launch_containers() {
     SINK_CONFIG="$DATADIR/sink.cfg"
     cat <<EOF > "$SINK_CONFIG"
 [Sink]
-Url: http://localhost:$IMAGE_PORT/logs/%(identifier)s/
+Url: $IMAGES_URL_POD/logs/%(identifier)s/
 Logs: /cache/images/logs
 PruneInterval: 0.5
 EOF
@@ -153,7 +158,8 @@ EOF
     read s3user s3key < "$SECRETS/tasks/..data/s3-keys--localhost.localdomain"
     podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
-until mc alias set minio http://127.0.0.1:9000  minioadmin '$admin_password'; do sleep 1; done
+# HACK: podman in github workflow fails to resolve localhost.localdomain, so can't use S3_URL_HOST here
+until mc alias set minio http://localhost:9000  minioadmin '$admin_password'; do sleep 1; done
 mc mb minio/images
 mc mb minio/logs
 mc policy set download minio/images
@@ -189,7 +195,7 @@ EOF
         -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
         -e AMQP_SERVER=localhost:5671 \
         -e TEST_PUBLISH=sink-local \
-        -e S3_LOGS_URL=http://localhost.localdomain:9000/logs/ \
+        -e S3_LOGS_URL=$S3_URL_POD/logs/ \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
 }
 
@@ -215,7 +221,7 @@ test_image() {
 
         for retry in $(seq 10); do
             echo "waiting for image server to initialize"
-            curl --silent --fail --head --cacert $COCKPIT_CA_PEM https://cockpituous:8443 && break
+            curl --silent --fail --head --cacert $COCKPIT_CA_PEM '$IMAGES_URL_POD' && break
             sleep 5
         done
 
@@ -228,12 +234,12 @@ test_image() {
         ln -s $NAME images/testimage
 
         # test image-upload to S3
-        ./image-upload --store http://localhost.localdomain:9000/images/ testimage
+        ./image-upload --store '$S3_URL_POD'/images/ testimage
         # S3 store received this
-        curl http://localhost.localdomain:9000/images/ | grep -q "testimage.*qcow"
+        curl '$S3_URL_POD'/images/ | grep -q "testimage.*qcow"
 
         # test image-upload to cockpit/image container (htpasswd credentials setup)
-        ./image-upload --store https://cockpituous:8443 testimage
+        ./image-upload --store '$IMAGES_URL_POD' testimage
         '
     # image container received this
     test "$(cat "$IMAGES"/testimage-*.qcow2)" = "world"
@@ -248,11 +254,11 @@ test_image() {
     podman exec -i cockpituous-tasks sh -euxc '
         rm --verbose /cache/images/testimage*
         cd bots
-        ./image-download --store https://cockpituous:8443 testimage
+        ./image-download --store '$IMAGES_URL_POD' testimage
         grep -q "^world" /cache/images/testimage-*.qcow2
         rm /cache/images/testimage*
 
-        ./image-download --store http://localhost.localdomain:9000/images/ testimage
+        ./image-download --store '$S3_URL_POD'/images/ testimage
         grep -q "^world" /cache/images/testimage-*.qcow2
         '
 
@@ -276,7 +282,7 @@ test_pr() {
     done;
     ./inspect-queue --amqp localhost:5671;"
 
-    LOGS_URL=http://localhost.localdomain:$S3_PORT/logs/
+    LOGS_URL="$S3_URL_HOST/logs/"
 
     # wait until the unit-test got run and published, i.e. until the non-chunked raw log file exists
     for retry in $(seq 60); do
