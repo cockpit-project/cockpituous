@@ -209,7 +209,7 @@ cleanup_containers() {
 
 test_image() {
     # test image upload
-    podman exec -i cockpituous-tasks timeout 30 sh -ec '
+    podman exec -i cockpituous-tasks timeout 30 sh -exc '
         # wait until tasks container has set up itself and checked out bots
         until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
 
@@ -245,7 +245,7 @@ test_image() {
     test "$R2" = "id34 shhht"
 
     # validate cockpit/image downloading
-    podman exec -i cockpituous-tasks sh -ec '
+    podman exec -i cockpituous-tasks sh -exc '
         rm --verbose /cache/images/testimage*
         cd bots
         ./image-download --store https://cockpituous:8443 testimage
