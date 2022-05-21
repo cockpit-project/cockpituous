@@ -13,9 +13,9 @@ IMAGES=$DATADIR/images
 IMAGE_PORT=${IMAGE_PORT:-8080}
 S3_PORT=${S3_PORT:-9000}
 # S3 address from inside cockpituous pod
-S3_URL_POD=http://localhost.localdomain:9000
+S3_URL_POD=https://localhost.localdomain:9000
 # S3 address from host
-S3_URL_HOST=http://localhost.localdomain:$S3_PORT
+S3_URL_HOST=https://localhost.localdomain:$S3_PORT
 IMAGES_URL_POD=https://cockpituous:8443
 
 # CLI option defaults/values
@@ -151,15 +151,19 @@ EOF
     podman run -d --name cockpituous-s3 --pod=cockpituous \
         -e MINIO_ROOT_USER="minioadmin" \
         -e MINIO_ROOT_PASSWORD="$admin_password" \
+        -v "$SECRETS"/tasks/server.key:/root/.minio/certs/private.key:ro \
+        -v "$SECRETS"/tasks/server.pem:/root/.minio/certs/public.crt:ro \
         docker.io/minio/minio server /data --console-address :9001
     # wait until it started, create bucket
     podman run -d --interactive --name cockpituous-mc --pod=cockpituous \
+        -v "$SECRETS"/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
         --entrypoint /bin/sh docker.io/minio/mc
     read s3user s3key < "$SECRETS/tasks/..data/s3-keys--localhost.localdomain"
     podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
+update-ca-trust
 # HACK: podman in github workflow fails to resolve localhost.localdomain, so can't use S3_URL_HOST here
-until mc alias set minio http://localhost:9000  minioadmin '$admin_password'; do sleep 1; done
+until mc alias set minio https://localhost:9000 minioadmin '$admin_password'; do sleep 1; done
 mc mb minio/images
 mc mb minio/logs
 mc policy set download minio/images
@@ -236,7 +240,7 @@ test_image() {
         # test image-upload to S3
         ./image-upload --store '$S3_URL_POD'/images/ testimage
         # S3 store received this
-        curl '$S3_URL_POD'/images/ | grep -q "testimage.*qcow"
+        python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep -q "testimage.*qcow"
 
         # test image-upload to cockpit/image container (htpasswd credentials setup)
         ./image-upload --store '$IMAGES_URL_POD' testimage
@@ -283,10 +287,11 @@ test_pr() {
     ./inspect-queue --amqp localhost:5671;"
 
     LOGS_URL="$S3_URL_HOST/logs/"
+    CURL="curl --cacert $SECRETS/ca.pem --silent --fail --show-error"
 
     # wait until the unit-test got run and published, i.e. until the non-chunked raw log file exists
     for retry in $(seq 60); do
-        LOG_MATCH="$(curl --silent --show-error $LOGS_URL| grep -o "pull-${PR}-[[:alnum:]-]*-unit-tests/log<")" && break
+        LOG_MATCH="$($CURL $LOGS_URL| grep -o "pull-${PR}-[[:alnum:]-]*-unit-tests/log<")" && break
         echo waiting for unit-tests run to finish...
         sleep 10
     done
@@ -294,8 +299,8 @@ test_pr() {
 
     # spot-checks that it produced sensible logs in S3
     LOG_URL="$LOGS_URL$LOG_PATH"
-    LOG="$(curl $LOG_URL)"
-    LOG_HTML="$(curl ${LOG_URL}.html)"
+    LOG="$($CURL $LOG_URL)"
+    LOG_HTML="$($CURL ${LOG_URL}.html)"
     echo "--------------- test log -----------------"
     echo  "$LOG"
     echo "--------------- test log end -------------"
@@ -305,7 +310,7 @@ test_pr() {
     echo "$LOG" | grep -q 'Test run finished, return code: 0'
     # validate test attachment if we ran cockpituous' own tests
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
-        BOGUS_LOG=$(curl ${LOG_URL%/log}/bogus.log)
+        BOGUS_LOG=$($CURL ${LOG_URL%/log}/bogus.log)
         echo "$BOGUS_LOG" | grep -q 'heisenberg compensator'
     fi
 }
