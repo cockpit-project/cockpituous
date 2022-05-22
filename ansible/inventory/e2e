@@ -11,6 +11,9 @@ ci-srv-04.e2e.bos.redhat.com ansible_user=root
 ci-srv-05.e2e.bos.redhat.com ansible_user=root
 ci-srv-06.e2e.bos.redhat.com ansible_user=root
 
+[e2e_s3]
+cockpit-11.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
+
 [e2e:vars]
 notification_mx=smtp.corp.redhat.com
 notification_to=mpitt@redhat.com,mmarusak@redhat.com,sraymaek@redhat.com

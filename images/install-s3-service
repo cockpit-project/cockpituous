@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# deploy this script with:
+# ansible -i inventory -m include_role -a name=s3-systemd e2e_s3
+set -eufx
+
+CACHE=/var/cache/cockpit-tasks
+SECRETS=/var/lib/cockpit-secrets
+
+if RUNC=$(which podman 2>/dev/null); then
+    UNIT_DEPS=''
+else
+    RUNC=$(which docker)
+    UNIT_DEPS="Requires=docker.service
+After=docker.service"
+fi
+
+systemctl stop cockpit-s3.service || true
+
+cat <<EOF > /etc/systemd/system/cockpit-s3.service
+[Unit]
+Description=Cockpit S3 image server
+$UNIT_DEPS
+
+[Service]
+Restart=always
+RestartSec=60
+ExecStartPre=-$RUNC rm -f cockpit-s3
+ExecStartPre=/bin/rm -rf $CACHE/.minio.sys/
+ExecStartPre=/bin/sh -c 'dd if=/dev/urandom bs=12 count=1 status=none | base64 > /run/cockpit-s3.rootpassword.txt'
+ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=443:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) -v $SECRETS/tasks/server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/server.pem:/root/.minio/certs/public.crt:ro -v $CACHE:/data:rw quay.io/minio/minio server /data"
+ExecStartPost=/usr/local/lib/setup-s3.sh
+ExecStartPost=/bin/rm -f /run/cockpit-s3.rootpassword.txt
+ExecStop=$RUNC rm -f cockpit-s3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat <<EOF > /usr/local/lib/setup-s3.sh
+#!/bin/sh
+set -eu
+read s3user s3key < "$SECRETS/tasks/s3-keys/e2e.bos.redhat.com"
+$RUNC run --interactive --rm --network=host \
+    -v "$SECRETS"/webhook/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
+    --entrypoint /bin/sh quay.io/minio/mc <<EOC
+set -e
+update-ca-trust
+until mc alias set minio https://localhost minioadmin \$(cat /run/cockpit-s3.rootpassword.txt); do sleep 1; done
+# this fails with non-zero as the directory already exists; that's fine
+mc mb minio/images || true
+mc policy set download minio/images
+mc admin user add minio/ '\$s3user' '\$s3key'
+mc admin policy set minio/ readwrite user='\$s3user'
+EOC
+EOF
+chmod a+x /usr/local/lib/setup-s3.sh
+
+systemctl daemon-reload
+systemctl enable --now cockpit-s3.service
