@@ -153,11 +153,11 @@ EOF
         -e MINIO_ROOT_PASSWORD="$admin_password" \
         -v "$SECRETS"/tasks/server.key:/root/.minio/certs/private.key:ro \
         -v "$SECRETS"/tasks/server.pem:/root/.minio/certs/public.crt:ro \
-        docker.io/minio/minio server /data --console-address :9001
+        quay.io/minio/minio server /data --console-address :9001
     # wait until it started, create bucket
     podman run -d --interactive --name cockpituous-mc --pod=cockpituous \
         -v "$SECRETS"/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
-        --entrypoint /bin/sh docker.io/minio/mc
+        --entrypoint /bin/sh quay.io/minio/mc
     read s3user s3key < "$SECRETS/tasks/..data/s3-keys--localhost.localdomain"
     podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
