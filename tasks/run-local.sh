@@ -209,7 +209,7 @@ cleanup_containers() {
 
 test_image() {
     # test image upload
-    podman exec -i cockpituous-tasks timeout 30 sh -exc '
+    podman exec -i cockpituous-tasks timeout 30 sh -euxc '
         # wait until tasks container has set up itself and checked out bots
         until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
 
@@ -245,7 +245,7 @@ test_image() {
     test "$R2" = "id34 shhht"
 
     # validate cockpit/image downloading
-    podman exec -i cockpituous-tasks sh -exc '
+    podman exec -i cockpituous-tasks sh -euxc '
         rm --verbose /cache/images/testimage*
         cd bots
         ./image-download --store https://cockpituous:8443 testimage
@@ -264,7 +264,7 @@ test_pr() {
     # need to use real GitHub token for this
     [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
 
-    podman exec -i cockpituous-tasks sh -exc "
+    podman exec -i cockpituous-tasks sh -euxc "
     cd bots;
     ./tests-scan -p $PR --amqp 'localhost:5671' --repo $PR_REPO;
     for retry in \$(seq 10); do
@@ -323,7 +323,7 @@ podman logs -f cockpituous-tasks &
 
 if [ -n "$INTERACTIVE" ]; then
     # check out the correct bots, as part of what cockpit-tasks would usually do
-    podman exec cockpituous-tasks sh -ec \
+    podman exec cockpituous-tasks sh -euc \
         'git clone --quiet --depth=1 -b "${COCKPIT_BOTS_BRANCH:-main}" "${COCKPIT_BOTS_REPO:-https://github.com/cockpit-project/bots}"'
 
     echo "Starting a tasks container shell; exit it to clean up the deployment"
