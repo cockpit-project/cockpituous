@@ -1,6 +1,6 @@
 - name: Set SSH authorized keys from files
-  authorized_key:
-    user: "{{ user }}"
-    state: present
-    exclusive: True
-    key: "{{ lookup('file', 'ssh-keys') }}"
+  copy:
+    content: "{{ lookup('file', 'ssh-keys') }}"
+    dest: "~{{ user }}/.ssh/authorized_keys"
+    owner: "{{ user }}"
+    group: "{{ user }}"
