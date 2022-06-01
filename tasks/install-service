@@ -14,26 +14,6 @@ TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
 
 systemctl stop 'cockpit-tasks@*.service'
 
-if RUNC=$(which podman 2>/dev/null); then
-    UNIT_DEPS=''
-    DEVICES="--device=/dev/kvm"
-    NETWORK='--net=slirp4netns'  # isolate containers from each other
-    NETWORK_SETUP=''
-    NETWORK_TEARDOWN=''
-    STORAGE=''
-else
-    RUNC=$(which docker)
-    # rely on oci-kvm-hook for /dev/kvm; but avoid stat failure on Fedora ≥ 33 guests on RHEL 7
-    DEVICES='--security-opt=seccomp=unconfined'
-    NETWORK='--network=cockpit-tasks-%i'
-    NETWORK_SETUP="ExecStartPre=-$RUNC network rm cockpit-tasks-%i
-ExecStartPre=$RUNC network create --driver bridge cockpit-tasks-%i"
-    NETWORK_TEARDOWN="ExecStop=$RUNC network rm cockpit-tasks-%i"
-    STORAGE='--storage-opt size=50G'
-    UNIT_DEPS="Requires=docker.service
-After=docker.service"
-fi
-
 mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
@@ -41,7 +21,6 @@ chcon -R -t container_file_t $SECRETS $CACHE
 cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 [Unit]
 Description=Cockpit Tasks %i
-$UNIT_DEPS
 
 [Service]
 Environment="TEST_JOBS=${TEST_JOBS:-8}"
@@ -55,12 +34,10 @@ Restart=always
 RestartSec=60
 # give image pull enough time
 TimeoutStartSec=10min
-ExecStartPre=-$RUNC rm -f cockpit-tasks-%i
-ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull $RUNC pull quay.io/cockpit/tasks
-$NETWORK_SETUP
-ExecStart=$RUNC run --name=cockpit-tasks-%i --hostname=%i-%H $DEVICES $NETWORK $STORAGE --memory=24g --pids-limit=16384 --volume=npm-cache:/work/.npm --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
-ExecStop=$RUNC rm -f cockpit-tasks-%i
-$NETWORK_TEARDOWN
+ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
+ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
+ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=%i-%H --device=/dev/kvm --net=slirp4netns --memory=24g --pids-limit=16384 --volume=npm-cache:/work/.npm --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
+ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
 
 [Install]
 WantedBy=multi-user.target
