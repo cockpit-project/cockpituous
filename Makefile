@@ -1,9 +1,8 @@
 all:
 	@echo "usage: make containers" >&2
-	@echo "       make release-shell" >&2
-	@echo "       make release-cockpit" >&2
-	@echo "       make release-container" >&2
-	@echo "       make release-install" >&2
+	@echo "       make tasks-shell" >&2
+	@echo "       make tasks-container" >&2
+	@echo "       make tasks-push" >&2
 	@echo "       make check" >&2
 
 check:
@@ -18,7 +17,7 @@ WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
 TASK_CACHE := /var/cache/cockpit-tasks
 DOCKER ?= $(shell which podman docker 2>/dev/null | head -n1)
 
-containers: images-container release-container tests-container
+containers: images-container tests-container
 	@true
 
 images-shell:
@@ -34,16 +33,6 @@ images-container:
 
 images-push:
 	./push-container quay.io/cockpit/images
-
-release-shell:
-	$(DOCKER) run -ti --rm --entrypoint=/bin/bash ghcr.io/cockpit-project/release
-
-release-container:
-	$(DOCKER) build -t ghcr.io/cockpit-project/release:$(TAG) release
-	$(DOCKER) tag ghcr.io/cockpit-project/release:$(TAG) ghcr.io/cockpit-project/release:latest
-
-release-push:
-	./push-container ghcr.io/cockpit-project/release
 
 tasks-shell:
 	$(DOCKER) run -ti --rm \
