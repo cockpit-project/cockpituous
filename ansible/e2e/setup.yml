@@ -1,11 +1,11 @@
 ---
-- hosts: e2e
+- name: Set up host OS
+  hosts: e2e
   gather_facts: false
   roles:
   - role: users
     vars:
       user: root
-  - ci-data-cache
 
   tasks:
   - name: Disallow root logins with password
@@ -50,3 +50,17 @@
       name: NetworkManager
       state: reloaded
     when: nm_dnsmasq.changed
+
+- name: Set up tasks runner
+  hosts: e2e
+  gather_facts: false
+  roles:
+    - ci-data-cache
+    - install-secrets-dir
+    - tasks-systemd
+
+- name: Set up image server
+  hosts: e2e_s3
+  gather_facts: false
+  roles:
+    - s3-systemd
