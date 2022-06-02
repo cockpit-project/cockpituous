@@ -28,6 +28,15 @@
       state: stopped
       enabled: no
 
+  - name: Disable unconnected network interfaces to avoid NM-wait-online timeout
+    copy:
+      dest: /etc/NetworkManager/conf.d/disabled-ifaces.conf
+      mode: 0644
+      content: |
+        [keyfile]
+        unmanaged-devices=interface-name:eno*,interface-name:enp3s0f3
+    register: disable_ifaces
+
   # github.com has an obnoxiously short TTL of a minute
   - name: set minimum TTL for local DNS cache
     copy:
@@ -45,11 +54,11 @@
         dns=dnsmasq
     register: nm_dnsmasq
 
-  - name: Reload NetworkManager for dnsmasq configuration change
+  - name: Reload NetworkManager for configuration changes
     service:
       name: NetworkManager
       state: reloaded
-    when: nm_dnsmasq.changed
+    when: nm_dnsmasq.changed or disable_ifaces.changed
 
 - name: Set up tasks runner
   hosts: e2e
