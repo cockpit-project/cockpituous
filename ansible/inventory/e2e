@@ -16,4 +16,4 @@ cockpit-11.apps.cnfdb2.e2e.bos.redhat.com ansible_user=root
 
 [e2e:vars]
 notification_mx=smtp.corp.redhat.com
-notification_to=mpitt@redhat.com,mmarusak@redhat.com,sraymaek@redhat.com
+notification_to=mpitt@redhat.com,mmarusak@redhat.com,allison.karlitskaya@redhat.com
