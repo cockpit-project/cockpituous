@@ -1,0 +1,5 @@
+racadm set iDRAC.VirtualMedia.Attached Attached
+racadm set iDRAC.VirtualMedia.Enable Enabled
+racadm set iDRAC.VirtualMedia.EncryptEnable Disabled
+racadm set iDRAC.VirtualMedia.FloppyEmulation Disabled
+racadm set iDRAC.VirtualMedia.KeyEnable Disabled

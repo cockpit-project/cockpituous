@@ -1,0 +1,2 @@
+racadm remoteimage -d
+racadm remoteimage -s
