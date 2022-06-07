@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -eu
+
+idrac_ssh="$1"
+shift
+
+. ./read-passwd
+
+cat "$@" | sshpass -e ssh "${idrac_ssh}" || true

@@ -1,0 +1,3 @@
+racadm set iDRAC.VirtualMedia.BootOnce 1
+racadm set iDRAC.ServerBoot.FirstBootDevice VCD-DVD
+racadm serveraction powercycle

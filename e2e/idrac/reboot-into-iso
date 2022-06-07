@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -eu
+
+idrac_ssh="$1"
+nfs_path="$2"
+
+. ./read-passwd
+
+./run-fragment "${idrac_ssh}" fragments/virtual-media.racadm /dev/stdin << EOF
+racadm remoteimage -c -l ${nfs_path}
+EOF
+
+echo
+echo 'Does everything look good?  "Remote Image is now Configured"?'
+read -p '[ ENTER to continue, ^C to abort. ] ' ignore
+
+./run-fragment "${idrac_ssh}" fragments/boot-vcd.racadm
+
+cat <<EOF
+Please remember to run
+
+  ./run-fragment ${idrac_ssh} fragments/unmount.racadm
+
+EOF
