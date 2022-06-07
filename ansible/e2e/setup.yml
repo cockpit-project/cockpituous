@@ -86,7 +86,9 @@
   roles:
     - ci-data-cache
     - install-secrets-dir
-    - tasks-systemd
+    - role: tasks-systemd
+      vars:
+        instances: 4
 
 - name: Set up image server
   hosts: e2e_s3
