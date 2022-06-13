@@ -17,8 +17,7 @@
 
   tasks:
   - name: Pre-pull current container image to avoid long downtime
-    # avoid docker_image module, that requires python-docker
-    command: docker pull quay.io/cockpit/tasks
+    command: podman pull quay.io/cockpit/tasks
 
   - name: Tell tasks containers to drain and restart
     command: pkill -ex cockpit-tasks
