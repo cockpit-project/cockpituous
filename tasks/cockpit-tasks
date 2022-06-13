@@ -24,6 +24,8 @@ fi
 # prone to timeouts and errors with lots of parallel containers
 npm config set fetch-retries 6
 npm config set fetch-timeout 600000
+npm config set fetch-retry-mintimeout 60000
+npm config set maxsockets 3
 
 # set up S3 keys for OpenShift secrets volume
 if [ ! -d /secrets/s3-keys ]; then
