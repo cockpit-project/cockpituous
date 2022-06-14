@@ -1,6 +1,6 @@
 # Cockpit CI metrics
 
-Our CI system regularly [builds](https://github.com/cockpit-project/bots/blob/main/prometheus-stats) a [metrics file](https://prometheus.io/docs/instrumenting/exposition_formats/) which is stored on CentOS CI's [logs web server](../sink/sink-centosci.yaml): https://logs-https-frontdoor.apps.ocp.ci.centos.org/prometheus
+Our CI system regularly [builds](https://github.com/cockpit-project/bots/blob/main/prometheus-stats) a [metrics file](https://prometheus.io/docs/instrumenting/exposition_formats/) which is stored on our log S3 bucket]: https://cockpit-logs.us-east-1.linodeobjects.com/prometheus
 
 These kubernetes resources deploy [Prometheus](https://prometheus.io/) to
 regularly read these metrics and store them in a database, and [Grafana](https://grafana.com/) to visualize these metrics as graphs.
