@@ -103,9 +103,9 @@ items:
         - job_name: ci
           honor_timestamps: true
           metrics_path: /prometheus
-          scheme: http
+          scheme: https
           static_configs:
-          - targets: ['sink-http.frontdoor.svc.cluster.local:8080']
+          - targets: ['cockpit-logs.us-east-1.linodeobjects.com']
 
   - kind: ConfigMap
     apiVersion: v1
