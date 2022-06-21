@@ -4,7 +4,6 @@
 # ansible -i inventory -m include_role -a name=s3-systemd e2e_s3
 set -eufx
 
-CACHE=/var/cache/cockpit-tasks
 SECRETS=/var/lib/cockpit-secrets
 
 if RUNC=$(which podman 2>/dev/null); then
@@ -26,9 +25,8 @@ $UNIT_DEPS
 Restart=always
 RestartSec=60
 ExecStartPre=-$RUNC rm -f cockpit-s3
-ExecStartPre=/bin/rm -rf $CACHE/.minio.sys/
 ExecStartPre=/bin/sh -c 'dd if=/dev/urandom bs=12 count=1 status=none | base64 > /run/cockpit-s3.rootpassword.txt'
-ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=443:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) -v $SECRETS/tasks/server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/server.pem:/root/.minio/certs/public.crt:ro -v $CACHE:/data:rw quay.io/minio/minio server /data"
+ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=443:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) -v $SECRETS/tasks/server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/server.pem:/root/.minio/certs/public.crt:ro -v images-minio-data:/data:rw quay.io/minio/minio server /data"
 ExecStartPost=/usr/local/lib/setup-s3.sh
 ExecStartPost=/bin/rm -f /run/cockpit-s3.rootpassword.txt
 ExecStop=$RUNC rm -f cockpit-s3
