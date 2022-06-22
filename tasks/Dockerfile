@@ -49,9 +49,9 @@ RUN dnf -y update && \
         vim-enhanced \
         virt-install \
         wget && \
-    curl -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec.in | \
-    sed 's/@[A-Z_]*@/0/g' > /tmp/cockpit.spec && \
+    curl -o /tmp/cockpit.spec -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec | \
     dnf -y builddep /tmp/cockpit.spec && \
+    rm /tmp/cockpit.spec && \
     dnf -y install \
         audit-libs-devel \
         libtool \
