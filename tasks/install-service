@@ -8,7 +8,7 @@ set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
-INSTANCES=${INSTANCES:-3}
+INSTANCES=${INSTANCES:-4}
 # assume the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention; this can be overridden
 TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
 
