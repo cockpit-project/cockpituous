@@ -6,6 +6,7 @@
   - role: users
     vars:
       user: root
+  - chrony-redhat
 
   tasks:
   - name: Disallow root logins with password
@@ -27,26 +28,6 @@
       name: zezere_ignition_banner.service
       state: stopped
       enabled: no
-
-  - name: Drop default NTP servers
-    lineinfile:
-      path: /etc/chrony.conf
-      regexp: '^pool'
-      state: absent
-    register: ntp_1
-
-  - name: Add Red Hat internal NTP server
-    lineinfile:
-      path: /etc/chrony.conf
-      regexp: '^server'
-      line: server clock.corp.redhat.com iburst
-    register: ntp_2
-
-  - name: Restart chrony on changes
-    service:
-      name: chronyd
-      state: restarted
-    when: ntp_1.changed or ntp_2.changed
 
   - name: Disable unconnected network interfaces to avoid NM-wait-online timeout
     copy:
