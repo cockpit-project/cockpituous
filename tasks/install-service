@@ -18,6 +18,14 @@ mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
 
+if [ $INSTANCES -eq 1 ]; then
+    # just use the hostname without prefix
+    CONTAINER_HOSTNAME="%l"
+else
+    # prefix the host name with the unit instance, so we can tell them apart in GitHub statuses
+    CONTAINER_HOSTNAME="%i-%l"
+fi
+
 cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 [Unit]
 Description=Cockpit Tasks %i
@@ -38,7 +46,7 @@ ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
 ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
 ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
-ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=%i-%l --device=/dev/kvm --network=cockpit-tasks-%i --memory=24g --pids-limit=16384 --volume=npm-cache-%i:/work/.npm --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
+ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} --device=/dev/kvm --network=cockpit-tasks-%i --memory=24g --pids-limit=16384 --volume=npm-cache-%i:/work/.npm --volume=\${TEST_CACHE}/images:/cache/images:rw --volume=\${TEST_SECRETS}/tasks:/secrets:ro --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro ${TMPVOL:-} --shm-size=1024m --user=1111 --env=NPM_REGISTRY=\${NPM_REGISTRY} --env=TEST_JOBS=\${TEST_JOBS} --env=TEST_PUBLISH=\${TEST_PUBLISH} --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} quay.io/cockpit/tasks
 ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
 ExecStop=/usr/bin/podman network rm cockpit-tasks-%i
 
