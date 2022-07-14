@@ -1,0 +1,40 @@
+---
+- name: Create tasks runner OpenStack instance
+  hosts: localhost
+  gather_facts: false
+  vars_files: psi_defaults.yml
+  roles:
+    - role: launch-openstack-instance
+      vars:
+        # playbook can be called with `-e instance_name=..` to use a different name
+        instance_name: '{{ psi_cloud }}-1'
+        ssh_user: '{{ psi_user }}'
+        cloud: '{{ psi_cloud }}'
+        image: '{{ psi_image }}'
+        flavor: '{{ psi_flavor }}'
+        network: '{{ psi_network }}'
+        os_group: "openstack_tasks"
+
+- name: Early setup
+  hosts: launched
+  tasks:
+    - name: Install required packages
+      dnf:
+        name:
+          - podman
+        state: latest
+
+- name: Configure instances
+  hosts: launched
+  vars_files: psi_defaults.yml
+  roles:
+    - role: users
+      vars:
+        user: "{{ psi_user }}"
+    - chrony-redhat
+    - system-upgrade
+    - ci-data-cache
+    - install-secrets-dir
+    - role: tasks-systemd
+      vars:
+        instances: 1

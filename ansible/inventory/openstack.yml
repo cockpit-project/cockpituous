@@ -1,0 +1,14 @@
+---
+plugin: openstack
+cache: yes
+# you can enable this while working on the playbooks, to speed up inventory
+# cache_plugin: yaml
+# cache_connection: ansible-inventory-openstack-cache
+only_clouds:
+  - "rhos-01"
+fail_on_erros: true
+compose:
+  ansible_user: "'fedora'"
+  ansible_become: true
+  # avoid deprecation warning
+  ansible_python_interpreter: "'python3'"

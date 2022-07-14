@@ -1,0 +1,35 @@
+# This is a clouds.yaml file, which can be used by OpenStack tools as a source
+# of configuration on how to connect to a cloud. If this is your only cloud,
+# just put or symlink this file in ~/.config/openstack/clouds.yaml and tools like
+# python-openstackclient will just work with no further config.
+#
+# If you have more than one cloud account, add the cloud entry to the clouds
+# section of your existing file and you can refer to them by name with
+# OS_CLOUD=openstack or --os-cloud=openstack
+#
+# You will need to create ~/.config/openstack/secure.yaml with the template
+# below, add your username and password to it, and set tight (0600) permissions:
+#
+# clouds:
+#   rhos-01:
+#     username: "YOUR_RH_USER_NAME"
+#     password: "YOUR_RH_KERBEROS_PASSWORD"
+clouds:
+  rhos-01:
+    auth:
+      auth_url: https://api.rhos-01.prod.psi.rdu2.redhat.com:13000
+      project_id: fb16e06c6dcb4e679a5d1eec4839cbb7
+      project_name: "front-door-ci"
+      user_domain_name: "redhat.com"
+    region_name: "regionOne"
+    interface: "public"
+    identity_api_version: 3
+  rhos-d:
+    auth:
+      auth_url: https://rhos-d.infra.prod.upshift.rdu2.redhat.com:13000
+      project_id: ec41f2c1c3224ab1b3668b35462bd082
+      project_name: "front-door-ci"
+      user_domain_name: "redhat.com"
+    region_name: "regionOne"
+    interface: "public"
+    identity_api_version: 3

@@ -1,6 +1,7 @@
 *.swp
 .vimrc
 *.txt
+id_deployment*
 local-data/
 sink/logs
 sink/sinkc
