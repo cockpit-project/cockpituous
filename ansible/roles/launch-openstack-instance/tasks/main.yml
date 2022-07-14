@@ -1,0 +1,81 @@
+---
+# Generic role for launching and configuring an OpenStack instance
+#
+# This uses a temporary deployment SSH key, thus does not assume any SSH setup.
+# Your playbook needs to ensure that it sets up permanent SSH access as
+# intended.
+#
+# Required variables:
+# - instance_name
+# - cloud: ID from ~/.config/openstack/cloud.yml
+# - image: OpenStack image name or ID
+# - flavor: OpenStack flavor name or ID
+# - ssh_user: ansible_ssh_user to connect as
+# - os_group: meta data "group=..." key; the dynamic inventory will turn these
+#             into automatic Ansible groups; thus use the same value here and
+#             in the setup playbook's "hosts:"
+# - network: OpenStack network name or ID
+#
+# Optional variables:
+# - volume_size: Copy the image into a new transient volume of given size in GB.
+#                Use this if the flavor's volume size is too small.
+
+- name: Clean up existing {{ instance_name }} instance
+  os_server:
+    name: '{{ instance_name }}'
+    cloud: '{{ cloud }}'
+    state: absent
+
+- name: Create temporary deployment SSH key
+  os_keypair:
+    cloud: '{{ cloud }}'
+    state: present
+    name: '{{ deployment_key_name }}'
+  register: ssh_key
+
+- name: Write temporary deployment SSH key
+  when: ssh_key.changed
+  copy:
+    dest: '{{ deployment_key_path }}'
+    mode: 0600
+    content: '{{ ssh_key.key.private_key }}'
+
+- name: Launch instance
+  os_server:
+    name: '{{ instance_name }}'
+    timeout: 300
+    cloud: '{{ cloud }}'
+    state: present
+    image: '{{ image }}'
+    flavor: '{{ flavor }}'
+    key_name: '{{ deployment_key_name }}'
+    network: '{{ network }}'
+    terminate_volume: yes
+    volume_size: "{{ volume_size | default(omit) }}"
+    boot_from_volume: "{{ (volume_size | default('')) | ternary('yes', 'no') }}"
+    meta:
+      group: '{{ os_group }}'
+  register: instance
+
+# do that bit as early as possible, so that it doesn't stay around if the setup fails
+- name: Remove temporary deployment SSH key in OpenStack
+  os_keypair:
+    cloud: '{{ cloud }}'
+    state: absent
+    name: '{{ deployment_key_name }}'
+
+- name: Add instance to temporary 'launched' inventory group
+  add_host:
+    hostname: '{{ instance.openstack.interface_ip }}'
+    ansible_ssh_user: '{{ deployment_ssh_user }}'
+    ansible_become: true
+    ansible_ssh_private_key_file: '{{ deployment_key_path }}'
+    ansible_python_interpreter: python3
+    # unfortunately the host FP is not part of the os_server result; but *shrug*, we just created this instance, there is no way to know
+    ansible_ssh_extra_args: -o StrictHostKeyChecking=no
+    openstack: '{{ instance.openstack }}'
+    groupname: launched
+
+- name: Wait for SSH to come up
+  delegate_to: '{{ instance.openstack.interface_ip }}'
+  wait_for_connection:
