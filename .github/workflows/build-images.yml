@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment: quay.io
     timeout-minutes: 30
     # needs to use docker, as podman-built images are not accepted to RHEL 8's docker any more

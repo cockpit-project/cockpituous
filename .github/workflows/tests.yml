@@ -2,7 +2,7 @@ name: tests
 on: [pull_request]
 jobs:
   unit-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Clone repository
         uses: actions/checkout@v2
@@ -16,7 +16,7 @@ jobs:
         run: make check
 
   tasks:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       # enough permissions for tests-scan to work
       pull-requests: read
