@@ -1,0 +1,4 @@
+---
+deployment_key_name: '{{ instance_name }}-deployment'
+deployment_key_path: '{{ playbook_dir }}/id_deployment-{{ instance_name }}'
+deployment_ssh_user: '{{ ssh_user }}'
