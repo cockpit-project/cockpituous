@@ -42,7 +42,6 @@ RUN dnf -y update && \
         rpm-build \
         rpmdevtools \
         rsync \
-        sassc \
         socat \
         strace \
         tar \
