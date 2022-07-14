@@ -48,15 +48,14 @@ jobs:
 
       - name: Build tasks container if it changed
         if: steps.containers_changed.outputs.tasks
-        # Run podman as root, as podman is missing slirp4netns by default, and does not have overlayfs by default
-        run: sudo make tasks-container
+        run: make tasks-container
 
       - name: Build images container if it changed
         if: steps.containers_changed.outputs.images
-        run: sudo make images-container
+        run: make images-container
 
       - name: Test local deployment
         run: |
           echo '${{ secrets.GITHUB_TOKEN }}' > ~/.config/github-token
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
-          sudo tasks/run-local.sh -p $PRN -t ~/.config/github-token
+          tasks/run-local.sh -p $PRN -t ~/.config/github-token
