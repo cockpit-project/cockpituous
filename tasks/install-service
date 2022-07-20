@@ -2,8 +2,10 @@
 
 # deploy changes to this script with:
 # ansible -i inventory -m include_role -a name=tasks-systemd e2e
-# ansible -i inventory -m include_role -a name=tasks-systemd tag_ServiceComponent_Tasks
-# ansible -i inventory -m include_role -a name=tasks-systemd openstack_tasks
+# ansible -i inventory -m include_role -a name=tasks-systemd -e instances=12 tag_ServiceComponent_Tasks
+# ansible -i inventory -m include_role -a name=tasks-systemd -e instances=1 openstack_tasks
+#
+# See ansible/{aws,psi}/launch-tasks.yml for the parameters.
 
 set -eufx
 
