@@ -76,6 +76,8 @@
     openstack: '{{ instance.openstack }}'
     groupname: launched
 
+# we can't run Ansible yet with CoreOS (no Python!), so just ping port
 - name: Wait for SSH to come up
-  delegate_to: '{{ instance.openstack.interface_ip }}'
-  wait_for_connection:
+  wait_for:
+    host: '{{ instance.openstack.interface_ip }}'
+    port: 22
