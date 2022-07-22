@@ -20,6 +20,13 @@ Check that this works with
 
     ansible-inventory -i inventory/openstack.yml -v --yaml --list
 
+Fedora CoreOS image import
+--------------------------
+The PSI cluster only has outdated Fedora images, and no CoreOS. So we import
+these ourselves. Before doing a bigger deployment, import the current version
+with [import-coreos.sh](./import-coreos.sh). See the script header for
+requirements.
+
 Tasks runner setup
 ------------------
 We don't have very big flavors on this cloud, so each tasks instance can run just one tasks bot.
@@ -32,4 +39,4 @@ For the time being there is no dynamic scaling, so do this for rhos-01{1..16} (a
 
 All cloud/PSI specific parameters are in [psi_defaults.yml](./psi_defaults.yml), please edit/extend that instead of hardcoding cloud specifics in roles or playbooks.
 
-The instances run our usual [users role](../roles/users/), so if you are in the [ssh-keys](../roles/users/tasks/ssh-keys) list, you can SSH to the instances with `ssh fedora@10.X.X.X`.
+The instances run our usual [users role](../roles/users/), so if you are in the [ssh-keys](../roles/users/tasks/ssh-keys) list, you can SSH to the instances with `ssh core@10.X.X.X`.

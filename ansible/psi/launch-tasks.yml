@@ -16,13 +16,15 @@
         os_group: "openstack_tasks"
 
 - name: Early setup
+  gather_facts: false
   hosts: launched
+  vars_files: psi_defaults.yml
   tasks:
-    - name: Install required packages
-      dnf:
-        name:
-          - podman
-        state: latest
+    - name: Install Python for Ansible
+      raw: rpm-ostree install --apply-live python3 python3-libselinux python3-pyyaml
+    - name: Set host name
+      hostname:
+        name: "{{ instance_name | default('{{ psi_cloud }}-1') }}"
 
 - name: Configure instances
   hosts: launched
@@ -32,7 +34,6 @@
       vars:
         user: "{{ psi_user }}"
     - chrony-redhat
-    - system-upgrade
     - ci-data-cache
     - install-secrets-dir
     - role: tasks-systemd

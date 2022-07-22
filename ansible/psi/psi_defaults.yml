@@ -1,7 +1,8 @@
 ---
 psi_cloud: "rhos-01"
-psi_image: "Fedora-Cloud-Base-35"
-psi_user: "fedora"
+# custom image, see ./import-coreos.sh
+psi_image: "Fedora-CoreOS"
+psi_user: "core"
 # 16 VCPUs, 32 GiB RAM, 160 GB disk
 psi_flavor: "ci.standard.xxxl"
 psi_network: "shared_net_2"
