@@ -37,6 +37,8 @@ Create and configure an instance with
 
 For the time being there is no dynamic scaling, so do this for rhos-01{1..16} (as much as your quota allows).
 
+You can run [deploy-all.sh](./deploy-all.sh) to mass-deploy all instances. Existing instances are deleted first.
+
 All cloud/PSI specific parameters are in [psi_defaults.yml](./psi_defaults.yml), please edit/extend that instead of hardcoding cloud specifics in roles or playbooks.
 
 The instances run our usual [users role](../roles/users/), so if you are in the [ssh-keys](../roles/users/tasks/ssh-keys) list, you can SSH to the instances with `ssh core@10.X.X.X`.
