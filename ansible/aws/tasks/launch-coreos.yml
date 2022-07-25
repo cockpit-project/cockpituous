@@ -59,6 +59,6 @@
   loop: "{{ ec2.instances }}"
 
 - name: Install Python for Ansible
-  raw: rpm-ostree install --apply-live python3 python3-libselinux python3-pyyaml
+  raw: type python3 || rpm-ostree install --apply-live python3 python3-libselinux python3-pyyaml
   delegate_to: "{{ item.public_dns_name | default(item.private_ip_address, true) }}"
   loop: "{{ ec2.instances }}"
