@@ -77,17 +77,16 @@ points to the stable IP 54.89.13.31 of that instance.
 
 Webhook setup
 -------------
-Normally our webhook runs on [CentOS CI](../tasks/cockpit-tasks-webhook.yaml), but for times when this is down we can spin up a webhook in AWS:
+AWS runs our primary webhook. Deploy or update it with:
 
     ansible-playbook -i inventory aws/launch-webhook.yml
 
-Using this deployment requires changing all the GitHub project webhooks to
-http://ec2-3-228-126-27.compute-1.amazonaws.com and changing `DEFAULT_AMQP_SERVER` in
-[bots](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py).
+Set project webhooks to point to http://ec2-3-228-126-27.compute-1.amazonaws.com
+and the shared password found in our CI secrets (`webhook/.config/github-webhook-token`).
 
-Once you don't need this any more, revert the bots change, set the webhook back
-to http://webhook-frontdoor.apps.ocp.ci.centos.org/ and delete the webhook AWS
-instance.
+If you deploy this somewhere else, you need to change `DEFAULT_AMQP_SERVER` in
+[bots](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py)
+and change all GitHub project webhooks accordingly.
 
 Cockpit demo setup
 ------------------
