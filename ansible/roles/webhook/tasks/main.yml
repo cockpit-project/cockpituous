@@ -14,7 +14,7 @@
     import os.path
     import yaml
     with open("/run/cockpit-tasks-webhook.yaml") as f:
-        y = yaml.load(f)
+        y = yaml.full_load(f)
     files = [item for item in y["items"] if item["metadata"]["name"] == "amqp-config"][0]["data"]
     for name, contents in files.items():
         with open(os.path.join('/etc/rabbitmq', name), 'w') as f:
