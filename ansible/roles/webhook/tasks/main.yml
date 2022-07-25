@@ -8,7 +8,7 @@
 # keep this in sync with tasks/run-local.sh
 - name: Generate flat files from RabbitMQ config map
   shell: |
-    rm -r /etc/rabbitmq
+    rm -rf /etc/rabbitmq
     mkdir -p /etc/rabbitmq
     python3 - <<EOF
     import os.path
