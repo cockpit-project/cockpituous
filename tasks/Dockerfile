@@ -91,6 +91,10 @@ RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work
     printf '[libdefaults]\ndefault_ccache_name = FILE:/tmp/krb5.ccache\n' > /etc/krb5.conf.d/0_file_ccache && \
     echo 'user ALL=NOPASSWD: /usr/bin/chmod 666 /dev/kvm' > /etc/sudoers.d/user-fix-kvm
 
+# HACK: apply https://gitlab.com/libosinfo/osinfo-db/-/merge_requests/481 until
+# it lands in Fedora: https://bugzilla.redhat.com/show_bug.cgi?id=2103835
+RUN sed -i 's_isolinux/_images/pxeboot/_' /usr/share/osinfo/os/fedoraproject.org/fedora-rawhide.xml
+
 ENV LANG=C.UTF-8 \
     TEST_OVERLAY_DIR=/tmp
 
