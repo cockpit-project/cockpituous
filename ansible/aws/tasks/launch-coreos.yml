@@ -58,6 +58,20 @@
     port: 22
   loop: "{{ ec2.instances }}"
 
+- name: Switch to stable CoreOS stream and install updates
+  raw: |
+    if ! rpm-ostree status --booted | grep -q coreos/stable; then
+        rpm-ostree rebase --bypass-driver --reboot fedora:fedora/x86_64/coreos/stable
+    fi
+  delegate_to: "{{ item.public_dns_name | default(item.private_ip_address, true) }}"
+  loop: "{{ ec2.instances }}"
+
+- name: Wait for SSH to come up after reboot
+  wait_for:
+    host: "{{ item.public_dns_name | default(item.private_ip_address, true) }}"
+    port: 22
+  loop: "{{ ec2.instances }}"
+
 - name: Install Python for Ansible
   raw: type python3 || rpm-ostree install --apply-live python3 python3-libselinux python3-pyyaml
   delegate_to: "{{ item.public_dns_name | default(item.private_ip_address, true) }}"
