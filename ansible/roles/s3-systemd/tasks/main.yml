@@ -6,4 +6,4 @@
     mode: preserve
 
 - name: Set up systemd service for S3 service
-  command: /run/install-s3-service
+  command: env DISABLE_TLS="{{ disable_tls | default('') }}" /run/install-s3-service
