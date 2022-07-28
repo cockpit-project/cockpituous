@@ -30,7 +30,7 @@ EOF
 cat <<EOF > /usr/local/lib/setup-s3.sh
 #!/bin/sh
 set -eu
-read s3user s3key < "$SECRETS/tasks/s3-keys/e2e.bos.redhat.com"
+read s3user s3key < "$SECRETS/tasks/s3-keys/self-hosted"
 $RUNC run --interactive --rm --network=host \
     -v "$SECRETS"/webhook/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
     --entrypoint /bin/sh quay.io/minio/mc <<EOC
