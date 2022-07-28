@@ -9,3 +9,5 @@ cd "$(dirname $(dirname $(realpath $0)))"
 NUM=16
 
 seq $NUM | parallel --line-buffer -j4 ansible-playbook -i inventory/ -e instance_name='rhos-01-{}' psi/launch-tasks.yml
+
+ansible-playbook -i inventory/ psi/image-cache.yml

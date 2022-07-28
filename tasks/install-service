@@ -11,6 +11,7 @@ set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
+IMAGE_STORES=${CACHE}/image-stores
 INSTANCES=${INSTANCES:-4}
 # assume the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention; this can be overridden
 TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
@@ -28,6 +29,9 @@ else
     # prefix the host name with the unit instance, so we can tell them apart in GitHub statuses
     CONTAINER_HOSTNAME="%i-%l"
 fi
+
+# ensure this always exists
+touch "$IMAGE_STORES"
 
 cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 [Unit]
@@ -56,6 +60,7 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --volume=\${TEST_CACHE}/images:/cache/images:rw \
     --volume=\${TEST_SECRETS}/tasks:/secrets:ro \
     --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
+    --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
     --env=NPM_REGISTRY=\${NPM_REGISTRY} \
     --env=TEST_JOBS=\${TEST_JOBS} \
     --env=TEST_PUBLISH=\${TEST_PUBLISH} \

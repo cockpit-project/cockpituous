@@ -1,0 +1,31 @@
+---
+- name: Set up S3 image cache
+  hosts: psi_s3
+  gather_facts: false
+  roles:
+    - role: s3-systemd
+      vars:
+        # we have no stable IP and no DNS, and subjectAltNames don't support IP patterns
+        disable_tls: 1
+
+- name: Configure image cache on all task runners
+  hosts: openstack_tasks
+  gather_facts: false
+  tasks:
+    - name: Create config file with store URL
+      copy:
+        dest: /var/cache/cockpit-tasks/image-stores
+        mode: 0644
+        content: |
+          http://{{ hostvars[groups["psi_s3"][0]].ansible_host }}/images/
+
+    - name: Create s3-keys alias
+      file:
+        src: self-hosted
+        dest: "/var/lib/cockpit-secrets/tasks/s3-keys/{{ hostvars[groups['psi_s3'][0]].ansible_host }}"
+        state: link
+        owner: 1111
+        group: 1111
+
+    - name: Tell tasks containers to drain and restart
+      command: pkill -ex cockpit-tasks
