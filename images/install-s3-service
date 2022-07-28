@@ -5,21 +5,13 @@
 set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
-
-if RUNC=$(which podman 2>/dev/null); then
-    UNIT_DEPS=''
-else
-    RUNC=$(which docker)
-    UNIT_DEPS="Requires=docker.service
-After=docker.service"
-fi
+RUNC=$(which podman)
 
 systemctl stop cockpit-s3.service || true
 
 cat <<EOF > /etc/systemd/system/cockpit-s3.service
 [Unit]
 Description=Cockpit S3 image server
-$UNIT_DEPS
 
 [Service]
 Restart=always
