@@ -9,6 +9,17 @@ RUNC=$(which podman)
 
 systemctl stop cockpit-s3.service || true
 
+if [ -z "${DISABLE_TLS:-}" ]; then
+
+    CERT_VOLS="-v $SECRETS/tasks/server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/server.pem:/root/.minio/certs/public.crt:ro"
+    PORT=443
+    PROTOCOL=https
+else
+    CERT_VOLS=""
+    PORT=80
+    PROTOCOL=http
+fi
+
 cat <<EOF > /etc/systemd/system/cockpit-s3.service
 [Unit]
 Description=Cockpit S3 image server
@@ -18,7 +29,7 @@ Restart=always
 RestartSec=60
 ExecStartPre=-$RUNC rm -f cockpit-s3
 ExecStartPre=/bin/sh -c 'dd if=/dev/urandom bs=12 count=1 status=none | base64 > /run/cockpit-s3.rootpassword.txt'
-ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=443:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) -v $SECRETS/tasks/server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/server.pem:/root/.minio/certs/public.crt:ro -v images-minio-data:/data:rw quay.io/minio/minio server /data"
+ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=$PORT:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) $CERT_VOLS -v images-minio-data:/data:rw quay.io/minio/minio server /data"
 ExecStartPost=/usr/local/lib/setup-s3.sh
 ExecStartPost=/bin/rm -f /run/cockpit-s3.rootpassword.txt
 ExecStop=$RUNC rm -f cockpit-s3
@@ -36,7 +47,7 @@ $RUNC run --interactive --rm --network=host \
     --entrypoint /bin/sh quay.io/minio/mc <<EOC
 set -e
 update-ca-trust
-until mc alias set minio https://localhost minioadmin \$(cat /run/cockpit-s3.rootpassword.txt); do sleep 1; done
+until mc alias set minio ${PROTOCOL}://localhost minioadmin \$(cat /run/cockpit-s3.rootpassword.txt); do sleep 1; done
 # this fails with non-zero as the directory already exists; that's fine
 mc mb minio/images || true
 mc policy set download minio/images
