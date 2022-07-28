@@ -12,3 +12,4 @@ compose:
   ansible_become: true
   # avoid deprecation warning
   ansible_python_interpreter: "'python3'"
+  ansible_ssh_common_args: "'-o StrictHostKeyChecking=no'"
