@@ -7,7 +7,7 @@ Access
 ------
 Sign into the OpenShift web console on https://api.rhos-01.prod.psi.rdu2.redhat.com with domain "redhat.com", your RedHat user name, and your Kerberos password. You need to be in the [front-door-ci group](https://rover.redhat.com/groups/group/front-door-ci) for this.
 
-The only change that was, and currently needs to be done manually is to add SSH and ICMP to the "default" security group. This step may be automated in the future.
+The only change that was, and currently needs to be done manually is to add SSH, HTTP, and ICMP to the "default" security group. This step may be automated in the future.
 
 Automation setup
 ----------------
@@ -40,6 +40,14 @@ For the time being there is no dynamic scaling, so do this for rhos-01{1..16} (a
 You can run [deploy-all.sh](./deploy-all.sh) to mass-deploy all instances. Existing instances are deleted first.
 
 All cloud/PSI specific parameters are in [psi_defaults.yml](./psi_defaults.yml), please edit/extend that instead of hardcoding cloud specifics in roles or playbooks.
+
+Image cache
+-----------
+We also run an S3 image server on the first instance (defined in [ansible/inventory/psi_s3](../inventory/psi_s3)), mostly as a local cache. Otherwise image download during tests is too slow and repeated too often. Set this up with
+
+    ansible-playbook -i inventory psi/image-cache.yml
+
+This needs to be run whenever the first instance gets redeployed.
 
 SSH access
 ----------
