@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+# Generate ~/.ssh/ansible-openstack.config from dynamic OpenStack inventory
+
+import json
+import os
+import subprocess
+from pathlib import Path
+
+os_inventory_path = Path(__file__).parent / "inventory/openstack.yml"
+
+inventory = json.loads(subprocess.check_output(
+    ["ansible-inventory", "-i", os_inventory_path, "--list"]
+    ).strip().decode())
+
+target = Path("~/.ssh/ansible-openstack.config")
+with open(target.expanduser(), "w") as f:
+    f.write(f"# automatically generated from {os_inventory_path}\n")
+
+    for hostname, props in inventory["_meta"]["hostvars"].items():
+        f.write(f"""
+Host {hostname}
+    Hostname {props["ansible_host"]}
+    User {props["ansible_user"]}
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+""")
+
+    # SSH rejects group-writable files (for wide umask)
+    perms = os.fstat(f.fileno()).st_mode
+    os.fchmod(f.fileno(), perms & 0o644)
+
+print(f"Generated {target}")
+include = "Include ansible-openstack.config"
+if include not in Path("~/.ssh/config").expanduser().read_text("UTF-8"):
+    print(f"To enable this, add this line to your ~/.ssh/config:\n{include}")
