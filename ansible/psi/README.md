@@ -41,4 +41,6 @@ You can run [deploy-all.sh](./deploy-all.sh) to mass-deploy all instances. Exist
 
 All cloud/PSI specific parameters are in [psi_defaults.yml](./psi_defaults.yml), please edit/extend that instead of hardcoding cloud specifics in roles or playbooks.
 
-The instances run our usual [users role](../roles/users/), so if you are in the [ssh-keys](../roles/users/tasks/ssh-keys) list, you can SSH to the instances with `ssh core@10.X.X.X`.
+SSH access
+----------
+The instances run our usual [users role](../roles/users/), so if you are in the [ssh-keys](../roles/users/tasks/ssh-keys) list, you can SSH to the instances. Run [`./openstack-ssh-config`](../openstack-ssh-config) to generate an SSH configuration file from the dynamic inventory, and follow the instructions. Then you can do e. g. `ssh rhos-01-1`.
