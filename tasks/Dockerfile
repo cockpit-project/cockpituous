@@ -14,6 +14,7 @@ RUN dnf -y update && \
         firefox \
         fpaste \
         gcc-c++ \
+        genisoimage \
         git \
         git-lfs \
         gnupg \
