@@ -34,9 +34,8 @@ RUN dnf -y update && \
         origin-clients \
         psmisc \
         procps-ng \
-        python3-pyflakes \
         python3 \
-        python3-pycodestyle \
+        python3-flake8 \
         python3-pika \
         python3-pillow \
         qemu-kvm-core \
