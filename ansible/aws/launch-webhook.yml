@@ -13,6 +13,12 @@
         network:
           interfaces:
             - eni-004f5b4f714f3fda9
+        volumes:
+          # default 10 GB are not enough for two rpm-ostree deployments and tasks container
+          - device_name: /dev/xvda
+            ebs:
+              volume_size: 20
+              delete_on_termination: true
 
 - name: Configure instances
   hosts: launched
