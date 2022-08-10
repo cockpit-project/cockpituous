@@ -8,10 +8,11 @@ RemainAfterExit=yes
 Restart=on-failure
 TimeoutStopSec=70
 
+ExecStart=-/usr/bin/podman pod rm -f cockpituous
+
 ExecStart=/usr/bin/podman run \
 	--cgroups=no-conmon \
 	--rm \
-	--replace \
 	-d \
 	--name cockpituous-rabbitmq \
 	--pod=new:cockpituous \
@@ -26,7 +27,6 @@ ExecStart=/usr/bin/podman run \
 ExecStart=/usr/bin/podman run \
 	--cgroups=no-conmon \
 	--rm \
-	--replace \
 	-d \
 	--name cockpituous-webhook \
 	--pod=cockpituous \
