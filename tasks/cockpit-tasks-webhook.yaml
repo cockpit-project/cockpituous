@@ -1,165 +1,167 @@
 ---
+kind: ReplicationController
 apiVersion: v1
-kind: List
-items:
-- kind: ReplicationController
-  apiVersion: v1
-  metadata:
-    name: webhook
-  spec:
-    replicas: 1
-    selector:
-      infra: webhook
-    template:
-      metadata:
-        name: webhook
-        labels:
-          infra: webhook
-      spec:
-        containers:
-          - name: amqp
-            image: docker.io/rabbitmq
-            ports:
-            - containerPort: 5671
-              protocol: TCP
-              name: amqp-secure
-            volumeMounts:
-            - name: webhook-secrets
-              mountPath: /run/secrets/webhook
-              readOnly: true
-            - name: amqp-config
-              mountPath: /etc/rabbitmq
-              readOnly: true
-            resources:
-              limits:
-                memory: 1G
-                cpu: 1
-              requests:
-                memory: 300M
-                cpu: 200m
-          - name: webhook
-            image: quay.io/cockpit/tasks
-            ports:
-              - containerPort: 8080
-                protocol: TCP
-            command: [ "webhook" ]
-            volumeMounts:
-            - name: webhook-secrets
-              mountPath: /run/secrets/webhook
-              readOnly: true
-            resources:
-              limits:
-                memory: 1G
-                cpu: 2
-              requests:
-                memory: 200M
-                cpu: 100m
-        volumes:
-        - name: webhook-secrets
-          secret:
-            secretName: webhook-secrets
-        - name: amqp-config
-          configMap:
-            name: amqp-config
-
-- kind: Service
-  apiVersion: v1
-  metadata:
-    name: webhook
-  spec:
-    clusterIP: None
-    selector:
-      infra: webhook
-    ports:
-    - name: webhook
-      port: 80
-      targetPort: 8080
-      protocol: TCP
-
-- kind: Route
-  apiVersion: route.openshift.io/v1
-  metadata:
-    name: webhook
-  spec:
-    to:
-      kind: Service
+metadata:
+  name: webhook
+spec:
+  replicas: 1
+  selector:
+    infra: webhook
+  template:
+    metadata:
       name: webhook
-    port:
-      targetPort: 8080
+      labels:
+        infra: webhook
+    spec:
+      containers:
+        - name: amqp
+          image: docker.io/rabbitmq
+          ports:
+          - containerPort: 5671
+            protocol: TCP
+            name: amqp-secure
+          volumeMounts:
+          - name: webhook-secrets
+            mountPath: /run/secrets/webhook
+            readOnly: true
+          - name: amqp-config
+            mountPath: /etc/rabbitmq
+            readOnly: true
+          resources:
+            limits:
+              memory: 1G
+              cpu: 1
+            requests:
+              memory: 300M
+              cpu: 200m
+        - name: webhook
+          image: quay.io/cockpit/tasks
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          command: [ "webhook" ]
+          volumeMounts:
+          - name: webhook-secrets
+            mountPath: /run/secrets/webhook
+            readOnly: true
+          resources:
+            limits:
+              memory: 1G
+              cpu: 2
+            requests:
+              memory: 200M
+              cpu: 100m
+      volumes:
+      - name: webhook-secrets
+        secret:
+          secretName: webhook-secrets
+      - name: amqp-config
+        configMap:
+          name: amqp-config
 
-- kind: Service
-  apiVersion: v1
-  metadata:
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: webhook
+spec:
+  clusterIP: None
+  selector:
+    infra: webhook
+  ports:
+  - name: webhook
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: webhook
+spec:
+  to:
+    kind: Service
+    name: webhook
+  port:
+    targetPort: 8080
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: amqp
+spec:
+  clusterIP: None
+  selector:
+    infra: webhook
+  ports:
+  - targetPort: 5671
+    port: 5671
+    protocol: TCP
+    name: amqp-secure
+
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: amqp
+spec:
+  to:
+    kind: Service
     name: amqp
-  spec:
-    clusterIP: None
-    selector:
-      infra: webhook
-    ports:
-    - targetPort: 5671
-      port: 5671
-      protocol: TCP
-      name: amqp-secure
+  port:
+    targetPort: amqp-secure
+  tls:
+    termination: passthrough
 
-- kind: Route
-  apiVersion: route.openshift.io/v1
-  metadata:
-    name: amqp
-  spec:
-    to:
-      kind: Service
-      name: amqp
-    port:
-      targetPort: amqp-secure
-    tls:
-      termination: passthrough
-
-- kind: ConfigMap
-  apiVersion: v1
-  metadata:
-    name: amqp-config
-  data:
-    # password authentication is disabled, so the contents of "password_hash" doesn't matter
-    definitions.json: |
-        {
-            "users": [
-                {
-                    "name": "cockpit-amqp",
-                    "password_hash":"pB0/JnjGQ9tS8/w9gU7Fx8yRsquH54tnX3bufGZ0KQqho5Wz",
-                    "hashing_algorithm":"rabbit_password_hashing_sha256",
-                    "tags": ""
-                }
-            ],
-            "vhosts": [
-                {
-                    "name": "/"
-                }
-            ],
-            "permissions": [
-                {
-                    "user": "cockpit-amqp",
-                    "vhost": "/",
-                    "configure": ".*",
-                    "write": ".*",
-                    "read": ".*"
-                }
-            ]
-        }
-    enabled_plugins: |
-        [rabbitmq_auth_mechanism_ssl,rabbitmq_management].
-    rabbitmq.conf: |
-        log.file = false
-        log.console = true
-        log.console.level = error
-        listeners.ssl.default = 5671
-        ssl_options.cacertfile = /run/secrets/webhook/ca.pem
-        ssl_options.certfile   = /run/secrets/webhook/amqp-server.pem
-        ssl_options.keyfile    = /run/secrets/webhook/amqp-server.key
-        ssl_options.verify     = verify_peer
-        ssl_options.fail_if_no_peer_cert = false
-        ssl_options.versions.1 = tlsv1.2
-        ssl_options.versions.2 = tlsv1.1
-        auth_mechanisms.1 = EXTERNAL
-        ssl_cert_login_from = common_name
-        management.load_definitions = /etc/rabbitmq/definitions.json
-        consumer_timeout = 9000000
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: amqp-config
+data:
+  # password authentication is disabled, so the contents of "password_hash" doesn't matter
+  definitions.json: |
+      {
+          "users": [
+              {
+                  "name": "cockpit-amqp",
+                  "password_hash":"pB0/JnjGQ9tS8/w9gU7Fx8yRsquH54tnX3bufGZ0KQqho5Wz",
+                  "hashing_algorithm":"rabbit_password_hashing_sha256",
+                  "tags": ""
+              }
+          ],
+          "vhosts": [
+              {
+                  "name": "/"
+              }
+          ],
+          "permissions": [
+              {
+                  "user": "cockpit-amqp",
+                  "vhost": "/",
+                  "configure": ".*",
+                  "write": ".*",
+                  "read": ".*"
+              }
+          ]
+      }
+  enabled_plugins: |
+      [rabbitmq_auth_mechanism_ssl,rabbitmq_management].
+  rabbitmq.conf: |
+      log.file = false
+      log.console = true
+      log.console.level = error
+      listeners.ssl.default = 5671
+      ssl_options.cacertfile = /run/secrets/webhook/ca.pem
+      ssl_options.certfile   = /run/secrets/webhook/amqp-server.pem
+      ssl_options.keyfile    = /run/secrets/webhook/amqp-server.key
+      ssl_options.verify     = verify_peer
+      ssl_options.fail_if_no_peer_cert = false
+      ssl_options.versions.1 = tlsv1.2
+      ssl_options.versions.2 = tlsv1.1
+      auth_mechanisms.1 = EXTERNAL
+      ssl_cert_login_from = common_name
+      management.load_definitions = /etc/rabbitmq/definitions.json
+      consumer_timeout = 9000000

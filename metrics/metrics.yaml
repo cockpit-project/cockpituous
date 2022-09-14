@@ -1,187 +1,191 @@
 ---
-apiVersion: v1
-kind: List
-items:
-  - kind: Deployment
-    apiVersion: apps/v1
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      infra: metrics
+  template:
     metadata:
-      name: metrics
-    spec:
-      replicas: 1
-      selector:
-        matchLabels:
-          infra: metrics
-      template:
-        metadata:
-          labels:
-            infra: metrics
-        spec:
-          containers:
-          - name: prometheus
-            image: quay.io/prometheus/prometheus:latest
-            ports:
-            - containerPort: 9090
-              protocol: TCP
-              name: prom
-            volumeMounts:
-              - name: prometheus-config
-                mountPath: /etc/prometheus/
-                readOnly: true
-              - name: prometheus-db
-                mountPath: /prometheus
-
-          - name: grafana
-            image: docker.io/grafana/grafana
-            env:
-            - name: GF_PATHS_CONFIG
-              value: /grafana-config/grafana.ini
-            - name: GF_PATHS_PROVISIONING
-              value: /etc/grafana/provisioning
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: metrics-secrets
-                  key: grafana-admin
-            ports:
-            - containerPort: 3000
-              protocol: TCP
-              name: grafana
-            volumeMounts:
-            - name: grafana-config
-              mountPath: /grafana-config
-              readOnly: true
-            - name: grafana-provisioning-datasources
-              mountPath: /etc/grafana/provisioning/datasources
-              readOnly: true
-            - name: grafana-provisioning-dashboards
-              mountPath: /etc/grafana/provisioning/dashboards
-              readOnly: true
-            - name: grafana-dashboards
-              mountPath: /dashboards
-              readOnly: true
-
-          volumes:
-            - name: prometheus-config
-              configMap:
-                name: prometheus-config
-            - name: prometheus-db
-              # from ./prometheus-claim.yaml
-              persistentVolumeClaim:
-                claimName: prometheus-db
-            - name: grafana-config
-              configMap:
-                name: grafana-config
-            - name: grafana-provisioning-datasources
-              configMap:
-                name: grafana-provisioning-datasources
-            - name: grafana-provisioning-dashboards
-              configMap:
-                name: grafana-provisioning-dashboards
-            - name: grafana-dashboards
-              configMap:
-                # this is not defined here, but gets built from *.json files in ./deploy.sh
-                name: grafana-dashboards
-
-  - kind: ConfigMap
-    apiVersion: v1
-    metadata:
-      name: prometheus-config
-    data:
-      prometheus.yml: |
-        global:
-          scrape_interval: 15m
-          scrape_timeout: 30s
-          evaluation_interval: 15m
-        alerting:
-          alertmanagers:
-          - static_configs:
-            - targets: []
-            scheme: http
-            timeout: 10s
-            api_version: v1
-        scrape_configs:
-        - job_name: ci
-          honor_timestamps: true
-          metrics_path: /prometheus
-          scheme: https
-          static_configs:
-          - targets: ['cockpit-logs.us-east-1.linodeobjects.com']
-
-  - kind: ConfigMap
-    apiVersion: v1
-    metadata:
-      name: grafana-provisioning-datasources
-    data:
-      datasource.yaml: |
-        apiVersion: 1
-        datasources:
-        - name: Prometheus
-          type: prometheus
-          url: http://localhost:9090
-          isDefault: true
-          access: proxy
-          editable: true
-
-  - kind: ConfigMap
-    apiVersion: v1
-    metadata:
-      name: grafana-provisioning-dashboards
-    data:
-      all.yaml: |
-        apiVersion: 1
-        providers:
-        - name: default
-          options:
-            path: /dashboards/
-
-  - kind: ConfigMap
-    apiVersion: v1
-    metadata:
-      name: grafana-config
-    data:
-      grafana.ini: |
-        [auth.anonymous]
-        enabled = true
-        [users]
-        default_theme = light
-
-  - kind: Service
-    apiVersion: v1
-    metadata:
-      name: prometheus
-    spec:
-      clusterIP: None
-      selector:
+      labels:
         infra: metrics
-      ports:
-      - name: prom
-        port: 9090
-        targetPort: 9090
-        protocol: TCP
-
-  - kind: Service
-    apiVersion: v1
-    metadata:
-      name: grafana
     spec:
-      clusterIP: None
-      selector:
-        infra: metrics
-      ports:
+      containers:
+      - name: prometheus
+        image: quay.io/prometheus/prometheus:latest
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+          name: prom
+        volumeMounts:
+          - name: prometheus-config
+            mountPath: /etc/prometheus/
+            readOnly: true
+          - name: prometheus-db
+            mountPath: /prometheus
+
       - name: grafana
-        port: 3000
-        targetPort: 3000
-        protocol: TCP
+        image: docker.io/grafana/grafana
+        env:
+        - name: GF_PATHS_CONFIG
+          value: /grafana-config/grafana.ini
+        - name: GF_PATHS_PROVISIONING
+          value: /etc/grafana/provisioning
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metrics-secrets
+              key: grafana-admin
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+          name: grafana
+        volumeMounts:
+        - name: grafana-config
+          mountPath: /grafana-config
+          readOnly: true
+        - name: grafana-provisioning-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+          readOnly: true
+        - name: grafana-provisioning-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
+          readOnly: true
+        - name: grafana-dashboards
+          mountPath: /dashboards
+          readOnly: true
 
-  - kind: Route
-    apiVersion: route.openshift.io/v1
-    metadata:
-      name: grafana
-    spec:
-      to:
-        kind: Service
-        name: grafana
-      port:
-        targetPort: 3000
-      tls:
-        termination: edge
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        - name: prometheus-db
+          # from ./prometheus-claim.yaml
+          persistentVolumeClaim:
+            claimName: prometheus-db
+        - name: grafana-config
+          configMap:
+            name: grafana-config
+        - name: grafana-provisioning-datasources
+          configMap:
+            name: grafana-provisioning-datasources
+        - name: grafana-provisioning-dashboards
+          configMap:
+            name: grafana-provisioning-dashboards
+        - name: grafana-dashboards
+          configMap:
+            # this is not defined here, but gets built from *.json files in ./deploy.sh
+            name: grafana-dashboards
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15m
+      scrape_timeout: 30s
+      evaluation_interval: 15m
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets: []
+        scheme: http
+        timeout: 10s
+        api_version: v1
+    scrape_configs:
+    - job_name: ci
+      honor_timestamps: true
+      metrics_path: /prometheus
+      scheme: https
+      static_configs:
+      - targets: ['cockpit-logs.us-east-1.linodeobjects.com']
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: grafana-provisioning-datasources
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://localhost:9090
+      isDefault: true
+      access: proxy
+      editable: true
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: grafana-provisioning-dashboards
+data:
+  all.yaml: |
+    apiVersion: 1
+    providers:
+    - name: default
+      options:
+        path: /dashboards/
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: grafana-config
+data:
+  grafana.ini: |
+    [auth.anonymous]
+    enabled = true
+    [users]
+    default_theme = light
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: prometheus
+spec:
+  clusterIP: None
+  selector:
+    infra: metrics
+  ports:
+  - name: prom
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: grafana
+spec:
+  clusterIP: None
+  selector:
+    infra: metrics
+  ports:
+  - name: grafana
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: grafana
+spec:
+  to:
+    kind: Service
+    name: grafana
+  port:
+    targetPort: 3000
+  tls:
+    termination: edge
