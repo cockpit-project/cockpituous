@@ -57,12 +57,13 @@ import os.path
 import yaml
 
 with open("$MYDIR/cockpit-tasks-webhook.yaml") as f:
-    y = yaml.full_load(f)
-files = [item for item in y["items"] if item["metadata"]["name"] == "amqp-config"][0]["data"]
+    for doc in yaml.full_load_all(f):
+        if doc["metadata"]["name"] == "amqp-config":
+            break
+files = doc["data"]
 for name, contents in files.items():
     with open(os.path.join('$RABBITMQ_CONFIG', name), 'w') as f:
         f.write(contents)
-print(files)
 EOF
     # need to make files world-readable, as rabbitmq container runs as different user
     chmod -R go+rX "$RABBITMQ_CONFIG"
@@ -268,7 +269,7 @@ test_queue() {
     echo "$OUT" | grep -q 'queue public is empty'
 }
 
-# 
+#
 # main
 #
 
