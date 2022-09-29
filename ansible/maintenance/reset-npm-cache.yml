@@ -1,0 +1,13 @@
+- name: Reset the NPM cache volume after occasional corruption
+  hosts: e2e tag_ServiceComponent_Tasks openstack_tasks
+  gather_facts: false
+  tasks:
+    - name: Clear npm cache directory in all npm-cache-N volumes
+      shell: |
+        {% raw %}
+        set -ex
+        for dir in $(podman volume ls --format '{{.Name}}' | grep '^npm-cache-' | xargs -rn1 \
+                     podman volume inspect --format '{{.Mountpoint}}'); do
+            rm  -rf "$dir/_cacache"
+        done
+        {% endraw %}
