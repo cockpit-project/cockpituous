@@ -132,8 +132,8 @@ update-ca-trust
 until mc alias set minio https://localhost:9000 minioadmin '$admin_password'; do sleep 1; done
 mc mb minio/images
 mc mb minio/logs
-mc policy set download minio/images
-mc policy set download minio/logs
+mc anonymous set download minio/images
+mc anonymous set download minio/logs
 mc admin user add minio/ $s3user $s3key
 mc admin policy set minio/ readwrite user=$s3user
 EOF
