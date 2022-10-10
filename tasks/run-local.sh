@@ -166,6 +166,7 @@ EOF
         -e AMQP_SERVER=localhost:5671 \
         -e TEST_PUBLISH=sink-local \
         -e S3_LOGS_URL=$S3_URL_POD/logs/ \
+	-e SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
 }
 
