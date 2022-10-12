@@ -18,6 +18,7 @@ RUN dnf -y update && \
         git \
         git-lfs \
         gnupg \
+        google-noto-cjk-fonts-common \
         intltool \
         jq \
         lcov \
