@@ -51,28 +51,6 @@ RUN dnf -y update && \
     curl -o /tmp/cockpit.spec -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec | \
     dnf -y builddep /tmp/cockpit.spec && \
     rm /tmp/cockpit.spec && \
-    dnf -y install \
-        audit-libs-devel \
-        libtool \
-        gettext-devel \
-        gtk3-devel \
-        gtk-doc \
-        gtk3-devel-docs \
-        glib2-doc \
-        gobject-introspection-devel \
-        glade-devel \
-        libgnomekbd-devel \
-        libxklavier-devel \
-        make \
-        pango-devel \
-        python3-devel \
-        rpm-devel \
-        libarchive-devel \
-        libtimezonemap-devel \
-        gdk-pixbuf2-devel \
-        libxml2 \
-        gsettings-desktop-schemas \
-        desktop-file-utils && \
     dnf clean all
 
 COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
