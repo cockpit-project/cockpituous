@@ -84,12 +84,3 @@ VOLUME /cache/images
 USER user
 WORKDIR /work
 CMD ["/usr/local/bin/cockpit-tasks", "--publish", "$TEST_PUBLISH", "--verbose"]
-
-# We execute the script in the host, but it doesn't exist on the host. So pipe it in
-LABEL INSTALL /usr/bin/docker run -ti --rm --privileged --volume=/:/host:rw --user=root IMAGE /bin/bash -c \"/usr/sbin/chroot /host /bin/sh -s < /usr/local/bin/install-service\"
-
-# Run a simple interactive instance of the tests container
-LABEL RUN /usr/bin/docker run -ti --rm --volume=/var/lib/cockpit-secrets/tasks:/secrets:ro --volume=/var/cache/cockpit-tasks/images:/cache/images:rw IMAGE /bin/bash -i
-
-# Start a container in the background; attach to it with "docker exec -it <name> byobu"
-LABEL DEV /usr/bin/docker run -d --volume=/var/cache/cockpit-tasks/images:/cache/images:rw IMAGE sleep infinity
