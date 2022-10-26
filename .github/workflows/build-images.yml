@@ -7,15 +7,12 @@ jobs:
     runs-on: ubuntu-22.04
     environment: quay.io
     timeout-minutes: 30
-    # needs to use docker, as podman-built images are not accepted to RHEL 8's docker any more
-    env:
-      DOCKER: docker
     steps:
       - name: Clone repository
         uses: actions/checkout@v3
 
       - name: Log into container registry
-        run: docker login -u ${{ secrets.QUAY_BOTUSER }} -p ${{ secrets.QUAY_TOKEN }} quay.io
+        run: podman login -u ${{ secrets.QUAY_BOTUSER }} -p ${{ secrets.QUAY_TOKEN }} quay.io
 
       - name: Build images container
         run: make images-container
