@@ -38,9 +38,11 @@ RUN dnf -y update && \
         psmisc \
         procps-ng \
         python3 \
+        python3-build \
         python3-flake8 \
         python3-pika \
         python3-pillow \
+        python3-wheel \
         qemu-kvm-core \
         rpm-build \
         rpmdevtools \
