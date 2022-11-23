@@ -41,7 +41,6 @@ Description=Cockpit Tasks %i
 Environment="TEST_JOBS=${TEST_JOBS:-8}"
 Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
-Environment="TEST_PUBLISH=${TEST_PUBLISH:-sink}"
 Environment="TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}"
 Environment="TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}"
 Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
@@ -63,7 +62,6 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
     --env=NPM_REGISTRY=\${NPM_REGISTRY} \
     --env=TEST_JOBS=\${TEST_JOBS} \
-    --env=TEST_PUBLISH=\${TEST_PUBLISH} \
     --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
     quay.io/cockpit/tasks

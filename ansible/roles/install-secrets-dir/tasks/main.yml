@@ -28,12 +28,6 @@
      mode: 'u=rwX,g=rX,o=rX'
      setype: container_file_t
 
- # otherwise ssh bitterly complains: Permissions 0644 for '/secrets/id_rsa' are too open
- - name: Fix permissions of private SSH key file
-   file:
-     path: /var/lib/cockpit-secrets/tasks/id_rsa
-     mode: '0600'
-
  - name: Clean up secrets archive
    file:
      path: /tmp/secrets.tar.gz

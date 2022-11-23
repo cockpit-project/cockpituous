@@ -1,6 +1,0 @@
-{ "message": "Starting test", "irc": { "channel": "#cockpit" } }
-This is the actual contents of the log
-Another line
-
-Yet anether line
-{ "message": "Finished test", "irc": { "channel": "#cockpit" } }

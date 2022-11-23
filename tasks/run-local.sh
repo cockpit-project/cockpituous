@@ -164,7 +164,6 @@ EOF
         -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
         -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
         -e AMQP_SERVER=localhost:5671 \
-        -e TEST_PUBLISH=sink-local \
         -e S3_LOGS_URL=$S3_URL_POD/logs/ \
 	-e SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
@@ -255,7 +254,7 @@ test_pr() {
     echo "--------------- test log end -------------"
     echo "$LOG_HTML" | grep -q '<html>'
     echo "$LOG" | grep -q 'Running on:.*cockpituous'
-    echo "$LOG" | grep -q '^OK'
+    echo "$LOG" | grep -q 'python3 -m pyflakes'
     echo "$LOG" | grep -q 'Test run finished, return code: 0'
     # validate test attachment if we ran cockpituous' own tests
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
