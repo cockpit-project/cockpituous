@@ -3,8 +3,6 @@
 *.txt
 id_deployment*
 local-data/
-sink/logs
-sink/sinkc
 tasks/credentials/**/*.key
 tasks/credentials/**/*.pem
 __pycache__

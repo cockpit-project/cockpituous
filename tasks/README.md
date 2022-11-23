@@ -8,9 +8,7 @@ The container has optional mounts:
 
  * `/secrets`: A directory for tasks specific secrets, with at least the following files:
    * `s3-keys/*`: files with S3 access tokens for image upload/download and task log bucket
-   * `server.{pem,key}`: TLS certificate for cockpit/image container, for image upload/download and log sink
-   * `ssh-config`: SSH configuration file containing a 'sink' host
-   * The SSH config usually goes along with an SSH key `id_rsa{,.pub}` and a `known_hosts` file
+   * `server.{pem,key}`: TLS certificate for cockpit/image container, for image upload/download
  * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
    * `.config--github-token`: GitHub token to create and update issues and PRs
    * `amqp-{client,server}.{pem,key}`: TLS certificates for RabbitMQ
@@ -80,9 +78,9 @@ command:
 
 # Deploying locally for development
 
-For hacking on the webhook, image/sink, or task container, or validating new container
+For hacking on the webhook, image, or task container, or validating new container
 images, you can also run a simple [podman pod](http://docs.podman.io/en/latest/pod.html)
-locally with  RabbitMQ, webhook, images, sink, and tasks containers:
+locally with  RabbitMQ, webhook, images, and tasks containers:
 
     $ tasks/run-local.sh
 
@@ -93,7 +91,7 @@ tag by setting `$TASKS_TAG` and/or `$IMAGES_TAG`.
 
 This currently does not yet have any convenient way to inject arbitrary jobs
 into the AMQP queue; this will be provided at a later point. However, you can
-test the whole GitHub → webhook → tasks → sink/GitHub status workflow on some
+test the whole GitHub → webhook → tasks → GitHub status workflow on some
 cockpituous PR with specifying the PR number and a GitHub token:
 
     $ tasks/run-local.sh -p 123 -t ~/.config/github-token

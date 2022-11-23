@@ -46,9 +46,7 @@ For running tests we need to use [Nitro instances](https://docs.aws.amazon.com/A
 Persistent resources
 --------------------
 
- * eni-0fece6d6c83cd9eca, aka "cockpit-public-sink": network device with stable external IP 54.89.13.31 (DNS: logs.cockpit-project.org)
  * eni-004f5b4f714f3fda9, aka "cockpit-public-webhook": network device with stable external IP 3.228.126.27 (DNS: ec2-3-228-126-27.compute-1.amazonaws.com)
- * vol-082d93e22206389e6, aka "cockpit-logs": persistent volume for the public log sink
 
 Tasks runner setup
 ------------------
@@ -58,22 +56,6 @@ Create and configure the instance:
     ansible-playbook -i inventory aws/launch-tasks.yml
 
 If you run more than one at a time, set a custom host name with `-e hostname=cockpit-aws-tasks-2` or similar, so that GitHub test statuses remain useful to identify where a test runs.
-
-Public log sink/server setup
-----------------------------
-
- * Create and configure the instance:
-
-       ansible-playbook -i inventory aws/launch-public-sink.yml
-
- * Set up an ssh configuration for convenience:
-
-       Host awssink
-          Hostname logs.cockpit-project.org
-          User core
-
-The logs.cockpit-project.org domain (managed by Red Hat, ask sgallagh about it)
-points to the stable IP 54.89.13.31 of that instance.
 
 Webhook setup
 -------------

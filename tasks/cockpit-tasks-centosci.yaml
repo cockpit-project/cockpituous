@@ -19,8 +19,6 @@ spec:
         env:
         - name: TEST_JOBS
           value: '6'
-        - name: TEST_PUBLISH
-          value: sink-local-4
         - name: RUN_STATISTICS_QUEUE
           value: '1'
         volumeMounts:
