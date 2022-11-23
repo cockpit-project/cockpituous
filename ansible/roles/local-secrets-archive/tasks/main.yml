@@ -18,6 +18,3 @@
    run_once: yes
    shell: |
      tar -C $XDG_RUNTIME_DIR/ci-secrets  -hz --hard-dereference -c webhook tasks > $XDG_RUNTIME_DIR/ci-secrets.tar.gz
-   args:
-     # archive module does not support dereferencing links
-     warn: false
