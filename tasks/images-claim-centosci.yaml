@@ -1,3 +1,4 @@
+# persistent image cache volume for tasks containers and our test-results.db database (for CI weather)
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
