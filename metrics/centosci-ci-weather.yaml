@@ -1,41 +1,35 @@
+# Expose our test-results.db database and CI weather (https://github.com/cockpit-project/bots/blob/main/tests.html)
+# on a simple web server. Grafana still does not fully replace this.
+
 kind: ReplicationController
 apiVersion: v1
 metadata:
-  name: sink
+  name: ci-weather
 spec:
   replicas: 1
   selector:
-    infra: sink
+    infra: ci-weather
   template:
     metadata:
-      name: sink
+      name: ci-weather
       labels:
-        infra: sink
+        infra: ci-weather
     spec:
       containers:
-        - name: sink
-          image: quay.io/cockpit/images
+        - name: ci-weather
+          image: docker.io/nginxinc/nginx-unprivileged
           ports:
             - containerPort: 8080
               protocol: TCP
               name: http
-            - containerPort: 8022
-              protocol: TCP
-              name: ssh
-          command: [ 'sh', '-ec', 'OUT=$(sed "/^user:/d; /^$(id -u):/d" /etc/passwd); echo -e "$OUT\nuser:x:$(id -u):0:user:/home/user:/bin/bash" > /etc/passwd; /usr/sbin/sshd -p 8022 -o StrictModes=no -E /dev/stderr; /usr/sbin/nginx -g "daemon off;"' ]
           volumeMounts:
           - name: images
-            mountPath: /cache/images
-          - name: webhook-secrets
-            mountPath: /run/secrets/webhook
-            readOnly: true
-          - name: task-secrets
-            mountPath: /secrets
+            mountPath: /usr/share/nginx/html/
             readOnly: true
           resources:
             limits:
               memory: 1G
-              cpu: 2
+              cpu: 1
             requests:
               memory: 200M
               cpu: 100m
@@ -43,22 +37,16 @@ spec:
       - name: images
         persistentVolumeClaim:
           claimName: cockpit-images
-      - name: webhook-secrets
-        secret:
-          secretName: webhook-secrets
-      - name: task-secrets
-        secret:
-          secretName: cockpit-tasks-secrets
 
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: sink-http
+  name: ci-weather-http
 spec:
   clusterIP: None
   selector:
-    infra: sink
+    infra: ci-weather
   ports:
   # we use edge termination, so talk to plain http
   - targetPort: http
@@ -70,11 +58,12 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
+  # backwards compatible name
   name: logs-https
 spec:
   to:
     kind: Service
-    name: sink-http
+    name: ci-weather-http
   port:
     targetPort: http
   tls:
