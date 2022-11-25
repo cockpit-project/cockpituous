@@ -76,7 +76,7 @@ EOF
         cd "$SECRETS"
         $MYDIR/credentials/generate-ca.sh
         (mkdir -p webhook; cd webhook; $MYDIR/credentials/webhook/generate.sh)
-        (mkdir -p tasks; cd tasks; $ROOTDIR/images/generate-image-certs.sh)
+        (mkdir -p tasks; cd tasks; $ROOTDIR/local-s3/generate-s3-cert.sh)
 
         # dummy token
         echo 0123abc > "$SECRETS"/webhook/.config--github-token
@@ -117,8 +117,8 @@ launch_containers() {
     podman run -d --name cockpituous-s3 --pod=cockpituous \
         -e MINIO_ROOT_USER="minioadmin" \
         -e MINIO_ROOT_PASSWORD="$admin_password" \
-        -v "$SECRETS"/tasks/server.key:/root/.minio/certs/private.key:ro \
-        -v "$SECRETS"/tasks/server.pem:/root/.minio/certs/public.crt:ro \
+        -v "$SECRETS"/tasks/s3-server.key:/root/.minio/certs/private.key:ro \
+        -v "$SECRETS"/tasks/s3-server.pem:/root/.minio/certs/public.crt:ro \
         quay.io/minio/minio server /data --console-address :9001
     # wait until it started, create bucket
     podman run -d --interactive --name cockpituous-mc --pod=cockpituous \

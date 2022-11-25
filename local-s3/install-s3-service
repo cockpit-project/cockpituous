@@ -11,7 +11,7 @@ systemctl stop cockpit-s3.service || true
 
 if [ -z "${DISABLE_TLS:-}" ]; then
 
-    CERT_VOLS="-v $SECRETS/tasks/server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/server.pem:/root/.minio/certs/public.crt:ro"
+    CERT_VOLS="-v $SECRETS/tasks/s3-server.key:/root/.minio/certs/private.key:ro -v $SECRETS/tasks/s3-server.pem:/root/.minio/certs/public.crt:ro"
     PORT=443
     PROTOCOL=https
 else

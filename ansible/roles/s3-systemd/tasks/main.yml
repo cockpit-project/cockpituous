@@ -1,7 +1,7 @@
 ---
 - name: "Upload s3 service installation script"
   copy:
-    src: "{{ role_path }}/../../../images/install-s3-service"
+    src: "{{ role_path }}/../../../local-s3/install-s3-service"
     dest: /run/install-s3-service
     mode: preserve
 

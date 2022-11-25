@@ -8,7 +8,7 @@ The container has optional mounts:
 
  * `/secrets`: A directory for tasks specific secrets, with at least the following files:
    * `s3-keys/*`: files with S3 access tokens for image upload/download and task log bucket
-   * `server.{pem,key}`: TLS certificate for cockpit/image container, for image upload/download
+   * `s3-server.{pem,key}`: TLS certificate for local S3 image cache container
  * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
    * `.config--github-token`: GitHub token to create and update issues and PRs
    * `amqp-{client,server}.{pem,key}`: TLS certificates for RabbitMQ
