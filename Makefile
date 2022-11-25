@@ -15,22 +15,8 @@ WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
 TASK_CACHE := /var/cache/cockpit-tasks
 DOCKER ?= $(shell which podman docker 2>/dev/null | head -n1)
 
-containers: images-container tests-container
+containers: tests-container
 	@true
-
-images-shell:
-	$(DOCKER) run -ti --rm --publish 8080:8080 --publish=8493:8443 \
-		--volume=$(TASK_SECRETS):/secrets:ro \
-		--volume=$(TASK_CACHE)/images:/cache/images:rw \
-		--entrypoint=/bin/bash \
-        cockpit/images -i
-
-images-container:
-	$(DOCKER) build -t quay.io/cockpit/images:$(TAG) images
-	$(DOCKER) tag quay.io/cockpit/images:$(TAG) quay.io/cockpit/images:latest
-
-images-push:
-	./push-container quay.io/cockpit/images
 
 tasks-shell:
 	$(DOCKER) run -ti --rm \

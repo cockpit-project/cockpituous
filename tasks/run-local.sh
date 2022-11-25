@@ -209,7 +209,7 @@ test_image() {
     R2=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r2.cloud.com')
     test "$R2" = "id34 shhht"
 
-    # validate cockpit/image downloading
+    # validate image downloading from S3
     podman exec -i cockpituous-tasks sh -euxc '
         rm --verbose /cache/images/testimage*
         cd bots
