@@ -48,6 +48,11 @@ to access `/dev/kvm`. Further work is necessary to remove this requirement.
     $ oc adm policy add-scc-to-user anyuid -z cockpituous
     $ oc adm policy add-scc-to-user hostmount-anyuid -z cockpituous
 
+You most probably want a persistent shared volume for locally caching images.
+Create it with
+
+    $ oc create -f tasks/images-claim-centosci.yaml
+
 Now create all the remaining kubernetes objects. The secrets are created from
 the `/var/lib/cockpit-secrets/tasks` directory as described above. For the
 webhook secrets a github token `~/.config/github-webhook-token` should be
