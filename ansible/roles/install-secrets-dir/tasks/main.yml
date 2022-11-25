@@ -35,8 +35,8 @@
 
  # the above empties the /secrets volume for running containers
  - name: Restart webhook and image containers to pick up changed secrets
-   # The glob avoids failure on machines which are not running cockpit-images
-   command: systemctl restart cockpituous-webhook*.service cockpit-images*.service
+   # The glob avoids failure on machines which are not running webhook
+   command: systemctl restart cockpituous-webhook*.service
 
  - name: Restart systemd controlled tasks containers to pick up changed secrets
    command: systemctl restart cockpit-tasks@*

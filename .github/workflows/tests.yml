@@ -39,20 +39,13 @@ jobs:
         id: containers_changed
         run: |
           tasks=$(git diff --name-only origin/main..HEAD -- tasks/ | grep -Ev 'run-local.sh|openssl.cnf|README' || true)
-          images=$(git diff --name-only origin/main..HEAD -- images/)
           # print for debugging
           echo "tasks: $tasks"
-          echo "images: $images"
           [ -z "$tasks" ] || echo "::set-output name=tasks::true"
-          [ -z "$images" ] || echo "::set-output name=images::true"
 
       - name: Build tasks container if it changed
         if: steps.containers_changed.outputs.tasks
         run: make tasks-container
-
-      - name: Build images container if it changed
-        if: steps.containers_changed.outputs.images
-        run: make images-container
 
       - name: Test local deployment
         run: |
