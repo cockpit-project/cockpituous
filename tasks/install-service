@@ -55,7 +55,6 @@ ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
     --device=/dev/kvm --network=cockpit-tasks-%i \
     --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
-    --volume=npm-cache-%i:/work/.npm \
     --volume=\${TEST_CACHE}/images:/cache/images:rw \
     --volume=\${TEST_SECRETS}/tasks:/secrets:ro \
     --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
