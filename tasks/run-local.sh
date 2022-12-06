@@ -261,7 +261,6 @@ test_pr() {
     echo "--------------- test log end -------------"
     assert_in '<html>' "$LOG_HTML"
     assert_in 'Running on:.*cockpituous' "$LOG"
-    assert_in 'python3 -m pyflakes' "$LOG"
     assert_in 'Test run finished, return code: 0' "$LOG"
     # validate test attachment if we ran cockpituous' own tests
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
