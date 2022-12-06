@@ -21,6 +21,13 @@ PR_REPO=cockpit-project/cockpituous
 TOKEN=
 INTERACTIVE=
 
+assert_in() {
+    if ! echo "$2" | grep -q "$1"; then
+        echo "ERROR: did not find '$1' in '$2'" >&2
+        exit 1
+    fi
+}
+
 parse_options() {
     while getopts "his:t:p:r:" opt "$@"; do
         case $opt in
@@ -252,14 +259,14 @@ test_pr() {
     echo "--------------- test log -----------------"
     echo  "$LOG"
     echo "--------------- test log end -------------"
-    echo "$LOG_HTML" | grep -q '<html>'
-    echo "$LOG" | grep -q 'Running on:.*cockpituous'
-    echo "$LOG" | grep -q 'python3 -m pyflakes'
-    echo "$LOG" | grep -q 'Test run finished, return code: 0'
+    assert_in '<html>' "$LOG_HTML"
+    assert_in 'Running on:.*cockpituous' "$LOG"
+    assert_in 'python3 -m pyflakes' "$LOG"
+    assert_in 'Test run finished, return code: 0' "$LOG"
     # validate test attachment if we ran cockpituous' own tests
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
         BOGUS_LOG=$($CURL ${LOG_URL%/log}/bogus.log)
-        echo "$BOGUS_LOG" | grep -q 'heisenberg compensator'
+        assert_in 'heisenberg compensator' "$BOGUS_LOG"
     fi
 }
 
