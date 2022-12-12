@@ -24,7 +24,7 @@ spec:
           - name: prometheus-config
             mountPath: /etc/prometheus/
             readOnly: true
-          - name: prometheus-db
+          - name: prometheus-data
             mountPath: /prometheus
 
       - name: grafana
@@ -61,10 +61,10 @@ spec:
         - name: prometheus-config
           configMap:
             name: prometheus-config
-        - name: prometheus-db
+        - name: prometheus-data
           # from ./prometheus-claim.yaml
           persistentVolumeClaim:
-            claimName: prometheus-db
+            claimName: prometheus-data
         - name: grafana-config
           configMap:
             name: grafana-config
