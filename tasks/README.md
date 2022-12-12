@@ -112,7 +112,7 @@ Add a webhook to your GitHub project on the Settings → Webhooks page of your p
 
  * Set the Payload URL to the DNS host name of the deployed route:
 
-       http://webhook-frontdoor.apps.ocp.ci.centos.org
+       http://webhook-cockpit.apps.ocp.cloud.ci.centos.org
 
  * Use the same secret as in `~/.config/github-webhook-token` above.
 
