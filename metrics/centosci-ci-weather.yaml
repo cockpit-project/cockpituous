@@ -23,7 +23,7 @@ spec:
               protocol: TCP
               name: http
           volumeMounts:
-          - name: images
+          - name: prometheus-data
             mountPath: /usr/share/nginx/html/
             readOnly: true
           resources:
@@ -34,9 +34,9 @@ spec:
               memory: 200M
               cpu: 100m
       volumes:
-      - name: images
+      - name: prometheus-data
         persistentVolumeClaim:
-          claimName: cockpit-images
+          claimName: prometheus-data
 
 ---
 kind: Service
@@ -58,8 +58,7 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  # backwards compatible name
-  name: logs-https
+  name: ci-weather
 spec:
   to:
     kind: Service

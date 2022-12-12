@@ -19,7 +19,7 @@ regularly read these metrics and store them in a database, and [Grafana](https:/
 
        metrics/deploy.sh
 
-   After that, Grafana should be available at https://grafana-frontdoor.apps.ocp.ci.centos.org and show the Cockpit CI dashboard at https://grafana-frontdoor.apps.ocp.ci.centos.org/d/ci/cockpit-ci
+   After that, Grafana should be available at https://grafana-cockpit.apps.ocp.cloud.ci.centos.org and show the Cockpit CI dashboard at https://grafana-cockpit.apps.ocp.cloud.ci.centos.org/d/ci/cockpit-ci
 
 
 ## Dashboard maintenance
@@ -31,3 +31,7 @@ The metrics are meant to implement and measure our [Service Level objectives](ht
 Whenever you change the dashboard, use the "Dashboard settings" button (cog
 icon at the top right) → JSON model, copy&paste it to
 [cockpit.ci-json](./cockpit-ci.json), and send a pull request to update it.
+
+## CI weather
+
+We also have a [static viewer](https://github.com/cockpit-project/bots/blob/main/tests.html) for the test result database. It is *really* slow, but still has features which Grafana doesn't -- in particular, showing example log URLs for failures. This is deployed as a separate [centosci-ci-weather.yaml](./centosci-ci-weather.yaml) resource and accessible here: https://ci-weather-cockpit.apps.ocp.cloud.ci.centos.org/tests.html
