@@ -42,6 +42,7 @@ RUN dnf -y update && \
         python3-flake8 \
         python3-pika \
         python3-pillow \
+        python3-pip \
         python3-wheel \
         qemu-kvm-core \
         rpm-build \
