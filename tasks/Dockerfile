@@ -19,6 +19,7 @@ RUN dnf -y update && \
         git-lfs \
         gnupg \
         gobject-introspection-devel \
+        golang-github-evanw-esbuild \
         google-noto-cjk-fonts-common \
         intltool \
         jq \
