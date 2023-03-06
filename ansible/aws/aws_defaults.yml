@@ -7,5 +7,5 @@ aws_rhel_ami: ami-03a454637e4aa453d
 
 # CoreOS image for container workloads
 aws_coreos_owner: "125523088429"
-aws_coreos_filter: "fedora-coreos-*"
+aws_coreos_filter: "Fedora CoreOS stable *"
 aws_coreos_defaultuser: "core"
