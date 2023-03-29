@@ -142,7 +142,7 @@ mc mb minio/logs
 mc anonymous set download minio/images
 mc anonymous set download minio/logs
 mc admin user add minio/ $s3user $s3key
-mc admin policy set minio/ readwrite user=$s3user
+mc admin policy attach minio/ readwrite --user $s3user
 EOF
     unset s3key
 
