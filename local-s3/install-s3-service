@@ -52,7 +52,7 @@ until mc alias set minio ${PROTOCOL}://localhost minioadmin \$(cat /run/cockpit-
 mc mb minio/images || true
 mc policy set download minio/images
 mc admin user add minio/ '\$s3user' '\$s3key'
-mc admin policy set minio/ readwrite user='\$s3user'
+mc admin policy attach minio/ readwrite --user '\$s3user'
 EOC
 EOF
 chmod a+x /usr/local/lib/setup-s3.sh
