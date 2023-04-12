@@ -81,6 +81,7 @@ for i in $(seq 1 30); do
     virsh list --id --all | xargs --no-run-if-empty virsh destroy
     pkill -9 virtqemud || true
     while pgrep virtqemud >/dev/null; do sleep 0.5; done
+    rm -rf ~/.config/libvirt ~/.cache/libvirt
 
     # run-queue fails on empty queues; don't poll too often
     timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || slumber
