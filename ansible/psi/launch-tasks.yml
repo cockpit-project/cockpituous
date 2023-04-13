@@ -20,12 +20,15 @@
   hosts: launched
   vars_files: psi_defaults.yml
   tasks:
-    - name: Install Python for Ansible
-      raw: type python3 || rpm-ostree install -y --apply-live python3 python3-libselinux python3-pyyaml
-
     - name: Set host name
       hostname:
         name: "{{ instance_name | default('{{ psi_cloud }}-1') }}"
+
+    - name: Install required packages
+      dnf:
+        name:
+          - podman
+        state: latest
 
 - name: Configure instances
   hosts: launched

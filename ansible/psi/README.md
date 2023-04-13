@@ -20,13 +20,6 @@ Check that this works with
 
     ansible-inventory -i inventory/openstack.yml -v --yaml --list
 
-Fedora CoreOS image import
---------------------------
-The PSI cluster only has outdated Fedora images, and no CoreOS. So we import
-these ourselves. Before doing a bigger deployment, import the current version
-with [import-coreos.sh](./import-coreos.sh). See the script header for
-requirements.
-
 Tasks runner setup
 ------------------
 We don't have very big flavors on this cloud, so each tasks instance can run just one tasks bot.
