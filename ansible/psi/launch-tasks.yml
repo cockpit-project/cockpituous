@@ -21,7 +21,8 @@
   vars_files: psi_defaults.yml
   tasks:
     - name: Install Python for Ansible
-      raw: rpm-ostree install --apply-live python3 python3-libselinux python3-pyyaml
+      raw: type python3 || rpm-ostree install -y --apply-live python3 python3-libselinux python3-pyyaml
+
     - name: Set host name
       hostname:
         name: "{{ instance_name | default('{{ psi_cloud }}-1') }}"
