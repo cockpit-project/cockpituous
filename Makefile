@@ -15,7 +15,7 @@ WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
 TASK_CACHE := /var/cache/cockpit-tasks
 DOCKER ?= $(shell which podman docker 2>/dev/null | head -n1)
 
-containers: tests-container
+containers: tasks-container
 	@true
 
 tasks-shell:
