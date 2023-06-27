@@ -181,7 +181,7 @@ sequenceDiagram
 
  * The webhook calls an OpenShift route, e. g.
 
-      http://webhook-cockpit.apps.ci.centos.org/
+      http://webhook-cockpit.apps.ocp.cloud.ci.centos.org/
 
    This is a route/service that gets that HTTP request to a pod that has (1) an
    off-the-shelf [RabbitMQ container](https://hub.docker.com/_/rabbitmq), and
