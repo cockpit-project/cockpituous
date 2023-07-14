@@ -12,7 +12,7 @@ The only change that was, and currently needs to be done manually is to add SSH,
 Automation setup
 ----------------
 
-You need to install the OpenStack SDK, either with `sudo dnf install python3-openstacksdk` (on Fedora), or `pip install openstacksdk`.
+You need to install the OpenStack SDK, either with `sudo dnf install python3-openstacksdk` (on Fedora), or `pip install openstacksdk`. If you run on Fedora 38, you also need to install the `ansible-collections-openstack` package (see [bz#2218141](https://bugzilla.redhat.com/show_bug.cgi?id=2218141)).
 
 After that, you need to set up `~/.config/openstack/clouds.yml`. If you don't already have one, copy or symlink [clouds.yml](./clouds.yml), otherwise merge it with your existing one. You need to create a file `~/.config/openstack/secure.yaml` for your credentials, see the comment in [clouds.yml](./clouds.yml) for how to do that.
 
