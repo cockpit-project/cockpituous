@@ -25,11 +25,9 @@ don't have that yet, run [credentials/generate-ca.sh](./credentials/generate-ca.
 Run either script in the target directory (e.g.
 `/var/lib/cockpit-secrets/webhook/`).
 
-# Deploying/updating on our own machines
+# Deploying/updating on our CI infrastructure
 
-This happens through [Ansible](../ansible/).
-
-## Troubleshooting
+This happens through [Ansible](../ansible/) depending on the target cloud.
 
 Some helpful commands:
 
