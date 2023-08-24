@@ -86,7 +86,11 @@ EOF
         (mkdir -p tasks; cd tasks; $ROOTDIR/local-s3/generate-s3-cert.sh)
 
         # dummy token
-        echo 0123abc > "$SECRETS"/webhook/.config--github-token
+	if [ -z "$TOKEN" ]; then
+            echo 0123abc > "$SECRETS"/webhook/.config--github-token
+	else
+            cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
+	fi
 
         # dummy S3 keys in OpenShift tasks/build-secrets encoding, for testing their setup
         mkdir tasks/..data
