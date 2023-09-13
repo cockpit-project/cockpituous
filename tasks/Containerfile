@@ -34,6 +34,7 @@ RUN dnf -y update && \
         nodejs-devel \
         npm \
         passwd \
+        pigz \
         psmisc \
         procps-ng \
         python3 \
