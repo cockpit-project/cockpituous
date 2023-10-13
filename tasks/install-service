@@ -50,6 +50,8 @@ RestartSec=60
 TimeoutStartSec=10min
 ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
 ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
+# HACK: sometimes images get an MCS category which makes them undeletable by the container
+ExecStartPre=/usr/bin/chcon -R -l s0 \${TEST_CACHE}/images/
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
 ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
