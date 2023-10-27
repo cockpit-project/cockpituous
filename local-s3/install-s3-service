@@ -46,7 +46,7 @@ $RUNC run --interactive --rm --network=host \
     -v "$SECRETS"/webhook/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
     --entrypoint /bin/sh quay.io/minio/mc <<EOC
 set -e
-update-ca-trust
+cat /etc/pki/ca-trust/source/anchors/ca.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 until mc alias set minio ${PROTOCOL}://localhost minioadmin \$(cat /run/cockpit-s3.rootpassword.txt); do sleep 1; done
 # this fails with non-zero as the directory already exists; that's fine
 mc mb minio/images || true
