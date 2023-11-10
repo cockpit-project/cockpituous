@@ -8,7 +8,7 @@ kubectl delete configmap/grafana-dashboards || true
 kubectl delete -f $MYDIR/metrics.yaml || true
 
 filearg=""
-for f in $MYDIR/*.json; do
+for f in $MYDIR/dashboards/*; do
     filearg="$filearg --from-file $f"
 done
 kubectl create configmap grafana-dashboards $filearg
