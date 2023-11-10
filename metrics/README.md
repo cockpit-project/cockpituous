@@ -5,19 +5,19 @@ Our CI system regularly [builds](https://github.com/cockpit-project/bots/blob/ma
 These kubernetes resources deploy [Prometheus](https://prometheus.io/) to
 regularly read these metrics and store them in a database, and [Grafana](https://grafana.com/) to visualize these metrics as graphs.
 
-## Deployment
+## Deployment to Kubernetes
 
  - For the first-ever installation, create a persistent volume claim to store
    the Prometheus database (as that is somewhat precious):
 
-       oc create -f prometheus-claim.yaml
+       kubectl create -f prometheus-claim.yaml
 
    Once this gets bound, it is ready to use. If that does not happen
    automatically, file a support ticket like [#341](https://pagure.io/centos-infra/issue/341).
 
  - Whenever the YAML resources or the dashboards change, this script cleans up all old resources and re-deploys everything:
 
-       metrics/deploy.sh
+       metrics/deploy-k8s.sh
 
    After that, Grafana should be available at https://grafana-cockpit.apps.ocp.cloud.ci.centos.org and show the Cockpit CI dashboard at https://grafana-cockpit.apps.ocp.cloud.ci.centos.org/d/ci/cockpit-ci
 
