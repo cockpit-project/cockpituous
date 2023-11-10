@@ -30,7 +30,7 @@ The metrics are meant to implement and measure our [Service Level objectives](ht
 
 Whenever you change the dashboard, use the "Dashboard settings" button (cog
 icon at the top right) → JSON model, copy&paste it to
-[cockpit.ci-json](./cockpit-ci.json), and send a pull request to update it.
+[cockpit.ci-json](./dashboards/cockpit-ci.json), and send a pull request to update it.
 
 ## CI weather
 
