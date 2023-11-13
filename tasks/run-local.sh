@@ -226,7 +226,17 @@ test_image() {
         cd bots
         ./image-download --store '$S3_URL_POD'/images/ testimage
         grep -q "^world" /cache/images/testimage-*.qcow2
+        rm --verbose /cache/images/testimage*
         '
+
+    # validate image pruning on s3
+    podman exec -i cockpituous-tasks sh -euxc '
+      cd bots
+      rm images/testimage
+      ./image-prune --s3 '$S3_URL_POD'/images/ --force --checkout-only
+      # S3 store removed it
+      [ -z "$(python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep testimage)" ]
+    '
 }
 
 test_pr() {
