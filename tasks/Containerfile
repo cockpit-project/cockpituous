@@ -17,13 +17,11 @@ RUN dnf -y update && \
         genisoimage \
         git \
         gnupg \
-        gobject-introspection-devel \
         google-noto-cjk-fonts-common \
         intltool \
         jq \
         lcov \
         libappstream-glib \
-        libtool \
         libvirt-daemon-driver-storage-core \
         libvirt-daemon-driver-qemu \
         libvirt-client \
