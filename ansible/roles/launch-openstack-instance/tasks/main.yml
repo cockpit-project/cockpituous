@@ -38,7 +38,7 @@
   copy:
     dest: '{{ deployment_key_path }}'
     mode: 0600
-    content: '{{ ssh_key.key.private_key }}'
+    content: '{{ ssh_key.keypair.private_key }}'
 
 - name: Launch instance
   os_server:
@@ -66,18 +66,17 @@
 
 - name: Add instance to temporary 'launched' inventory group
   add_host:
-    hostname: '{{ instance.openstack.interface_ip }}'
+    hostname: '{{ instance.server.addresses[network][0].addr }}'
     ansible_ssh_user: '{{ deployment_ssh_user }}'
     ansible_become: true
     ansible_ssh_private_key_file: '{{ deployment_key_path }}'
     ansible_python_interpreter: python3
     # unfortunately the host FP is not part of the os_server result; but *shrug*, we just created this instance, there is no way to know
     ansible_ssh_extra_args: -o StrictHostKeyChecking=no
-    openstack: '{{ instance.openstack }}'
     groupname: launched
 
 # we can't run Ansible yet with CoreOS (no Python!), so just ping port
 - name: Wait for SSH to come up
   wait_for:
-    host: '{{ instance.openstack.interface_ip }}'
+    host: '{{ instance.server.addresses[network][0].addr }}'
     port: 22
