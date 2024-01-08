@@ -6,7 +6,7 @@ set -eu
 cd "$(dirname $(dirname $(realpath $0)))"
 
 # number of instances; limited by quota
-NUM=16
+NUM=35
 
 seq $NUM | parallel --line-buffer -j4 ansible-playbook -i inventory/ -e instance_name='rhos-01-{}' psi/launch-tasks.yml
 
