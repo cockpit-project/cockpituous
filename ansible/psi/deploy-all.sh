@@ -11,6 +11,6 @@ FIRST=${FIRST:-1}
 # number of instances; limited by quota
 NUM=35
 
-seq $FIRST $NUM | parallel --line-buffer -j4 ansible-playbook -i inventory/ -e instance_name='rhos-01-{}' psi/launch-tasks.yml
+parallel -i -j4 ansible-playbook -i inventory/ -e instance_name='rhos-01-{}' psi/launch-tasks.yml -- $(seq $FIRST $NUM)
 
 ansible-playbook -i inventory/ psi/image-cache.yml
