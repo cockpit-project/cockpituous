@@ -13,4 +13,4 @@ NUM=35
 
 parallel -i -j4 ansible-playbook -i inventory/ -e instance_name='rhos-01-{}' psi/launch-tasks.yml -- $(seq $FIRST $NUM)
 
-ansible-playbook -i inventory/ psi/image-cache.yml
+ansible-playbook --forks 20 -i inventory/ psi/image-cache.yml
