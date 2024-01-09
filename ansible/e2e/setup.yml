@@ -69,6 +69,14 @@
     - install-secrets-dir
     - tasks-systemd
 
+  tasks:
+    - name: Create local image store config
+      copy:
+        dest: /var/cache/cockpit-tasks/image-stores
+        mode: 0644
+        content: |
+          https://{{ groups.e2e_s3[0]}}/images/
+
 - name: Set up image server
   hosts: e2e_s3
   gather_facts: false
