@@ -1,0 +1,37 @@
+#!/bin/sh
+# set up configuration and secrets for running tasks
+set -eux
+
+# ensure we have a passwd entry for random UIDs
+# https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
+if ! whoami && [ -w /etc/passwd ]; then
+    echo "user:x:$(id -u):0:random uid:/work:/sbin/nologin" >> /etc/passwd
+    export HOME=/work
+fi
+
+# set up custom NPM registry
+if [ -n "${NPM_REGISTRY:-}" ]; then
+    npm config set registry "$NPM_REGISTRY"
+    echo "Set NPM registry to $NPM_REGISTRY"
+fi
+
+# prone to timeouts and errors with lots of parallel containers
+npm config set fetch-retries 6
+npm config set fetch-timeout 600000
+npm config set fetch-retry-mintimeout 60000
+npm config set maxsockets 3
+
+# set up S3 keys for OpenShift secrets volume
+if [ ! -d /secrets/s3-keys ]; then
+    # then our container symlink will point into the void, replace it with a directory and set up all files that we can find
+    rm ~/.config/cockpit-dev/s3-keys
+    mkdir ~/.config/cockpit-dev/s3-keys
+    for f in /secrets/s3-keys--*; do
+        [ -e "$f" ] || continue # non-matching glob
+        ln -s "$f" ~/.config/cockpit-dev/s3-keys/"${f#*--}"
+    done
+fi
+
+# Set up github user and token
+git config --global credential.helper store
+echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-credentials
