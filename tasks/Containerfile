@@ -8,6 +8,7 @@ RUN dnf -y update && \
         byobu \
         chromium-headless \
         curl \
+        dbus-daemon \
         dbus-glib \
         diffstat \
         expect \
@@ -50,6 +51,7 @@ RUN dnf -y update && \
         socat \
         strace \
         tar \
+        valgrind \
         vim-enhanced \
         virt-install && \
     curl -o /tmp/cockpit.spec -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec && \
