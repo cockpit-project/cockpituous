@@ -18,9 +18,9 @@ TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
 
 systemctl stop 'cockpit-tasks@*.service'
 
-mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
-chown -R 1111:1111 $SECRETS $CACHE
-chcon -R -t container_file_t $SECRETS $CACHE
+mkdir -p "${SECRETS}/tasks" "${SECRETS}/webhook" "${CACHE}/images"
+chown -R 1111:1111 "${SECRETS}" "${CACHE}"
+chcon -R -t container_file_t "${SECRETS}" "${CACHE}"
 
 if [ -e "${SECRETS}/tasks/npm-registry.crt" ]; then
     NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
