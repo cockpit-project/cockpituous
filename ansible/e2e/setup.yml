@@ -18,16 +18,11 @@
     command: passwd -l root
 
   - name: Disable zezere service
-    service:
-      name: zezere_ignition.timer
-      state: stopped
-      enabled: no
-
-  - name: Disable zezere banner
-    service:
-      name: zezere_ignition_banner.service
-      state: stopped
-      enabled: no
+    shell: |
+      if systemctl list-unit-files zezere_ignition.timer; then
+        systemctl disable --now zezere_ignition.timer
+        systemctl disable --now zezere_ignition_banner.service
+      fi
 
   - name: Disable unconnected network interfaces to avoid NM-wait-online timeout
     copy:
