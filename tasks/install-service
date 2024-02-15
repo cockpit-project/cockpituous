@@ -9,6 +9,7 @@
 
 set -eufx
 
+ENVFILE=/etc/cockpit-tasks.environ
 SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
 IMAGE_STORES=${CACHE}/image-stores
@@ -16,7 +17,10 @@ INSTANCES=${INSTANCES:-4}
 # assume the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention; this can be overridden
 TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
 
-systemctl stop 'cockpit-tasks@*.service'
+
+systemctl stop cockpit-tasks-monitor.service || true
+rm -f /etc/cockpit-task-*.environ
+rm -f /etc/containers/systemd/cockpit-*.container
 
 mkdir -p "${SECRETS}/tasks" "${SECRETS}/webhook" "${CACHE}/images"
 chown -R 1111:1111 "${SECRETS}" "${CACHE}"
@@ -26,58 +30,85 @@ if [ -e "${SECRETS}/tasks/npm-registry.crt" ]; then
     NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
 fi
 
-if [ $INSTANCES -eq 1 ]; then
-    # just use the hostname without prefix
-    CONTAINER_HOSTNAME="%l"
-else
-    # prefix the host name with the unit instance, so we can tell them apart in GitHub statuses
-    CONTAINER_HOSTNAME="%i-%l"
-fi
-
 # ensure this always exists
 touch "$IMAGE_STORES"
 
-cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
-[Unit]
-Description=Cockpit Tasks %i
-
-[Service]
-Environment="TEST_JOBS=${TEST_JOBS:-8}"
-Environment="TEST_CACHE=$CACHE"
-Environment="TEST_SECRETS=$SECRETS"
-Environment="TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}"
-Environment="TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}"
-Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
-Restart=always
-RestartSec=60
-# give image pull enough time
-TimeoutStartSec=10min
-ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
-ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
-# HACK: sometimes images get an MCS category which makes them undeletable by the container
-ExecStartPre=/usr/bin/chcon -R -l s0 \${TEST_CACHE}/images/
-ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
-ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
-ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
-    --device=/dev/kvm --network=cockpit-tasks-%i \
-    --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
-    --volume=\${TEST_CACHE}/images:/cache/images:rw \
-    --volume=\${TEST_SECRETS}/tasks:/secrets:ro \
-    --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
-    --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
-    --env=NPM_REGISTRY=\${NPM_REGISTRY} \
-    --env=NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-} \
-    --env=TEST_JOBS=\${TEST_JOBS} \
-    --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
-    --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
-    quay.io/cockpit/tasks
-ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
-ExecStop=/usr/bin/podman network rm cockpit-tasks-%i
-
-[Install]
-WantedBy=multi-user.target
+cat <<EOF > "${ENVFILE}"
+INSTANCES=${INSTANCES}
+HOST_HOSTNAME=${HOSTNAME}
+IMAGE_STORES=${IMAGE_STORES}
+NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-}
+NPM_REGISTRY=${NPM_REGISTRY:-}
+TEST_CACHE=${CACHE}
+TEST_JOBS=${TEST_JOBS:-8}
+TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}
+TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}
+TMPVOL="${TMPVOL}"
 EOF
 
-systemctl daemon-reload
+cat <<EOF > /etc/containers/systemd/cockpit-tasks-monitor.container
+[Unit]
+Requires=podman.socket
 
-for i in `seq $INSTANCES`; do systemctl enable --now cockpit-tasks@$i; done
+[Container]
+Image=quay.io/cockpit/tasks
+Label=io.containers.autoupdate=registry
+EnvironmentFile=/etc/cockpit-tasks.environ
+SecurityLabelDisable=true
+HostName=%H-monitor
+Exec=/usr/local/bin/cockpit-run-run-queue
+User=root
+
+Volume=/run/podman:/run/podman:ro
+Volume=/etc/cockpit-tasks.environ:/etc/cockpit-tasks.environ:ro
+Volume=/etc/cockpit-wrapper.sh:/usr/local/bin/cockpit-wrapper:ro
+Volume=/etc/cockpit-run-run-queue.sh:/usr/local/bin/cockpit-run-run-queue:ro
+
+[Install]
+# Start by default on boot
+WantedBy=default.target
+EOF
+
+cat <<EOF > /etc/cockpit-run-run-queue.sh
+#!/bin/sh
+
+set -eux
+
+git clone https://github.com/cockpit-project/bots
+cd bots
+
+for i in \$(seq '${INSTANCES}'); do
+    INSTANCE=\$i sleep Inf &
+done
+
+wait
+EOF
+chmod +x /etc/cockpit-run-run-queue.sh
+
+cat <<EOF > /etc/cockpit-wrapper.sh
+#!/bin/sh
+
+set -eux
+
+podman-remote \
+    run \
+        --rm \
+        --device=/dev/kvm \
+        --memory=24g \
+        --pids-limit=16384 \
+        --shm-size=1024m \
+        ${TMPVOL:-} \
+        --hostname="\${INSTANCE:-0}-${HOSTNAME}" \
+        --name="cockpit-tasks-\${INSTANCE:-0}" \
+        --env-file='${ENVFILE}' \
+        --volume='${CACHE}'/images:/cache/images:rw \
+        --volume='${SECRETS}'/tasks:/secrets:ro \
+        --volume='${SECRETS}'/webhook:/run/secrets/webhook:ro \
+        --volume='${IMAGE_STORES}':/work/.config/cockpit-dev/image-stores:ro \
+        "\${TASK_CONTAINER:-quay.io/cockpit/tasks:latest}" \
+        "\$@"
+EOF
+chmod +x /etc/cockpit-wrapper.sh
+
+systemctl daemon-reload
+systemctl start cockpit-tasks-monitor
