@@ -11,6 +11,11 @@ COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-main}
 WORKDIR="$PWD"
 BOTS_DIR="$WORKDIR"/bots
 
+# OpenShift instances with their random user don't set $HOME
+if [ -z "${HOME:-}" ] || [ "$HOME" = / ]; then
+    export HOME=/work
+fi
+
 echo "Starting testing"
 
 function update_bots() {
