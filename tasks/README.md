@@ -34,6 +34,46 @@ Some helpful commands:
     # journalctl -fu cockpit-tasks@*
     # systemctl stop cockpit-tasks@*
 
+# Deploying on OpenShift
+
+The testing machines can run on OpenShift cluster(s), as long as they have
+support for `/dev/kvm` in containers. Otherwise they will only be able to
+process non-test tasks (such as processing the `statistics` or `webhook`
+queues).
+
+If you run tests, you need a persistent shared volume for locally caching
+images. Create it with
+
+    oc create -f tasks/images-claim-centosci.yaml
+
+Now create all the remaining kubernetes objects. The secrets are created from
+the `/var/lib/cockpit-secrets/tasks` directory as described above. For the
+webhook secrets a github token `~/.config/github-webhook-token` should be
+present.
+
+    make tasks-secrets | oc create -f -
+    oc create -f tasks/cockpit-tasks.json
+
+## Troubleshooting
+
+Some helpful commands:
+
+    oc describe rc
+    oc describe pods
+    oc log -f cockpit-tasks-xxxx
+
+Service affinity currently wants all the cockpit-tasks pods to be in the same region.
+If you have your own cluster make sure all the nodes are in the same region:
+
+    oc patch node node.example.com -p '{"metadata":{"labels": {"region": "infra"}}}'
+
+## Scaling
+
+We can scale the number of testing machines in the openshift cluster with this
+command:
+
+    oc scale rc cockpit-tasks --replicas=3
+
 # Deploying locally for development
 
 For hacking on the webhook, image, or task container, or validating new container
