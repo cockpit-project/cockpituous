@@ -1,0 +1,53 @@
+---
+# CentOS CI does not have /dev/kvm support, so this *only* processes the statistics queue
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: centosci-tasks
+spec:
+  replicas: 1
+  selector:
+    infra: cockpit-tasks
+  template:
+    metadata:
+      labels:
+        infra: cockpit-tasks
+    spec:
+      terminationGracePeriodSeconds: 3600
+      containers:
+      - name: cockpit-tasks
+        image: quay.io/cockpit/tasks
+        env:
+        - name: RUN_STATISTICS_QUEUE
+          value: '1'
+        volumeMounts:
+        - name: secrets
+          mountPath: "/secrets"
+          readOnly: true
+        - name: webhook-secrets
+          mountPath: /run/secrets/webhook
+          readOnly: true
+        - name: cache
+          mountPath: "/cache"
+        - name: prometheus-data
+          mountPath: "/cache/images"
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1
+          requests:
+            memory: 256Mi
+            cpu: 0.2
+      volumes:
+      - name: secrets
+        secret:
+          secretName: cockpit-tasks-secrets
+      - name: webhook-secrets
+        secret:
+          secretName: webhook-secrets
+      - name: cache
+        emptyDir: {}
+      - name: prometheus-data
+        # from ./prometheus-claim.yaml; using this also to store test-results.db
+        persistentVolumeClaim:
+          claimName: prometheus-data

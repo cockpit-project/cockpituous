@@ -1,0 +1,13 @@
+# persistent image cache volume for tasks containers and our test-results.db database (for CI weather)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cockpit-images
+  namespace: frontdoor
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
