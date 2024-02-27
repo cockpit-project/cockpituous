@@ -97,6 +97,40 @@ cockpituous PR with specifying the PR number and a GitHub token:
 This will run tests-scan/tests-trigger on the given PR and trigger an
 [unit-tests](../.cockpit-ci/run) test which simply does `make check`.
 
+# Running single container locally
+
+When you want to debug a problem with a test which may be sensitive to its
+particular environment (such as calibrating RAM, /dev/shm sizes, or behaviour
+of libvirt in a container, etc.), you can run the tasks container directly with
+podman. The production parameters are set in the
+[install-service](./install-service) script. You don't need secrets, custom
+networks, or most environment settings, the crucial parts are the memory,
+device, and image cache configurations.
+
+First of all, if you want to share your host's image cache (which is really a
+good idea), temporarily make it writable to the unprivileged user in the
+container:
+
+```sh
+chmod o+w ~/.cache/cockpit-images
+```
+
+Scaled down to a quarter of the size (to fit on a laptop), you can then run the
+container like this:
+
+```sh
+podman run -it --rm --device=/dev/kvm --memory=6g --pids-limit=4096 --shm-size=256m \
+    --security-opt label=disable -v ~/.cache/cockpit-images:/cache/images \
+    -e TEST_JOBS=2 quay.io/cockpit/tasks bash
+```
+
+Inside, you can then run a test, for example
+```sh
+git clone https://github.com/cockpit-project/cockpit-podman
+cd cockpit-podman/
+test/run
+```
+
 # GitHub webhook integration
 
 ## GitHub setup
