@@ -12,6 +12,10 @@
   gather_facts: false
 
   tasks:
+  - name: Clean up old container images
+    # this will fail due to at least one used image, but it's opportunistic anyway
+    shell: podman rmi --all || true
+
   - name: Pre-pull current container image to avoid long downtime
     command: podman pull quay.io/cockpit/tasks
 
@@ -22,6 +26,9 @@
   gather_facts: false
 
   tasks:
+  - name: Clean up old container images
+    shell: podman rmi --all || true
+
   - name: Pre-pull current container image to avoid long downtime
     command: podman pull quay.io/cockpit/tasks
 
