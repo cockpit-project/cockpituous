@@ -5,6 +5,28 @@
     dest: /run/install-service
     mode: preserve
 
+- name: Create custom SELinux rules to fix Chromium
+  copy:
+    dest: /tmp/cockpituous.te
+    mode: 0644
+    content: |
+      module cockpituous 1.0;
+      require {
+              type container_t;
+              class process execheap;
+      }
+
+      # HACK: See https://github.com/cockpit-project/cockpituous/issues/579
+      allow container_t self:process execheap;
+  register: selinux_policy
+
+- name: Install custom SELinux rules
+  shell: |
+    checkmodule -M -m -o /tmp/cockpituous.mod /tmp/cockpituous.te
+    semodule_package -o /tmp/cockpituous.pp -m /tmp/cockpituous.mod
+    semodule -i /tmp/cockpituous.pp
+  when: selinux_policy.changed
+
 - name: Set up systemd service for cockpit/tasks
   shell: |
     export INSTANCES={{ instances | default(4) }}
