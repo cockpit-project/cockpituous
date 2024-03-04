@@ -35,6 +35,14 @@ jobs:
           git config user.email github-actions@github.com
           git rebase origin/main
 
+      # HACK: Ubuntu 22.04 has podman 3.4, which isn't compatible with podman-remote 4 in our tasks container
+      # This PPA is a backport of podman 4.3 from Debian 12; drop this when moving `runs-on:` to ubuntu-24.04
+      - name: Update to newer podman
+        run: |
+          sudo add-apt-repository -y ppa:quarckster/containers
+          sudo apt install -y podman
+          systemctl --user daemon-reload
+
       - name: Check which containers changed
         id: containers_changed
         run: |

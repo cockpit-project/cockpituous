@@ -99,8 +99,14 @@ EOF
         echo 'cockpituous foobarfoo' > tasks/s3-keys/localhost.localdomain
         )
 
-        # need to make files world-readable, as containers run as different user
+        # start podman API
+        systemctl $([ $(id -u) -eq 0 ] || echo "--user") start podman.socket
+
+        # need to make files world-readable, as containers run as different user 1111
         chmod -R go+rX "$SECRETS"
+        # for the same reason, make podman socket accessible to that container user
+        # the directory is only accessible for the user, so 666 permissions don't hurt
+        chmod o+rw ${XDG_RUNTIME_DIR:-/run}/podman/podman.sock
     fi
 }
 
@@ -173,6 +179,8 @@ EOF
     podman run -d -it --name cockpituous-tasks --pod=cockpituous \
         -v "$SECRETS"/tasks:/run/secrets/tasks:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
+        -v "${XDG_RUNTIME_DIR:-/run}/podman/podman.sock:/podman.sock" \
+        --env=CONTAINER_HOST=unix:///podman.sock \
         --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
         --env=COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
         --env=COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
@@ -194,6 +202,9 @@ cleanup_containers() {
 
     # clean up dummy token, so that image-prune does not try to use it
     rm "$SECRETS"/webhook/.config--github-token
+
+    # revert podman socket permission change
+    chmod o-rw ${XDG_RUNTIME_DIR:-run}/podman/podman.sock
 
     podman stop --time=0 cockpituous-tasks
 }
@@ -334,6 +345,15 @@ test_queue() {
     echo "$OUT" | grep -q 'queue public does not exist'
 }
 
+test_podman() {
+    # tasks can connect to host's podman service
+    # this will be covered implicitly by job-runner, but as a more basal plumbing test this is easier to debug
+    out="$(podman exec -i cockpituous-tasks podman-remote ps)"
+    assert_in 'cockpituous-tasks' "$out"
+    out="$(podman exec -i cockpituous-tasks podman-remote run -it --rm quay.io/cockpit/tasks:latest whoami)"
+    assert_in '^user' "$out"
+}
+
 #
 # main
 #
@@ -352,6 +372,7 @@ else
     # tests which don't need GitHub interaction
     test_image
     test_queue
+    test_podman
     # "almost" end-to-end, starting with GitHub webhook JSON payload injection; fully localy, no privs
     test_mock_pr
     # if we have a PR number, run a unit test inside local deployment, and update PR status
