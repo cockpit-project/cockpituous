@@ -86,11 +86,11 @@ EOF
         (mkdir -p tasks; cd tasks; $ROOTDIR/local-s3/generate-s3-cert.sh)
 
         # dummy token
-	if [ -z "$TOKEN" ]; then
+        if [ -z "$TOKEN" ]; then
             echo 0123abc > "$SECRETS"/webhook/.config--github-token
-	else
+        else
             cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
-	fi
+        fi
 
         # dummy S3 keys in OpenShift tasks/build-secrets encoding, for testing their setup
         mkdir tasks/..data
@@ -173,7 +173,7 @@ EOF
         -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
         -e AMQP_SERVER=localhost:5671 \
         -e S3_LOGS_URL=$S3_URL_POD/logs/ \
-	-e SKIP_STATIC_CHECK=1 \
+        -e SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
 }
 
