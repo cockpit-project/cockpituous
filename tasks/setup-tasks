@@ -35,3 +35,8 @@ fi
 # Set up github user and token
 git config --global credential.helper store
 echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-credentials
+
+# Get bots
+if [ ! -d ~/bots ]; then
+    git clone --quiet -b "${COCKPIT_BOTS_BRANCH:-main}" "${COCKPIT_BOTS_REPO:-https://github.com/cockpit-project/bots}" ~/bots
+fi
