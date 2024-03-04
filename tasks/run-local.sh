@@ -184,7 +184,7 @@ cleanup_containers() {
     rm "$SECRETS"/webhook/.config--github-token
 
     if [ -n "$INTERACTIVE" ]; then
-        podman stop cockpituous-tasks
+        podman stop --time=0 cockpituous-tasks
     else
         # tell the tasks container iteration that we are done
         podman exec cockpituous-tasks kill -TERM 1
