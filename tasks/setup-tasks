@@ -22,7 +22,7 @@ npm config set fetch-retry-mintimeout 60000
 npm config set maxsockets 3
 
 # set up S3 keys for OpenShift secrets volume
-if [ ! -d /secrets/s3-keys ]; then
+if [ ! -d /secrets/s3-keys ] && [ ! -d ~/.config/cockpit-dev/s3-keys ]; then
     # then our container symlink will point into the void, replace it with a directory and set up all files that we can find
     rm ~/.config/cockpit-dev/s3-keys
     mkdir ~/.config/cockpit-dev/s3-keys
