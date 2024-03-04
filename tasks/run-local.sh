@@ -113,12 +113,10 @@ launch_containers() {
     trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
 
     # start podman and run RabbitMQ in the background
-    # HACK: put data into a tmpfs instead of anonymous volume, see https://github.com/containers/podman/issues/9432
     podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
         --publish $IMAGE_PORT:8080 \
         --publish $S3_PORT:9000 \
         --publish 9001:9001 \
-        --tmpfs /var/lib/rabbitmq \
         -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
         docker.io/rabbitmq
