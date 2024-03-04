@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+# Mock GitHub API server for testing an opened PR
+# You can run this manually in `tasks/run-local.sh -i` with `podman cp` and running
+# cd bots
+# PYTHONPATH=. ./mock-github-pr cockpit-project/bots $(git rev-parse HEAD) &
+# export GITHUB_API=http://127.0.0.7:8443
+# PYTHONPATH=. ./mock-github-pr --print-event cockpit-project/bots $(git rev-parse HEAD) | \
+#     ./publish-queue --amqp localhost:5671 --queue webhook
+#
+# and then two `./run-queue --amqp localhost:5671`
+# first to process webhook → tests-scan → public, second to actually run it
+
+import argparse
+import json
+import os
+import tempfile
+
+from task.test_mock_server import MockHandler, MockServer
+
+repo = None
+sha = None
+
+
+class Handler(MockHandler):
+    def do_GET(self):
+        if self.path in self.server.data:
+            self.replyJson(self.server.data[self.path])
+        elif self.path.startswith(f'/repos/{repo}/pulls?'):
+            self.replyJson([self.server.data[f'/repos/{repo}/pulls/1']])
+        elif self.path == f'/{repo}/{sha}/.cockpit-ci/container':
+            self.replyData('quay.io/cockpit/tasks')
+        else:
+            self.send_error(404, 'Mock Not Found: ' + self.path)
+
+    def do_POST(self):
+        if self.path.startswith(f'/repos/{repo}/statuses/{sha}'):
+            self.replyJson({})
+        else:
+            self.send_error(405, 'Method not allowed: ' + self.path)
+
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument('--port', type=int, default=8443, help="Port to listen on (default: %(default)s)")
+argparser.add_argument('--print-event', action='store_true', help="Print GitHub webhook pull_request event and exit")
+argparser.add_argument('repo', metavar='USER/PROJECT', help="GitHub user/org and project name")
+argparser.add_argument('sha', help="SHA to test in repo for the mock PR")
+args = argparser.parse_args()
+repo = args.repo
+sha = args.sha
+
+ADDRESS = ('127.0.0.7', args.port)
+
+GITHUB_DATA = {
+    f'/repos/{repo}/pulls/1': {
+        'title': 'mock PR',
+        'number': 1,
+        'state': 'open',
+        'body': "This is the body",
+        'base': {'repo': {'full_name': repo}, 'ref': 'main'},
+        'head': {'sha': args.sha, 'user': {'login': repo.split('/')[0]}},
+        'labels': [],
+        'updated_at': 0,
+    },
+    f'/repos/{repo}/commits/{args.sha}/status?page=1&per_page=100': {
+        'state': 'pending',
+        'statuses': [],
+        'sha': sha,
+    },
+}
+
+if args.print_event:
+    print(json.dumps({
+        'event': 'pull_request',
+        'request': {
+            'action': 'opened',
+            'pull_request': GITHUB_DATA[f'/repos/{repo}/pulls/1']
+        }
+    }, indent=4))
+    exit(0)
+
+temp = tempfile.TemporaryDirectory()
+cache_dir = os.path.join(temp.name, 'cache')
+os.environ['XDG_CACHE_HOME'] = cache_dir
+server = MockServer(ADDRESS, Handler, GITHUB_DATA)
+server.start()
+print(f'export GITHUB_API=http://{ADDRESS[0]}:{ADDRESS[1]}')
