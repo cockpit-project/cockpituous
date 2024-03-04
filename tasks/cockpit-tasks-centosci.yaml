@@ -22,7 +22,7 @@ spec:
           value: '1'
         volumeMounts:
         - name: secrets
-          mountPath: "/secrets"
+          mountPath: /run/secrets/tasks
           readOnly: true
         - name: webhook-secrets
           mountPath: /run/secrets/webhook

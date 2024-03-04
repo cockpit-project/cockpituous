@@ -175,7 +175,7 @@ EOF
 
     # Run tasks container in the backgroud
     podman run -d -it --name cockpituous-tasks --pod=cockpituous \
-        -v "$SECRETS"/tasks:/secrets:ro,z \
+        -v "$SECRETS"/tasks:/run/secrets/tasks:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
         -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
         -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
