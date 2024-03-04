@@ -234,6 +234,45 @@ test_image() {
     '
 }
 
+test_mock_pr() {
+    podman cp "$MYDIR/mock-github-pr" cockpituous-tasks:/work/bots/mock-github-pr
+    podman exec -i cockpituous-tasks sh -euxc "
+        cd bots
+        # test mock PR against our checkout, so that cloning will work
+        SHA=\$(git rev-parse HEAD)
+
+        # start mock GH server
+        PYTHONPATH=. ./mock-github-pr cockpit-project/bots \$SHA &
+        GH_MOCK_PID=\$!
+        export GITHUB_API=http://127.0.0.7:8443
+        until curl --silent \$GITHUB_API; do sleep 0.1; done
+
+        # simulate GitHub webhook event, put that into the webhook queue
+        PYTHONPATH=. ./mock-github-pr --print-event cockpit-project/bots \$SHA | \
+            ./publish-queue --amqp $AMQP_POD --create --queue webhook
+
+        ./inspect-queue --amqp $AMQP_POD
+
+        # first run-queue processes webhook → tests-scan → public queue
+        ./run-queue --amqp $AMQP_POD
+        ./inspect-queue --amqp $AMQP_POD
+
+        # second run-queue actually runs the test
+        ./run-queue --amqp $AMQP_POD
+
+        kill \$GH_MOCK_PID
+    "
+
+    LOGS_URL="$S3_URL_HOST/logs/"
+    CURL="curl --cacert $SECRETS/ca.pem --silent --fail --show-error"
+    LOG_MATCH="$($CURL $LOGS_URL| grep -o "pull-1-[[:alnum:]-]*-unit-tests/log<")"
+    LOG="$($CURL "${LOGS_URL}${LOG_MATCH%<}")"
+    echo "--------------- mock PR test log -----------------"
+    echo  "$LOG"
+    echo "--------------- mock PR test log end -------------"
+    assert_in 'Test run finished' "$LOG"
+}
+
 test_pr() {
     # need to use real GitHub token for this
     [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
@@ -313,6 +352,8 @@ else
     # tests which don't need GitHub interaction
     test_image
     test_queue
+    # "almost" end-to-end, starting with GitHub webhook JSON payload injection; fully localy, no privs
+    test_mock_pr
     # if we have a PR number, run a unit test inside local deployment, and update PR status
     [ -z "$PR" ] || test_pr
 fi
