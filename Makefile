@@ -7,7 +7,7 @@ all:
 
 check:
 	python3 -m pyflakes tasks tasks/webhook
-	python3 -m $$(python3 -m pep8 --version >/dev/null 2>&1 && echo pep8 || echo pycodestyle) --max-line-length=120 --ignore=E722 tasks tasks/webhook
+	python3 -m pycodestyle --max-line-length=120 --ignore=E722 tasks tasks/webhook
 
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
