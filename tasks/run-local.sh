@@ -137,8 +137,7 @@ launch_containers() {
     podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
 cat /etc/pki/ca-trust/source/anchors/ca.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-# HACK: podman in github workflow fails to resolve localhost.localdomain, so can't use S3_URL_HOST here
-until mc alias set minio https://localhost:9000 minioadmin '$admin_password'; do sleep 1; done
+until mc alias set minio '$S3_URL_HOST' minioadmin '$admin_password'; do sleep 1; done
 mc mb minio/images
 mc mb minio/logs
 mc anonymous set download minio/images
