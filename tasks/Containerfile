@@ -86,4 +86,3 @@ VOLUME /cache/images
 
 USER user
 WORKDIR /work
-CMD ["/usr/local/bin/cockpit-tasks", "--verbose"]

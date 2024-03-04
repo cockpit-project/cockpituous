@@ -70,7 +70,7 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --env=TEST_JOBS=\${TEST_JOBS} \
     --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
-    quay.io/cockpit/tasks
+    quay.io/cockpit/tasks cockpit-tasks --verbose
 ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
 ExecStop=/usr/bin/podman network rm cockpit-tasks-%i
 

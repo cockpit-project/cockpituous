@@ -176,7 +176,9 @@ EOF
         -e AMQP_SERVER=$AMQP_POD \
         -e S3_LOGS_URL=$S3_URL_POD/logs/ \
         -e SKIP_STATIC_CHECK=1 \
-        quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
+        quay.io/cockpit/tasks:${TASKS_TAG:-latest} bash
+
+    podman exec -i cockpituous-tasks setup-tasks
 }
 
 cleanup_containers() {
@@ -185,20 +187,12 @@ cleanup_containers() {
     # clean up dummy token, so that image-prune does not try to use it
     rm "$SECRETS"/webhook/.config--github-token
 
-    if [ -n "$INTERACTIVE" ]; then
-        podman stop --time=0 cockpituous-tasks
-    else
-        # tell the tasks container iteration that we are done
-        podman exec cockpituous-tasks kill -TERM 1
-    fi
+    podman stop --time=0 cockpituous-tasks
 }
 
 test_image() {
     # test image upload
     podman exec -i cockpituous-tasks timeout 30 sh -euxc '
-        # wait until tasks container has set up itself and checked out bots
-        until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
-
         cd bots
 
         # fake an image
@@ -242,8 +236,14 @@ test_pr() {
     # need to use real GitHub token for this
     [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
 
+    # run the main loop in the background; we could do this with a single run-queue invocation,
+    # but we want to test the cockpit-tasks script
+    podman exec -i cockpituous-tasks cockpit-tasks &
+    TASKS_PID=$!
+
     podman exec -i cockpituous-tasks sh -euxc "
-    cd bots;
+    cd bots
+
     ./tests-scan -p $PR --amqp '$AMQP_POD' --repo $PR_REPO;
     for retry in \$(seq 10); do
         ./tests-scan --repo $PR_REPO --human-readable --dry;
@@ -263,6 +263,11 @@ test_pr() {
         echo waiting for unit-tests run to finish...
         sleep 10
     done
+
+    # tell the tasks container iteration that we are done
+    kill -TERM $TASKS_PID
+    wait $TASKS_PID || true
+
     LOG_PATH="${LOG_MATCH%<}"
 
     # spot-checks that it produced sensible logs in S3
@@ -285,7 +290,7 @@ test_pr() {
 test_queue() {
     # tasks can connect to queue
     OUT=$(podman exec -i cockpituous-tasks bots/inspect-queue --amqp $AMQP_POD)
-    echo "$OUT" | grep -q 'queue public is empty'
+    echo "$OUT" | grep -q 'queue public does not exist'
 }
 
 #
@@ -300,10 +305,6 @@ launch_containers
 podman logs -f cockpituous-tasks &
 
 if [ -n "$INTERACTIVE" ]; then
-    # check out the correct bots, as part of what cockpit-tasks would usually do
-    podman exec cockpituous-tasks sh -euc \
-        'git clone --quiet --depth=1 -b "${COCKPIT_BOTS_BRANCH:-main}" "${COCKPIT_BOTS_REPO:-https://github.com/cockpit-project/bots}"'
-
     echo "Starting a tasks container shell; exit it to clean up the deployment"
     podman exec -it cockpituous-tasks bash
 else
