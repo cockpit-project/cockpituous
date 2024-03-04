@@ -23,7 +23,7 @@ chown -R 1111:1111 $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
 
 if [ -e "${SECRETS}/tasks/npm-registry.crt" ]; then
-    NODE_EXTRA_CA_CERTS=/secrets/npm-registry.crt
+    NODE_EXTRA_CA_CERTS=/run/secrets/tasks/npm-registry.crt
 fi
 
 if [ $INSTANCES -eq 1 ]; then
@@ -62,7 +62,7 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --device=/dev/kvm --network=cockpit-tasks-%i \
     --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
     --volume=\${TEST_CACHE}/images:/cache/images:rw \
-    --volume=\${TEST_SECRETS}/tasks:/secrets:ro \
+    --volume=\${TEST_SECRETS}/tasks:/run/secrets/tasks:ro \
     --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
     --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
     --env=NPM_REGISTRY=\${NPM_REGISTRY} \

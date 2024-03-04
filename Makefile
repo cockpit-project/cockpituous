@@ -22,7 +22,7 @@ tasks-shell:
 	$(DOCKER) run -ti --rm \
 		--shm-size=1024m \
 		--volume=$(CURDIR)/tasks:/usr/local/bin \
-		--volume=$(TASK_SECRETS):/secrets:ro \
+		--volume=$(TASK_SECRETS):/run/secrets/tasks/:ro \
 		--volume=$(WEBHOOK_SECRETS):/run/secrets/webhook/:ro \
 		--volume=$(TASK_CACHE):/cache:rw \
 		--entrypoint=/bin/bash \
