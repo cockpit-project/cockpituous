@@ -14,6 +14,8 @@ S3_PORT=${S3_PORT:-9000}
 S3_URL_POD=https://localhost.localdomain:9000
 # S3 address from host
 S3_URL_HOST=https://localhost.localdomain:$S3_PORT
+# AMQP address from inside the cockpituous pod
+AMQP_POD=localhost:5671
 
 # CLI option defaults/values
 PR=
@@ -152,7 +154,7 @@ EOF
         [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
         podman run -d --name cockpituous-webhook --pod=cockpituous --user user \
             -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
-            -e AMQP_SERVER=localhost:5671 \
+            -e AMQP_SERVER=$AMQP_POD \
             quay.io/cockpit/tasks:${TASKS_TAG:-latest} webhook
     fi
 
@@ -171,7 +173,7 @@ EOF
         -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
         -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
         -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
-        -e AMQP_SERVER=localhost:5671 \
+        -e AMQP_SERVER=$AMQP_POD \
         -e S3_LOGS_URL=$S3_URL_POD/logs/ \
         -e SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
@@ -242,7 +244,7 @@ test_pr() {
 
     podman exec -i cockpituous-tasks sh -euxc "
     cd bots;
-    ./tests-scan -p $PR --amqp 'localhost:5671' --repo $PR_REPO;
+    ./tests-scan -p $PR --amqp '$AMQP_POD' --repo $PR_REPO;
     for retry in \$(seq 10); do
         ./tests-scan --repo $PR_REPO --human-readable --dry;
         OUT=\$(./tests-scan --repo $PR_REPO -p $PR --human-readable --dry);
@@ -250,7 +252,7 @@ test_pr() {
         echo waiting until the status is visible;
         sleep 10;
     done;
-    ./inspect-queue --amqp localhost:5671;"
+    ./inspect-queue --amqp $AMQP_POD;"
 
     LOGS_URL="$S3_URL_HOST/logs/"
     CURL="curl --cacert $SECRETS/ca.pem --silent --fail --show-error"
@@ -282,7 +284,7 @@ test_pr() {
 
 test_queue() {
     # tasks can connect to queue
-    OUT=$(podman exec -i cockpituous-tasks bots/inspect-queue --amqp localhost:5671)
+    OUT=$(podman exec -i cockpituous-tasks bots/inspect-queue --amqp $AMQP_POD)
     echo "$OUT" | grep -q 'queue public is empty'
 }
 
