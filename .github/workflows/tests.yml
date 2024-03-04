@@ -10,7 +10,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y make python3-pyflakes python3-pep8
+          sudo apt-get install -y make python3-pyflakes python3-pycodestyle
 
       - name: Run unit tests
         run: make check
