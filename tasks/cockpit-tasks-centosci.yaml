@@ -33,6 +33,7 @@ spec:
           mountPath: "/cache"
         - name: prometheus-data
           mountPath: "/cache/images"
+        command: [ "cockpit-tasks" ]
         resources:
           limits:
             memory: 1Gi
