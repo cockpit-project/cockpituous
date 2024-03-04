@@ -36,6 +36,8 @@ touch "$IMAGE_STORES"
 cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 [Unit]
 Description=Cockpit Tasks %i
+Requires=podman.socket
+After=podman.socket
 
 [Service]
 Environment="TEST_JOBS=${TEST_JOBS:-8}"
@@ -53,6 +55,8 @@ ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
 ExecStartPre=/usr/bin/chcon -R -l s0 \${TEST_CACHE}/images/
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
 ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
+# idmapped mount would be better, but did not figure out how
+ExecStartPre=/usr/bin/chgrp 1111 %t/podman/podman.sock
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
     --device=/dev/kvm --network=cockpit-tasks-%i \
     --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
@@ -61,8 +65,10 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
     --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
     --volume=/etc/npmrc:/etc/npmrc:ro \
+    --volume=%t/podman/podman.sock:/podman.sock:rw \
     --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
     --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
+    --env=CONTAINER_HOST=unix:///podman.sock \
     --env=TEST_JOBS=\${TEST_JOBS} \
     --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
