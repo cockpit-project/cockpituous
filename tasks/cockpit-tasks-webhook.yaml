@@ -44,6 +44,9 @@ spec:
           - name: webhook-secrets
             mountPath: /run/secrets/webhook
             readOnly: true
+          env:
+          - name: COCKPIT_GITHUB_TOKEN_FILE
+            value: /run/secrets/webhook/.config--github-token
           resources:
             limits:
               memory: 1G

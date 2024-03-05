@@ -20,6 +20,8 @@ spec:
         env:
         - name: RUN_STATISTICS_QUEUE
           value: '1'
+        - name: COCKPIT_GITHUB_TOKEN_FILE
+          value: /run/secrets/webhook/.config--github-token
         volumeMounts:
         - name: secrets
           mountPath: /run/secrets/tasks

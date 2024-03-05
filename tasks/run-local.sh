@@ -89,21 +89,14 @@ EOF
 
         # dummy token
         if [ -z "$TOKEN" ]; then
-            echo 0123abc > "$SECRETS"/webhook/.config--github-token
+            echo 0123abc > webhook/.config--github-token
         else
-            cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
+            cp -fv "$TOKEN" webhook/.config--github-token
         fi
 
-        # dummy S3 keys in OpenShift tasks/build-secrets encoding, for testing their setup
-        mkdir tasks/..data
-        echo 'id12 geheim' > tasks/..data/s3-keys--r1.cloud.com
-        echo 'id34 shhht' > tasks/..data/s3-keys--r2.cloud.com
-        ln -s ..data/s3-keys--r1.cloud.com tasks/s3-keys--r1.cloud.com
-        ln -s ..data/s3-keys--r2.cloud.com tasks/s3-keys--r2.cloud.com
-
         # minio S3 key
-        echo 'cockpituous foobarfoo' > tasks/..data/s3-keys--localhost.localdomain
-        ln -s ..data/s3-keys--localhost.localdomain tasks/s3-keys--localhost.localdomain
+        mkdir tasks/s3-keys
+        echo 'cockpituous foobarfoo' > tasks/s3-keys/localhost.localdomain
         )
 
         # need to make files world-readable, as containers run as different user
@@ -143,7 +136,7 @@ launch_containers() {
     podman run -d --interactive --name cockpituous-mc --pod=cockpituous \
         -v "$SECRETS"/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
         --entrypoint /bin/sh quay.io/minio/mc
-    read s3user s3key < "$SECRETS/tasks/..data/s3-keys--localhost.localdomain"
+    read s3user s3key < "$SECRETS/tasks/s3-keys/localhost.localdomain"
     podman exec -i cockpituous-mc /bin/sh <<EOF
 set -e
 cat /etc/pki/ca-trust/source/anchors/ca.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
@@ -162,7 +155,8 @@ EOF
         [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
         podman run -d --name cockpituous-webhook --pod=cockpituous --user user \
             -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
-            -e AMQP_SERVER=$AMQP_POD \
+            --env=AMQP_SERVER=$AMQP_POD \
+            --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
             quay.io/cockpit/tasks:${TASKS_TAG:-latest} webhook
     fi
 
@@ -177,13 +171,15 @@ EOF
     podman run -d -it --name cockpituous-tasks --pod=cockpituous \
         -v "$SECRETS"/tasks:/run/secrets/tasks:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
-        -e COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
-        -e COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
-        -e COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
-        -e COCKPIT_TESTMAP_INJECT=main/unit-tests \
-        -e AMQP_SERVER=$AMQP_POD \
-        -e S3_LOGS_URL=$S3_URL_POD/logs/ \
-        -e SKIP_STATIC_CHECK=1 \
+        --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
+        --env=COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
+        --env=COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
+        --env=COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
+        --env=COCKPIT_TESTMAP_INJECT=main/unit-tests \
+        --env=AMQP_SERVER=$AMQP_POD \
+        --env=S3_LOGS_URL=$S3_URL_POD/logs/ \
+        --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
+        --env=SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} ${INTERACTIVE:+sleep infinity}
 }
 
@@ -204,7 +200,7 @@ cleanup_containers() {
 test_image() {
     # test image upload
     podman exec -i cockpituous-tasks timeout 30 sh -euxc '
-        # wait until tasks container has set up itself and checked out bots
+        # wait until cockpit-tasks has set up itself and checked out bots
         until [ -f bots/tests-trigger ]; do echo "waiting for tasks to initialize"; sleep 5; done
 
         cd bots
@@ -220,12 +216,6 @@ test_image() {
         # S3 store received this
         python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep -q "testimage.*qcow"
         '
-
-    # validate OpenShift s3 keys secrets setup
-    R1=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r1.cloud.com')
-    test "$R1" = "id12 geheim"
-    R2=$(podman exec -i cockpituous-tasks sh -ec 'cat ~/.config/cockpit-dev/s3-keys/r2.cloud.com')
-    test "$R2" = "id34 shhht"
 
     # validate image downloading from S3
     podman exec -i cockpituous-tasks sh -euxc '
