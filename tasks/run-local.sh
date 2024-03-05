@@ -112,7 +112,15 @@ EOF
 }
 
 launch_containers() {
-    trap "podman pod rm -f cockpituous" EXIT INT QUIT PIPE
+    cleanup() {
+        if [ $? -ne 0 ] && [ -z "$INTERACTIVE" ] && [ -t 0 ]; then
+            echo "Test failure; investigate, and press Enter to shut down"
+            read
+        fi
+        podman pod rm -f cockpituous
+    }
+
+    trap cleanup EXIT INT QUIT PIPE
 
     # start podman and run RabbitMQ in the background
     podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
