@@ -157,6 +157,7 @@ EOF
             -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
             --env=AMQP_SERVER=$AMQP_POD \
             --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
+            --env=COCKPIT_GITHUB_WEBHOOK_TOKEN_FILE=/run/secrets/webhook/.config--github-webhook-token \
             quay.io/cockpit/tasks:${TASKS_TAG:-latest} webhook
     fi
 
