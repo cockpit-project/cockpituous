@@ -40,6 +40,54 @@
       maxsockets=3
       cafile=/run/secrets/tasks/npm-registry.crt
 
+- name: Create job-runner configuration
+  copy:
+    dest: /etc/job-runner.toml
+    content: |
+      [logs]
+      driver='s3'
+
+      [forge.github]
+      token = [{file="/run/secrets/webhook/.config--github-token"}]
+
+      [logs.s3]
+      # bots lib/stores.py LOG_STORE
+      url = 'https://cockpit-logs.us-east-1.linodeobjects.com/'
+      key = [{file="/run/secrets/tasks/s3-keys/cockpit-logs.us-east-1.linodeobjects.com"}]
+
+      [container]
+      command = ['podman-remote', '--url=unix:///podman.sock']
+      run-args = [
+          # resources
+          '--device=/dev/kvm',
+          '--memory=24g',
+          '--pids-limit=16384',
+          '--shm-size=1024m',
+          # qcow overlays on tmpfs
+          '--tmpfs=/tmp:size=14g',
+          '--env=TEST_OVERLAY_DIR=/tmp',
+          # local image stores
+          '--env=COCKPIT_IMAGE_STORES_FILE=/config/image-stores',
+          '--volume=/var/cache/cockpit-tasks/image-stores:/config/image-stores:ro',
+          # generic secrets
+          '--volume=/var/lib/cockpit-secrets/tasks/npm-registry.crt:/run/secrets/tasks/npm-registry.crt:ro',
+          # various configuration
+          '--volume=/etc/npmrc:/etc/npmrc:ro',
+          '--volume=/var/cache/cockpit-tasks/images:/cache/images:rw',
+          '--env=TEST_JOBS={{ TEST_JOBS | default(8) }}',
+      ]
+
+      [container.secrets]
+      # these are *host* paths, this is podman-remote
+      image-upload=[
+          '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
+          '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
+      ]
+      github-token=[
+          '--volume=/var/lib/cockpit-secrets/webhook/.config--github-token:/run/secrets/github-token:ro',
+          '--env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/github-token',
+      ]
+
 - name: Set up systemd service for cockpit/tasks
   shell: |
     export INSTANCES={{ instances | default(4) }}

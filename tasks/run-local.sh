@@ -108,6 +108,54 @@ EOF
     fi
 }
 
+create_job_runner_config() {
+    # we never want to push to real GitHub branches in this test
+    run_args="'--security-opt=label=disable', '--volume=$MYDIR/mock-git-push:/usr/local/bin/git:ro'"
+
+    if [ "$1" = "mock" ]; then
+        forge_opts="api-url = '$GHAPI_URL_POD'"
+        # needs to run in pod network so that it can access GITHUB_API_POD
+        run_args="${run_args}, '--pod=cockpituous'"
+        run_args="${run_args}, '--env=GITHUB_API=$GHAPI_URL_POD', '--env=COCKPIT_IMAGE_UPLOAD_STORE=$S3_URL_POD/images/'"
+    elif [ "$1" = "real" ]; then
+        forge_opts=""
+    else
+        echo "ERROR: unknown job-runner config $1" >&2
+        exit 1
+    fi
+
+    cat <<EOF > $SECRETS/tasks/job-runner.toml
+[logs]
+driver='s3'
+
+[forge.github]
+token = [{file="/run/secrets/webhook/.config--github-token"}]
+$forge_opts
+
+[logs.s3]
+url = '$S3_URL_POD/logs'
+ca = [{file='/run/secrets/webhook/ca.pem'}]
+key = [{file="/run/secrets/tasks/s3-keys/localhost.localdomain"}]
+
+[container]
+command = ['podman-remote', '--url=unix:///podman.sock']
+run-args = [$run_args]
+
+[container.secrets]
+# these are *host* paths, this is podman-remote
+image-upload=[
+    '--volume=$SECRETS/tasks/s3-keys:/run/secrets/s3-keys:ro',
+    '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
+    '--volume=$SECRETS/webhook/ca.pem:/run/secrets/ca.pem:ro',
+    '--env=COCKPIT_CA_PEM=/run/secrets/ca.pem',
+]
+github-token=[
+    '--volume=$SECRETS/webhook/.config--github-token:/run/secrets/github-token:ro',
+    '--env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/github-token',
+]
+EOF
+}
+
 launch_containers() {
     cleanup() {
         if [ $? -ne 0 ] && [ -z "$INTERACTIVE" ] && [ -t 0 ]; then
@@ -189,6 +237,7 @@ EOF
         --env=COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
         --env=COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-} \
         --env=COCKPIT_TESTMAP_INJECT=main/unit-tests \
+        --env=JOB_RUNNER_CONFIG=/run/secrets/tasks/job-runner.toml \
         --env=AMQP_SERVER=$AMQP_POD \
         --env=S3_LOGS_URL=$S3_URL_POD/logs/ \
         --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
@@ -251,6 +300,7 @@ test_image() {
 
 test_mock_pr() {
     podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
+    create_job_runner_config mock
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
         # test mock PR against our checkout, so that cloning will work
@@ -292,6 +342,7 @@ test_mock_pr() {
 test_pr() {
     # need to use real GitHub token for this
     [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
+    create_job_runner_config real
 
     # run the main loop in the background; we could do this with a single run-queue invocation,
     # but we want to test the cockpit-tasks script
@@ -347,6 +398,7 @@ test_pr() {
 test_mock_image_refresh() {
     podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
     podman cp "$MYDIR/mock-git-push" cockpituous-tasks:/usr/local/bin/git
+    create_job_runner_config mock
 
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
