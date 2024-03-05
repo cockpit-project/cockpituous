@@ -27,10 +27,22 @@
     semodule -i /tmp/cockpituous.pp
   when: selinux_policy.changed
 
+# This only applies to RH VPN; make that optional if we ever deploy to public infrastructure
+- name: Create npm configuration
+  copy:
+    dest: /etc/npmrc
+    mode: 0644
+    content: |
+      registry=https://repository.engineering.redhat.com/nexus/repository/registry.npmjs.org/
+      fetch-retries=6
+      fetch-timeout=600000
+      fetch-retry-mintimeout=60000
+      maxsockets=3
+      cafile=/run/secrets/tasks/npm-registry.crt
+
 - name: Set up systemd service for cockpit/tasks
   shell: |
     export INSTANCES={{ instances | default(4) }}
-    export NPM_REGISTRY=https://repository.engineering.redhat.com/nexus/repository/registry.npmjs.org/
     export TEST_NOTIFICATION_MX={{ notification_mx | default('') }}
     export TEST_NOTIFICATION_TO={{ notification_to | default('') }}
     /run/install-service
