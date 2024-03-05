@@ -2,19 +2,10 @@
 # set up configuration and secrets for running tasks
 set -eux
 
-# ensure we have a passwd entry for random UIDs
-# https://docs.openshift.com/container-platform/3.7/creating_images/guidelines.html
-if ! whoami && [ -w /etc/passwd ]; then
-    echo "user:x:$(id -u):0:random uid:/work:/sbin/nologin" >> /etc/passwd
-    export HOME=/work
-fi
-
 # Set up secrets
 if [ -d /run/secrets/tasks ]; then
     ln -snf /run/secrets/tasks/s3-keys ~/.config/cockpit-dev/s3-keys
     ln -snf /run/secrets/webhook/.config--github-token ~/.config/github-token
-    git config --global credential.helper store
-    echo "https://cockpituous:$(cat ~/.config/github-token)@github.com" > ~/.git-credentials
 
     # set up S3 keys for OpenShift secrets volume, where there is just a flat hierarchy with "--" encoding
     if [ ! -d /run/secrets/tasks/s3-keys ] && [ ! -d ~/.config/cockpit-dev/s3-keys ]; then
