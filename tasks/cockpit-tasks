@@ -2,8 +2,6 @@
 
 set -eux
 
-setup-tasks
-
 COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-https://github.com/cockpit-project/bots}
 COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-main}
 
