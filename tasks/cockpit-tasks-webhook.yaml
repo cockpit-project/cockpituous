@@ -47,6 +47,8 @@ spec:
           env:
           - name: COCKPIT_GITHUB_TOKEN_FILE
             value: /run/secrets/webhook/.config--github-token
+          - name: COCKPIT_GITHUB_WEBHOOK_TOKEN_FILE
+            value: /run/secrets/webhook/.config--github-webhook-token
           resources:
             limits:
               memory: 1G

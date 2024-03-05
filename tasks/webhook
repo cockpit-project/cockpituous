@@ -4,7 +4,6 @@ import os
 import sys
 import logging
 import subprocess
-import shutil
 import http.server
 import json
 import contextlib
@@ -41,20 +40,6 @@ def setup_home():
         return
     logging.debug('Initializing %s', HOME_DIR)
     os.makedirs(HOME_DIR)
-
-    # install credentials from secrets volume; copy to avoid world-readable files
-    # (which e. g. ssh complains about), and to make them owned by our random UID.
-    old_umask = os.umask(0o77)
-    for f in os.listdir(WEBHOOK_SECRETS):
-        if f.startswith('..'):
-            continue  # secrets volume internal files
-        src = os.path.join(WEBHOOK_SECRETS, f)
-        if os.path.isdir(src):
-            continue  # happens with real directory instead of k8s secrets volumes
-        dest = os.path.join(HOME_DIR, f.replace('--', '/'))
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        shutil.copyfile(src, dest)
-    os.umask(old_umask)
 
 
 def ensure_bots_checkout():

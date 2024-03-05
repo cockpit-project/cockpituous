@@ -16,7 +16,7 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
         See https://developer.github.com/webhooks/securing/
         '''
         # load key
-        keyfile = os.path.expanduser('~/.config/github-webhook-token')
+        keyfile = os.getenv("COCKPIT_GITHUB_WEBHOOK_TOKEN_FILE", os.path.expanduser('~/.config/github-webhook-token'))
         try:
             with open(keyfile, 'rb') as f:
                 key = f.read().strip()
