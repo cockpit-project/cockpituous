@@ -22,10 +22,6 @@ mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
 chown -R 1111:1111 $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
 
-if [ -e "${SECRETS}/tasks/npm-registry.crt" ]; then
-    NODE_EXTRA_CA_CERTS=/run/secrets/tasks/npm-registry.crt
-fi
-
 if [ $INSTANCES -eq 1 ]; then
     # just use the hostname without prefix
     CONTAINER_HOSTNAME="%l"
@@ -47,7 +43,6 @@ Environment="TEST_CACHE=$CACHE"
 Environment="TEST_SECRETS=$SECRETS"
 Environment="TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}"
 Environment="TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}"
-Environment="NPM_REGISTRY=${NPM_REGISTRY:-}"
 Restart=always
 RestartSec=60
 # give image pull enough time
@@ -65,8 +60,7 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --volume=\${TEST_SECRETS}/tasks:/run/secrets/tasks:ro \
     --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
     --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
-    --env=NPM_REGISTRY=\${NPM_REGISTRY} \
-    --env=NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-} \
+    --volume=/etc/npmrc:/etc/npmrc:ro \
     --env=TEST_JOBS=\${TEST_JOBS} \
     --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \

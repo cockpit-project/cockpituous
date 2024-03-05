@@ -9,18 +9,6 @@ if ! whoami && [ -w /etc/passwd ]; then
     export HOME=/work
 fi
 
-# set up custom NPM registry
-if [ -n "${NPM_REGISTRY:-}" ]; then
-    npm config set registry "$NPM_REGISTRY"
-    echo "Set NPM registry to $NPM_REGISTRY"
-fi
-
-# prone to timeouts and errors with lots of parallel containers
-npm config set fetch-retries 6
-npm config set fetch-timeout 600000
-npm config set fetch-retry-mintimeout 60000
-npm config set maxsockets 3
-
 # Set up secrets
 if [ -d /run/secrets/tasks ]; then
     ln -snf /run/secrets/tasks/s3-keys ~/.config/cockpit-dev/s3-keys
