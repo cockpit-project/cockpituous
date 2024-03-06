@@ -174,7 +174,7 @@ EOF
         sleep 3
     done
 
-    # Run tasks container in the backgroud
+    # Run tasks container in the background
     # use bash as pid 1 to mop up zombies
     podman run -d -it --name cockpituous-tasks --pod=cockpituous \
         --security-opt=label=disable \
