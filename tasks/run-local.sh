@@ -87,12 +87,8 @@ EOF
         (mkdir -p webhook; cd webhook; $MYDIR/credentials/webhook/generate.sh)
         (mkdir -p tasks; cd tasks; $ROOTDIR/local-s3/generate-s3-cert.sh)
 
-        # dummy token
-        if [ -z "$TOKEN" ]; then
-            echo 0123abc > webhook/.config--github-token
-        else
-            cp -fv "$TOKEN" webhook/.config--github-token
-        fi
+        # default to dummy token, tests need to opt into real one
+        echo 0123abc > webhook/.config--github-token
 
         # minio S3 key
         mkdir tasks/s3-keys
@@ -204,7 +200,7 @@ EOF
 cleanup_containers() {
     echo "Cleaning up..."
 
-    # clean up dummy token, so that image-prune does not try to use it
+    # clean up token, so that image-prune does not try to use it
     rm "$SECRETS"/webhook/.config--github-token
 
     # revert podman socket permission change
