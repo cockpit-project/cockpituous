@@ -11,29 +11,29 @@ TimeoutStopSec=70
 ExecStart=-/usr/bin/podman pod rm -f cockpituous
 
 ExecStart=/usr/bin/podman run \
-	--cgroups=no-conmon \
-	--rm \
-	-d \
-	--name cockpituous-rabbitmq \
-	--pod=new:cockpituous \
-	--pull=always \
-	--publish 5671:5671 \
-	--publish 80:8080 \
-	--tmpfs /var/lib/rabbitmq \
-	-v /etc/rabbitmq:/etc/rabbitmq:ro,z \
-	-v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
-	docker.io/rabbitmq
+    --cgroups=no-conmon \
+    --rm \
+    -d \
+    --name cockpituous-rabbitmq \
+    --pod=new:cockpituous \
+    --pull=always \
+    --publish 5671:5671 \
+    --publish 80:8080 \
+    --tmpfs /var/lib/rabbitmq \
+    -v /etc/rabbitmq:/etc/rabbitmq:ro,z \
+    -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
+    docker.io/rabbitmq
 
 ExecStart=/usr/bin/podman run \
-	--cgroups=no-conmon \
-	--rm \
-	-d \
-	--name cockpituous-webhook \
-	--pod=cockpituous \
-	--pull=always \
-	-e AMQP_SERVER=localhost:5671 \
-	-v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
-	quay.io/cockpit/tasks webhook
+    --cgroups=no-conmon \
+    --rm \
+    -d \
+    --name cockpituous-webhook \
+    --pod=cockpituous \
+    --pull=always \
+    -e AMQP_SERVER=localhost:5671 \
+    -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
+    quay.io/cockpit/tasks webhook
 
 ExecStop=/usr/bin/podman pod rm -f cockpituous
 
