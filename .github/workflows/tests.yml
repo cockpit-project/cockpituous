@@ -49,7 +49,7 @@ jobs:
           tasks=$(git diff --name-only origin/main..HEAD -- tasks/ | grep -Ev 'run-local.sh|openssl.cnf|README|mock-github-pr|.yaml' || true)
           # print for debugging
           echo "tasks: $tasks"
-          [ -z "$tasks" ] || echo "::set-output name=tasks::true"
+          [ -z "$tasks" ] || echo "tasks=true" >> "$GITHUB_OUTPUT"
 
       - name: Build tasks container if it changed
         if: steps.containers_changed.outputs.tasks
