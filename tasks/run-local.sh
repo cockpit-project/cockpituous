@@ -180,7 +180,6 @@ EOF
         -v "$SECRETS"/tasks:/run/secrets/tasks:ro,z \
         -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
         -v "${XDG_RUNTIME_DIR:-/run}/podman/podman.sock:/podman.sock" \
-        --env=CONTAINER_HOST=unix:///podman.sock \
         --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
         --env=COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
         --env=COCKPIT_BOTS_REPO=${COCKPIT_BOTS_REPO:-} \
@@ -348,9 +347,9 @@ test_queue() {
 test_podman() {
     # tasks can connect to host's podman service
     # this will be covered implicitly by job-runner, but as a more basal plumbing test this is easier to debug
-    out="$(podman exec -i cockpituous-tasks podman-remote ps)"
+    out="$(podman exec -i cockpituous-tasks podman-remote --url unix:///podman.sock ps)"
     assert_in 'cockpituous-tasks' "$out"
-    out="$(podman exec -i cockpituous-tasks podman-remote run -it --rm quay.io/cockpit/tasks:latest whoami)"
+    out="$(podman exec -i cockpituous-tasks podman-remote --url unix:///podman.sock run -it --rm quay.io/cockpit/tasks:latest whoami)"
     assert_in '^user' "$out"
 }
 
