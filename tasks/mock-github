@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Mock GitHub API server for testing an opened PR
+# Mock GitHub API server for testing an opened PR or an issue for an image-refresh
 # You can run this manually in `tasks/run-local.sh -i` with `podman cp` and running
 # cd bots
 # PYTHONPATH=. ./mock-github cockpit-project/bots $(git rev-parse HEAD) &
@@ -27,6 +27,12 @@ class Handler(MockHandler):
             self.replyJson(self.server.data[self.path])
         elif self.path.startswith(f'/repos/{repo}/pulls?'):
             self.replyJson([self.server.data[f'/repos/{repo}/pulls/1']])
+        elif self.path == f'/repos/{repo}/pulls/2':
+            # image-refresh issue converted into PR
+            self.replyJson({
+                **self.server.data[f'/repos/{repo}/issues/2'],
+                "head": {"sha": "a1b2c3"},
+            })
         elif self.path == f'/{repo}/{sha}/.cockpit-ci/container':
             self.replyData('quay.io/cockpit/tasks')
         else:
@@ -35,6 +41,18 @@ class Handler(MockHandler):
     def do_POST(self):
         if self.path.startswith(f'/repos/{repo}/statuses/{sha}'):
             self.replyJson({})
+        # new SHA from mock-pushed PR #2 for image-refresh
+        elif self.path.startswith(f'/repos/{repo}/statuses/a1b2c3'):
+            self.replyJson({})
+        elif self.path.startswith(f'/repos/{repo}/issues/2'):
+            # updates the issue to "in progress", sets label, adds comment etc.; maybe keep state and assert?
+            self.replyJson({})
+        elif self.path == f'/repos/{repo}/pulls':
+            # image-refresh creates a PR for a refresh isssue
+            self.replyJson({
+                **GITHUB_DATA[f'/repos/{repo}/issues/2'],
+                "head": {"sha": "987654"},
+            })
         else:
             self.send_error(405, 'Method not allowed: ' + self.path)
 
@@ -43,6 +61,8 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument('--port', type=int, default=8443, help="Port to listen on (default: %(default)s)")
 argparser.add_argument('--print-pr-event', action='store_true',
                        help="Print GitHub webhook pull_request event and exit")
+argparser.add_argument('--print-image-refresh-event', action='store_true',
+                       help="Print GitHub webhook issue event for an image-refresh and exit")
 argparser.add_argument('repo', metavar='USER/PROJECT', help="GitHub user/org and project name")
 argparser.add_argument('sha', help="SHA to test in repo for the mock PR")
 args = argparser.parse_args()
@@ -52,6 +72,9 @@ sha = args.sha
 ADDRESS = ('127.0.0.7', args.port)
 
 GITHUB_DATA = {
+    f'/repos/{repo}': {
+        "default_branch": "main",
+    },
     f'/repos/{repo}/pulls/1': {
         'title': 'mock PR',
         'number': 1,
@@ -67,6 +90,18 @@ GITHUB_DATA = {
         'statuses': [],
         'sha': sha,
     },
+    f'/repos/{repo}/issues/2': {
+        'title': 'Refresh foonux image',
+        'number': 2,
+        'body': "blabla\n - [ ] image-refresh foonux\n",
+        # is in our allowlist
+        'user': {"login": "cockpit-project"},
+        'labels': [{"name": "bot"}],
+        'url': f'http://{ADDRESS[0]}/{repo}/issues/2',
+    },
+    f'/repos/{repo}/git/ref/heads/main': {
+        'object': {'sha': sha},
+    },
 }
 
 if args.print_pr_event:
@@ -75,6 +110,17 @@ if args.print_pr_event:
         'request': {
             'action': 'opened',
             'pull_request': GITHUB_DATA[f'/repos/{repo}/pulls/1']
+        }
+    }, indent=4))
+    exit(0)
+
+if args.print_image_refresh_event:
+    print(json.dumps({
+        'event': 'issues',
+        'request': {
+            'action': 'opened',
+            'issue': GITHUB_DATA[f'/repos/{repo}/issues/2'],
+            'repository': {'full_name': repo},
         }
     }, indent=4))
     exit(0)

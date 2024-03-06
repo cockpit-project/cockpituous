@@ -176,6 +176,7 @@ EOF
 
     # Run tasks container in the background
     # use bash as pid 1 to mop up zombies
+    # we always want to upload images to our local S3 store
     podman run -d -it --name cockpituous-tasks --pod=cockpituous \
         --security-opt=label=disable \
         -v "$SECRETS"/tasks:/run/secrets/tasks:ro \
@@ -189,6 +190,7 @@ EOF
         --env=AMQP_SERVER=$AMQP_POD \
         --env=S3_LOGS_URL=$S3_URL_POD/logs/ \
         --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
+        --env=COCKPIT_IMAGE_UPLOAD_STORE=$S3_URL_POD/images/ \
         --env=SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} bash
 
@@ -340,6 +342,76 @@ test_pr() {
     fi
 }
 
+test_mock_image_refresh() {
+    podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
+
+    # the last step of an image refresh is to push the branch back to origin; we can't nor
+    # want to do that here, so divert "git push" to a log file and check that
+    cat <<EOF | podman exec -i -u root cockpituous-tasks sh -euxc "cat > /usr/local/bin/git; chmod +x /usr/local/bin/git"
+#!/bin/sh
+if [ "\$1" = push ]; then
+    echo "\$@" >> /work/git-push.log
+    exit 0
+fi
+exec /usr/bin/git "\$@"
+EOF
+
+    podman exec -i cockpituous-tasks sh -euxc "
+        cd bots
+        # start mock GH server; use a mock SHA, only used for posting statuses
+        SHA=123abc
+        PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
+        GH_MOCK_PID=\$!
+        export GITHUB_API=http://127.0.0.7:8443
+        until curl --silent \$GITHUB_API; do sleep 0.1; done
+
+        # simulate GitHub webhook event, put that into the webhook queue
+        PYTHONPATH=. ./mock-github --print-image-refresh-event cockpit-project/bots \$SHA | \
+            ./publish-queue --amqp $AMQP_POD --create --queue webhook
+
+        ./inspect-queue --amqp $AMQP_POD
+
+        # first run-queue processes webhook → issue-scan → public queue
+        ./run-queue --amqp $AMQP_POD
+        ./inspect-queue --amqp $AMQP_POD
+
+        # second run-queue actually runs the image refresh
+        ./run-queue --amqp $AMQP_POD
+
+        kill \$GH_MOCK_PID
+    "
+
+    # successful refresh log
+    LOGS_URL="$S3_URL_HOST/logs/"
+    CURL="curl --cacert $SECRETS/ca.pem --silent --fail --show-error"
+    LOG_MATCH="$($CURL $LOGS_URL| grep -o "image-refresh-foonux-[[:alnum:]-]*/log<")"
+    LOG="$($CURL "${LOGS_URL}${LOG_MATCH%<}")"
+    echo "--------------- mock image-refresh test log -----------------"
+    echo  "$LOG"
+    echo "--------------- mock image-refresh test log end -------------"
+    assert_in 'Running on:.*cockpituous' "$LOG"
+    assert_in './image-create.*foonux' "$LOG"
+    assert_in "Uploading to $S3_URL_POD/images/foonux.*qcow2" "$LOG"
+    assert_in 'Success.' "$LOG"
+
+    # branch was (mock) pushed
+    PUSH_LOG="$(podman exec -i cockpituous-tasks cat /work/git-push.log)"
+    assert_in 'push origin +HEAD:refs/heads/image-refresh-foonux-' "$PUSH_LOG"
+    podman exec -i cockpituous-tasks rm /work/git-push.log
+    podman exec -i -u root cockpituous-tasks rm /usr/local/bin/git
+
+    podman exec -i cockpituous-tasks sh -euxc '
+        # validate image contents
+        qemu-img convert /cache/images/foonux-*.qcow2 /tmp/foonux.raw
+        grep "^fakeimage" /tmp/foonux.raw
+        rm /tmp/foonux.raw
+
+        # image is on the S3 server
+        cd bots
+        python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep "foonux.*qcow"
+    '
+}
+
 test_queue() {
     # tasks can connect to queue
     OUT=$(podman exec -i cockpituous-tasks bots/inspect-queue --amqp $AMQP_POD)
@@ -376,6 +448,8 @@ else
     test_podman
     # "almost" end-to-end, starting with GitHub webhook JSON payload injection; fully localy, no privs
     test_mock_pr
+    # similar structure for issue-scan for an image refresh
+    test_mock_image_refresh
     # if we have a PR number, run a unit test inside local deployment, and update PR status
     [ -z "$PR" ] || test_pr
 fi
