@@ -63,11 +63,12 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --volume=\${TEST_CACHE}/images:/cache/images:rw \
     --volume=\${TEST_SECRETS}/tasks:/run/secrets/tasks:ro \
     --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
-    --volume=${IMAGE_STORES}:/work/.config/cockpit-dev/image-stores:ro \
+    --volume=${IMAGE_STORES}:/config/image-stores:ro \
     --volume=/etc/npmrc:/etc/npmrc:ro \
     --volume=%t/podman/podman.sock:/podman.sock:rw \
     --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
     --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
+    --env=COCKPIT_IMAGE_STORES_FILE=/config/image-stores \
     --env=TEST_JOBS=\${TEST_JOBS} \
     --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
