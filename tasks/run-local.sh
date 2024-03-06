@@ -246,20 +246,20 @@ test_image() {
 }
 
 test_mock_pr() {
-    podman cp "$MYDIR/mock-github-pr" cockpituous-tasks:/work/bots/mock-github-pr
+    podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
         # test mock PR against our checkout, so that cloning will work
         SHA=\$(git rev-parse HEAD)
 
         # start mock GH server
-        PYTHONPATH=. ./mock-github-pr cockpit-project/bots \$SHA &
+        PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
         GH_MOCK_PID=\$!
         export GITHUB_API=http://127.0.0.7:8443
         until curl --silent \$GITHUB_API; do sleep 0.1; done
 
         # simulate GitHub webhook event, put that into the webhook queue
-        PYTHONPATH=. ./mock-github-pr --print-event cockpit-project/bots \$SHA | \
+        PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots \$SHA | \
             ./publish-queue --amqp $AMQP_POD --create --queue webhook
 
         ./inspect-queue --amqp $AMQP_POD

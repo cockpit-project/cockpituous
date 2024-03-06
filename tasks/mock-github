@@ -2,9 +2,9 @@
 # Mock GitHub API server for testing an opened PR
 # You can run this manually in `tasks/run-local.sh -i` with `podman cp` and running
 # cd bots
-# PYTHONPATH=. ./mock-github-pr cockpit-project/bots $(git rev-parse HEAD) &
+# PYTHONPATH=. ./mock-github cockpit-project/bots $(git rev-parse HEAD) &
 # export GITHUB_API=http://127.0.0.7:8443
-# PYTHONPATH=. ./mock-github-pr --print-event cockpit-project/bots $(git rev-parse HEAD) | \
+# PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots $(git rev-parse HEAD) | \
 #     ./publish-queue --amqp localhost:5671 --queue webhook
 #
 # and then two `./run-queue --amqp localhost:5671`
@@ -41,7 +41,8 @@ class Handler(MockHandler):
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--port', type=int, default=8443, help="Port to listen on (default: %(default)s)")
-argparser.add_argument('--print-event', action='store_true', help="Print GitHub webhook pull_request event and exit")
+argparser.add_argument('--print-pr-event', action='store_true',
+                       help="Print GitHub webhook pull_request event and exit")
 argparser.add_argument('repo', metavar='USER/PROJECT', help="GitHub user/org and project name")
 argparser.add_argument('sha', help="SHA to test in repo for the mock PR")
 args = argparser.parse_args()
@@ -68,7 +69,7 @@ GITHUB_DATA = {
     },
 }
 
-if args.print_event:
+if args.print_pr_event:
     print(json.dumps({
         'event': 'pull_request',
         'request': {
