@@ -281,7 +281,8 @@ test_mock_pr() {
     echo "--------------- mock PR test log -----------------"
     echo  "$LOG"
     echo "--------------- mock PR test log end -------------"
-    assert_in 'Test run finished' "$LOG"
+    assert_in 'Test run finished, return code: 0\|Job ran successfully' "$LOG"
+    assert_in 'Running on:.*cockpituous' "$LOG"
 }
 
 test_pr() {
@@ -331,7 +332,7 @@ test_pr() {
     echo "--------------- test log end -------------"
     assert_in '<html>' "$LOG_HTML"
     assert_in 'Running on:.*cockpituous' "$LOG"
-    assert_in 'Test run finished, return code: 0' "$LOG"
+    assert_in 'Test run finished, return code: 0\|Job ran successfully' "$LOG"
     # validate test attachment if we ran cockpituous' own tests
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
         BOGUS_LOG=$($CURL ${LOG_URL%/log}/bogus.log)
