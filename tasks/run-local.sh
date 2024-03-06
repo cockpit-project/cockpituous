@@ -123,16 +123,18 @@ launch_containers() {
 
     # start podman and run RabbitMQ in the background
     podman run -d --name cockpituous-rabbitmq --pod=new:cockpituous \
+        --security-opt=label=disable \
         --publish $IMAGE_PORT:8080 \
         --publish $S3_PORT:9000 \
         --publish 9001:9001 \
-        -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro,z \
-        -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
+        -v "$RABBITMQ_CONFIG":/etc/rabbitmq:ro \
+        -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
         docker.io/rabbitmq
 
     # S3
     local admin_password="$(dd if=/dev/urandom bs=10 count=1 status=none | base64)"
     podman run -d --name cockpituous-s3 --pod=cockpituous \
+        --security-opt=label=disable \
         -e MINIO_ROOT_USER="minioadmin" \
         -e MINIO_ROOT_PASSWORD="$admin_password" \
         -v "$SECRETS"/tasks/s3-server.key:/root/.minio/certs/private.key:ro \
@@ -140,6 +142,7 @@ launch_containers() {
         quay.io/minio/minio server /data --console-address :9001
     # wait until it started, create bucket
     podman run -d --interactive --name cockpituous-mc --pod=cockpituous \
+        --security-opt=label=disable \
         -v "$SECRETS"/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
         --entrypoint /bin/sh quay.io/minio/mc
     read s3user s3key < "$SECRETS/tasks/s3-keys/localhost.localdomain"
@@ -160,7 +163,8 @@ EOF
     if [ -n "$INTERACTIVE" ]; then
         [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
         podman run -d --name cockpituous-webhook --pod=cockpituous --user user \
-            -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
+            --security-opt=label=disable \
+            -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
             --env=AMQP_SERVER=$AMQP_POD \
             --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
             --env=COCKPIT_GITHUB_WEBHOOK_TOKEN_FILE=/run/secrets/webhook/.config--github-webhook-token \
@@ -177,8 +181,9 @@ EOF
     # Run tasks container in the backgroud
     # use bash as pid 1 to mop up zombies
     podman run -d -it --name cockpituous-tasks --pod=cockpituous \
-        -v "$SECRETS"/tasks:/run/secrets/tasks:ro,z \
-        -v "$SECRETS"/webhook:/run/secrets/webhook:ro,z \
+        --security-opt=label=disable \
+        -v "$SECRETS"/tasks:/run/secrets/tasks:ro \
+        -v "$SECRETS"/webhook:/run/secrets/webhook:ro \
         -v "${XDG_RUNTIME_DIR:-/run}/podman/podman.sock:/podman.sock" \
         --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
         --env=COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem \
