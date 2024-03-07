@@ -46,7 +46,7 @@ jobs:
       - name: Check which containers changed
         id: containers_changed
         run: |
-          tasks=$(git diff --name-only origin/main..HEAD -- tasks/ | grep -Ev 'run-local.sh|openssl.cnf|README|mock-|.yaml' || true)
+          tasks=$(git diff --name-only origin/main..HEAD -- tasks/ | grep -Ev 'run-local.sh|openssl.cnf|install-service|README|mock-|.yaml' || true)
           # print for debugging
           echo "tasks: $tasks"
           [ -z "$tasks" ] || echo "tasks=true" >> "$GITHUB_OUTPUT"
