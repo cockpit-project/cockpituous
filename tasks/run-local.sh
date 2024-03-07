@@ -346,17 +346,7 @@ test_pr() {
 
 test_mock_image_refresh() {
     podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
-
-    # the last step of an image refresh is to push the branch back to origin; we can't nor
-    # want to do that here, so divert "git push" to a log file and check that
-    cat <<EOF | podman exec -i -u root cockpituous-tasks sh -euxc "cat > /usr/local/bin/git; chmod +x /usr/local/bin/git"
-#!/bin/sh
-if [ "\$1" = push ]; then
-    echo "\$@" >> /work/git-push.log
-    exit 0
-fi
-exec /usr/bin/git "\$@"
-EOF
+    podman cp "$MYDIR/mock-git-push" cockpituous-tasks:/usr/local/bin/git
 
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
@@ -399,9 +389,9 @@ EOF
     assert_in 'Success.' "$LOG"
 
     # branch was (mock) pushed
-    PUSH_LOG="$(podman exec -i cockpituous-tasks cat /work/git-push.log)"
+    PUSH_LOG_MATCH="$($CURL $LOGS_URL| grep -o "image-refresh-foonux-[[:alnum:]-]*/git-push.log<")"
+    PUSH_LOG="$($CURL "${LOGS_URL}${PUSH_LOG_MATCH%<}")"
     assert_in 'push origin +HEAD:refs/heads/image-refresh-foonux-' "$PUSH_LOG"
-    podman exec -i cockpituous-tasks rm /work/git-push.log
     podman exec -i -u root cockpituous-tasks rm /usr/local/bin/git
 
     podman exec -i cockpituous-tasks sh -euxc '
