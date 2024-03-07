@@ -358,8 +358,10 @@ EOF
 
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
-        # start mock GH server; use a mock SHA, only used for posting statuses
-        SHA=123abc
+        # test mock PR against our checkout, so that cloning will work
+        SHA=\$(git rev-parse HEAD)
+
+        # start mock GH server
         PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
         GH_MOCK_PID=\$!
         export GITHUB_API=http://127.0.0.7:8443
