@@ -395,14 +395,18 @@ test_mock_image_refresh() {
     podman exec -i -u root cockpituous-tasks rm /usr/local/bin/git
 
     podman exec -i cockpituous-tasks sh -euxc '
+        # image is on the S3 server
+        cd bots
+        name=$(python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep -o "foonux.*qcow2")
+
+        # download image (it was not pushed to git, so need to use --state)
+        rm -f /cache/images/foonux*
+        ./image-download --store $COCKPIT_IMAGE_UPLOAD_STORE --state "$name"
+
         # validate image contents
         qemu-img convert /cache/images/foonux-*.qcow2 /tmp/foonux.raw
         grep "^fakeimage" /tmp/foonux.raw
         rm /tmp/foonux.raw
-
-        # image is on the S3 server
-        cd bots
-        python3 -m lib.s3 ls '$S3_URL_POD'/images/ | grep "foonux.*qcow"
     '
 }
 
