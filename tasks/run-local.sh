@@ -117,15 +117,13 @@ EOF
 
 create_job_runner_config() {
     # we never want to push to real GitHub branches in this test
-    run_args="'--security-opt=label=disable', '--volume=$MYDIR/mock-git-push:/usr/local/bin/git:ro'"
-
     if [ "$1" = "mock" ]; then
         forge_opts="api-url = '$GHAPI_URL_POD'"
         # needs to run in pod network so that it can access GITHUB_API_POD
-        run_args="${run_args}, '--pod=cockpituous'"
-        run_args="${run_args}, '--env=GITHUB_API=$GHAPI_URL_POD', '--env=COCKPIT_IMAGE_UPLOAD_STORE=$S3_URL_POD/images/'"
+        run_args="'--pod=cockpituous', '--env=GITHUB_API=$GHAPI_URL_POD'"
     elif [ "$1" = "real" ]; then
         forge_opts=""
+        run_args=""
     else
         echo "ERROR: unknown job-runner config $1" >&2
         exit 1
@@ -146,7 +144,14 @@ key = [{file="/run/secrets/tasks/s3-keys/localhost.localdomain"}]
 
 [container]
 command = ['podman-remote', '--url=unix:///podman.sock']
-run-args = [$run_args]
+run-args = [
+    '--security-opt=label=disable',
+    '--volume=$MYDIR/mock-git-push:/usr/local/bin/git:ro',
+    '--env=COCKPIT_IMAGE_UPLOAD_STORE=$S3_URL_POD/images/',
+    '--env=GIT_AUTHOR_*',
+    '--env=GIT_COMMITTER_*',
+    $run_args
+]
 
 [container.secrets]
 # these are *host* paths, this is podman-remote
@@ -249,6 +254,11 @@ EOF
         --env=S3_LOGS_URL=$S3_URL_POD/logs/ \
         --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
         --env=COCKPIT_IMAGE_UPLOAD_STORE=$S3_URL_POD/images/ \
+        --env=COCKPIT_IMAGES_DATA_DIR=/cache/images \
+        --env=GIT_COMMITTER_NAME=Cockpituous \
+        --env=GIT_COMMITTER_EMAIL=cockpituous@cockpit-project.org \
+        --env=GIT_AUTHOR_NAME=Cockpituous \
+        --env=GIT_AUTHOR_EMAIL=cockpituous@cockpit-project.org \
         --env=SKIP_STATIC_CHECK=1 \
         quay.io/cockpit/tasks:${TASKS_TAG:-latest} bash
 

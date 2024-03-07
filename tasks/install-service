@@ -69,6 +69,10 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
     --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
     --env=COCKPIT_IMAGE_STORES_FILE=/config/image-stores \
+    --env=GIT_COMMITTER_NAME=Cockpituous \
+    --env=GIT_COMMITTER_EMAIL=cockpituous@cockpit-project.org \
+    --env=GIT_AUTHOR_NAME=Cockpituous \
+    --env=GIT_AUTHOR_EMAIL=cockpituous@cockpit-project.org \
     --env=TEST_JOBS=\${TEST_JOBS} \
     --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
