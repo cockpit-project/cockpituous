@@ -96,18 +96,28 @@
           '--memory=24g',
           '--pids-limit=16384',
           '--shm-size=1024m',
+
           # qcow overlays on tmpfs
           '--tmpfs=/tmp:size=14g',
           '--env=TEST_OVERLAY_DIR=/tmp',
+
+          # image cache
+          '--env=COCKPIT_IMAGES_DATA_DIR=/cache/images',
+          '--volume=/var/cache/cockpit-tasks/images:/cache/images:rw',
+
           # local image stores
           '--env=COCKPIT_IMAGE_STORES_FILE=/config/image-stores',
           '--volume=/var/cache/cockpit-tasks/image-stores:/config/image-stores:ro',
+
           # generic secrets
           '--volume=/var/lib/cockpit-secrets/tasks/npm-registry.crt:/run/secrets/tasks/npm-registry.crt:ro',
+
           # various configuration
           '--volume=/etc/npmrc:/etc/npmrc:ro',
-          '--volume=/var/cache/cockpit-tasks/images:/cache/images:rw',
           '--env=TEST_JOBS={{ TEST_JOBS | default(8) }}',
+          # copy git settings from main tasks container
+          '--env=GIT_COMMITTER_*',
+          '--env=GIT_AUTHOR_*',
       ]
 
       [container.secrets]
