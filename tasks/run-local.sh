@@ -16,6 +16,8 @@ S3_URL_POD=https://localhost.localdomain:9000
 S3_URL_HOST=https://localhost.localdomain:$S3_PORT
 # AMQP address from inside the cockpituous pod
 AMQP_POD=localhost:5671
+# mock GitHub API running in tasks pod
+GHAPI_URL_POD="http://127.0.0.7:8443"
 
 # CLI option defaults/values
 PR=
@@ -257,8 +259,8 @@ test_mock_pr() {
         # start mock GH server
         PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
         GH_MOCK_PID=\$!
-        export GITHUB_API=http://127.0.0.7:8443
-        until curl --silent \$GITHUB_API; do sleep 0.1; done
+        export GITHUB_API=$GHAPI_URL_POD
+        until curl --silent --fail \$GITHUB_API/repos/cockpit-project/bots; do sleep 0.1; done
 
         # simulate GitHub webhook event, put that into the webhook queue
         PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots \$SHA | \
@@ -364,8 +366,8 @@ EOF
         # start mock GH server
         PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
         GH_MOCK_PID=\$!
-        export GITHUB_API=http://127.0.0.7:8443
-        until curl --silent \$GITHUB_API; do sleep 0.1; done
+        export GITHUB_API=$GHAPI_URL_POD
+        until curl --silent --fail \$GITHUB_API/repos/cockpit-project/bots; do sleep 0.1; done
 
         # simulate GitHub webhook event, put that into the webhook queue
         PYTHONPATH=. ./mock-github --print-image-refresh-event cockpit-project/bots \$SHA | \
