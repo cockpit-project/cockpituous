@@ -1,0 +1,8 @@
+#!/bin/sh
+# used in integration test where we can't/don't want to push back to origin
+set -eu
+if [ "$1" = push ]; then
+    echo "$@" >> "${TEST_ATTACHMENTS}/git-push.log"
+    exit 0
+fi
+exec /usr/bin/git "$@"
