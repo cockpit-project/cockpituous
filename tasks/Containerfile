@@ -69,7 +69,7 @@ RUN dnf -y update && \
     dnf clean all && \
     pip install ruff
 
-COPY cockpit-tasks install-service webhook github_handler.py /usr/local/bin/
+COPY cockpit-tasks webhook github_handler.py /usr/local/bin/
 
 RUN groupadd -g 1111 -r user && useradd -r -g user -u 1111 user --home-dir /work && \
     groupadd -g 1001 -r github && useradd -r --no-create-home -g github -u 1001 github && \
