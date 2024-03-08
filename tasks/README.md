@@ -1,22 +1,22 @@
 # Cockpit Continuous Integration tasks
 
-This is the container and configuration for the Cockpit integration tests and
-automated maintenance tasks. This documentation is for deployment on Fedora
-35+, Fedora CoreOS, or RHEL 8+.
+This is the [container](./container) and deployment scripts for the Cockpit
+integration tests and automated maintenance tasks.
 
 The container has optional mounts:
 
- * `/secrets`: A directory for tasks specific secrets, with at least the following files:
-   * `s3-keys/*`: files with S3 access tokens for image upload/download and task log bucket
-   * `s3-server.{pem,key}`: TLS certificate for local S3 image cache container
- * `/run/secrets/webhook`: A directory for secrets shared with the webhook container, with the following files:
-   * `.config--github-token`: GitHub token to create and update issues and PRs
+ * A directory for image files. Defined by `$COCKPIT_IMAGES_DATA_DIR` env
+   variable, conventionally `/cache/images`. On production hosts, this is
+   mounted from `/var/cache/cockpit-tasks/images`.
+ * S3 access tokens for image and log buckets. Defined by `$COCKPIT_S3_KEY_DIR`
+   env variable, conventionally `/run/secrets/s3-keys`.
+   On production hosts, this is mounted from `/var/lib/cockpit-secrets/tasks/s3-keys`.
+ * A directory for GitHub and AMQP secrets. Used by both the tasks and the the webhook container.
+   Must be in `/run/secrets/webhook` (bots currently assumes that).
+   * `.config--github-token`: GitHub token to create and update issues and PRs.
    * `amqp-{client,server}.{pem,key}`: TLS certificates for RabbitMQ
    * `ca.pem`: The general cockpit CI Certificate Authority which signed the above AMQP certificates
- * `/cache`: A directory for reusable cached data such as downloaded image files
-
-The mounts normally default to `/var/lib/cockpit-secrets/tasks`,
-`/var/lib/cockpit-secrets/webhook`, and `/var/cache/cockpit-tasks` on the host.
+   On production hosts, this is mounted from `/var/lib/cockpit-secrets/webhook`.
 
 To generate the [certificates needed for cross-cluster AMQP](https://www.rabbitmq.com/ssl.html) authentication,
 run the [credentials/webhook/generate.sh script](./credentials/webhook/generate.sh) script.
@@ -28,31 +28,27 @@ Run either script in the target directory (e.g.
 # Deploying/updating on our CI infrastructure
 
 This happens through [Ansible](../ansible/) depending on the target cloud.
-
-Some helpful commands:
-
-    # journalctl -fu cockpit-tasks@*
-    # systemctl stop cockpit-tasks@*
+These tasks containers controlled by systemd units `cockpit-tasks@*`.
 
 # Deploying on OpenShift
 
-The testing machines can run on OpenShift cluster(s), as long as they have
-support for `/dev/kvm` in containers. Otherwise they will only be able to
-process non-test tasks (such as processing the `statistics` or `webhook`
-queues).
+OpenShift primarily runs the GitHub webhook responder and AMQP server.
 
-If you run tests, you need a persistent shared volume for locally caching
-images. Create it with
+As `/dev/kvm` support on OpenShift is hard to come by, current bots
+`job-runner` and the deployment resources currently only support a tasks
+container which processes the `statistics` and `webhook` queues.
+
+You need a persistent shared volume for `test-results.db` and the Prometheus
+database. Create it with
 
     oc create -f tasks/images-claim-centosci.yaml
 
 Now create all the remaining kubernetes objects. The secrets are created from
-the `/var/lib/cockpit-secrets/tasks` directory as described above. For the
-webhook secrets a github token `~/.config/github-webhook-token` should be
-present.
+the `/var/lib/cockpit-secrets/*` directories as described above:
 
     make tasks-secrets | oc create -f -
-    oc create -f tasks/cockpit-tasks.json
+    oc create -f tasks/cockpit-tasks-webhook.json
+    oc create -f tasks/cockpit-tasks-centosci.json
 
 ## Troubleshooting
 
@@ -62,54 +58,59 @@ Some helpful commands:
     oc describe pods
     oc log -f cockpit-tasks-xxxx
 
-Service affinity currently wants all the cockpit-tasks pods to be in the same region.
-If you have your own cluster make sure all the nodes are in the same region:
+# Deploying locally for development, integration tests
 
-    oc patch node node.example.com -p '{"metadata":{"labels": {"region": "infra"}}}'
+For hacking on the webhook, task container, bots infrastructure,, or validating
+new container images, you can also run a [podman pod](http://docs.podman.io/en/latest/pod.html)
+locally with  RabbitMQ, webhook, minio S3, and tasks containers.
+Without arguments this will run some purely local integration tests:
 
-## Scaling
-
-We can scale the number of testing machines in the openshift cluster with this
-command:
-
-    oc scale rc cockpit-tasks --replicas=3
-
-# Deploying locally for development
-
-For hacking on the webhook, image, or task container, or validating new container
-images, you can also run a simple [podman pod](http://docs.podman.io/en/latest/pod.html)
-locally with  RabbitMQ, webhook, images, and tasks containers:
-
-    $ tasks/run-local.sh
+    tasks/run-local.sh
 
 This will also generate the secrets in a temporary directory, unless they
 already exist in `tasks/credentials/`. By default this will use the
-`quay.io/cockpit/{tasks,images}:latest` containers, but you can run a different
-tag by setting `$TASKS_TAG` and/or `$IMAGES_TAG`.
+[`quay.io/cockpit/tasks:latest`](https://quay.io/repository/cockpit/tasks?tab=tags)
+container, but you can run a different tag by setting `$TASKS_TAG`.
 
-This currently does not yet have any convenient way to inject arbitrary jobs
-into the AMQP queue; this will be provided at a later point. However, you can
-test the whole GitHub → webhook → tasks → GitHub status workflow on some
-cockpituous PR with specifying the PR number and a GitHub token:
+You can also test the whole GitHub → webhook → tasks → GitHub status workflow
+on some cockpituous PR with specifying the PR number and a GitHub token:
 
-    $ tasks/run-local.sh -p 123 -t ~/.config/github-token
+    tasks/run-local.sh -p 123 -t ~/.config/cockpit-dev/github-token
 
 This will run tests-scan/tests-trigger on the given PR and trigger an
 [unit-tests](../.cockpit-ci/run) test which simply does `make check`.
 
-# Running single container locally
+You can get an interactive shell with
+
+    tasks/run-local.sh -i
+
+to run things manually. For example, use `publish-queue` to inject a job into
+AMQP, or run `job-runner` or some bots command.
+
+# Running with toolbx
+
+This container can also be used for local development with
+[toolbx](https://containertoolbx.org/), to get an "official" Cockpit
+development environment that's independent from the host:
+
+```sh
+toolbox create --image quay.io/cockpit/tasks cockpit
+toolbox enter cockpit
+```
+
+# Running single container with production-like resources
 
 When you want to debug a problem with a test which may be sensitive to its
-particular environment (such as calibrating RAM, /dev/shm sizes, or behaviour
-of libvirt in a container, etc.), you can run the tasks container directly with
-podman. The production parameters are set in the
-[install-service](./install-service) script. You don't need secrets, custom
-networks, or most environment settings, the crucial parts are the memory,
-device, and image cache configurations.
+particular resource configuration (such as calibrating RAM, /dev/shm sizes, or
+behaviour of libvirt in a container, etc.), you can run the tasks container
+directly with podman. The production parameters are set in the
+`job-runner.toml` file in the
+[tasks-systemd Ansible role](../ansible/roles/tasks-systemd/tasks/main.yml).
+You don't need secrets, custom networks, or most environment settings, the
+crucial parts are the memory, device, and image cache configurations.
 
-First of all, if you want to share your host's image cache (which is really a
-good idea), temporarily make it writable to the unprivileged user in the
-container:
+If you want to share your host's image cache (which is really a good idea),
+temporarily make it writable to the unprivileged user in the container:
 
 ```sh
 chmod o+w ~/.cache/cockpit-images
@@ -215,7 +216,7 @@ sequenceDiagram
    (2) a cockpit/tasks container that runs the actual
    [webhook](https://github.com/cockpit-project/cockpituous/blob/main/tasks/webhook).
 
-   See the [Kubernetes resources](https://github.com/cockpit-project/cockpituous/blob/main/tasks/cockpit-tasks-webhook.yaml)
+   See the [Kubernetes resources](./cockpit-tasks-webhook.yaml)
    for details about the route, service, and pod.
 
    That webhook is a fairly straightforward piece of Python that routes the
@@ -245,23 +246,13 @@ sequenceDiagram
  * Some cockpit/tasks bot picks up the event payload from the "webhook" queue,
    and interprets it with [tests-scan](https://github.com/cockpit-project/bots/blob/main/tests-scan)
    or [issue-scan](https://github.com/cockpit-project/bots/blob/main/issue-scan)
-   depending on the event type. This results in a shell command like
-   `tests-invoke [...]`, `npm-update [...]`, or similar. If this involves any
-   Red Hat internal resources, like RHEL or Windows images, that command gets
-   put into the "internal" queue, otherwise into the "public" queue.
+   depending on the event type. This results in a
+   [job-runner JSON task](https://github.com/cockpit-project/bots/blob/main/job-runner)
+   or a shell command like `prometheus-stats`, or similar. If this involves any
+   Red Hat internal resources, like RHEL images, that command gets put into the
+   "internal" queue, otherwise into the "public" queue.
 
- * Some cockpit/tasks bot picks up the shell command from the internal or
+ * Some cockpit/tasks bot picks up the task from the internal or
    public queue (depending on whether it has access to Red Hat internal
    infrastructure), executes it, publishes the log, updates the GitHub status,
    and finally acks the queue item.
-
-# Using with toolbx
-
-This container can also be used for local development with
-[toolbx](https://containertoolbx.org/), to get an "official" Cockpit
-development environment that's independent from the host:
-
-```sh
-toolbox create --image quay.io/cockpit/tasks cockpit
-toolbox enter cockpit
-```
