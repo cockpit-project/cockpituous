@@ -4,5 +4,7 @@ set -eux
 
 if [ -n "$TEST_ATTACHMENTS" ]; then
     echo "heisenberg compensator at 99.8% efficiency" > "$TEST_ATTACHMENTS"/bogus.log
+    mkdir -p $TEST_ATTACHMENTS/data
+    echo "subdir-file" > $TEST_ATTACHMENTS/data/subdir-file.txt
 fi
 make check

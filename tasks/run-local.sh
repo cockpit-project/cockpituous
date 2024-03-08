@@ -392,6 +392,8 @@ test_pr() {
     if [ "${PR_REPO%/cockpituous}" != "$PR_REPO" ]; then
         BOGUS_LOG=$($CURL ${LOG_URL%/log}/bogus.log)
         assert_in 'heisenberg compensator' "$BOGUS_LOG"
+        BOGUS_SUBDIR_FILE=$($CURL ${LOG_URL%/log}/data/subdir-file.txt)
+        assert_in 'subdir-file' "$BOGUS_SUBDIR_FILE"
     fi
 }
 
