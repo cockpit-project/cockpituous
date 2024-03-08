@@ -6,8 +6,8 @@ all:
 	@echo "       make check" >&2
 
 check:
-	python3 -m pyflakes tasks tasks/webhook
-	python3 -m pycodestyle --max-line-length=120 --ignore=E722 tasks tasks/webhook
+	python3 -m pyflakes tasks tasks/container/webhook
+	python3 -m pycodestyle --max-line-length=120 --ignore=E722 tasks tasks/container/webhook
 
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
@@ -29,7 +29,7 @@ tasks-shell:
         quay.io/cockpit/tasks -i
 
 tasks-container:
-	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks
+	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks/container
 	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
 
 tasks-push:
