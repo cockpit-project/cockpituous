@@ -13,8 +13,6 @@ SECRETS=/var/lib/cockpit-secrets
 CACHE=/var/cache/cockpit-tasks
 IMAGE_STORES=${CACHE}/image-stores
 INSTANCES=${INSTANCES:-4}
-# assume the host has plenty of RAM, use a tmpfs for /tmp for getting less IO contention; this can be overridden
-TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
 
 systemctl stop 'cockpit-tasks@*.service'
 
@@ -40,45 +38,34 @@ Requires=podman.socket
 After=podman.socket
 
 [Service]
-Environment="TEST_JOBS=${TEST_JOBS:-8}"
-Environment="TEST_CACHE=$CACHE"
-Environment="TEST_SECRETS=$SECRETS"
-Environment="TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX:-}"
-Environment="TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO:-}"
 Restart=always
 RestartSec=60
 # give image pull enough time
 TimeoutStartSec=10min
 ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
-ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
 # HACK: sometimes images get an MCS category which makes them undeletable by the container
-ExecStartPre=/usr/bin/chcon -R -l s0 \${TEST_CACHE}/images/
+ExecStartPre=/usr/bin/chcon -R -l s0 ${CACHE}/images/
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
-ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
+# job-runner doesn't need /images, but we still need it for the run-queue store-tests task
+# FIXME: /dev/kvm should be dropped, but fix bots run-queue for that (indication of whether to run kvm tasks)
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
-    --device=/dev/kvm --network=cockpit-tasks-%i \
-    --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
-    --volume=\${TEST_CACHE}/images:/cache/images:rw \
-    --volume=\${TEST_SECRETS}/tasks:/run/secrets/tasks:ro \
-    --volume=\${TEST_SECRETS}/webhook:/run/secrets/webhook:ro \
-    --volume=${IMAGE_STORES}:/config/image-stores:ro \
-    --volume=/etc/npmrc:/etc/npmrc:ro \
+    --device=/dev/kvm \
+    --volume=${CACHE}/images:/cache/images:rw \
+    --volume=${SECRETS}/tasks:/run/secrets/tasks:ro \
+    --volume=${SECRETS}/webhook:/run/secrets/webhook:ro \
     --volume=/etc/job-runner.toml:/config/job-runner.toml:ro \
     --volume=%t/podman/podman.sock:/podman.sock:rw \
     --env=JOB_RUNNER_CONFIG=/config/job-runner.toml \
     --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
     --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
-    --env=COCKPIT_IMAGE_STORES_FILE=/config/image-stores \
     --env=GIT_COMMITTER_NAME=Cockpituous \
     --env=GIT_COMMITTER_EMAIL=cockpituous@cockpit-project.org \
     --env=GIT_AUTHOR_NAME=Cockpituous \
     --env=GIT_AUTHOR_EMAIL=cockpituous@cockpit-project.org \
-    --env=TEST_JOBS=\${TEST_JOBS} \
-    --env=TEST_NOTIFICATION_MX=\${TEST_NOTIFICATION_MX} \
-    --env=TEST_NOTIFICATION_TO=\${TEST_NOTIFICATION_TO} \
+    --env=TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX} \
+    --env=TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO} \
     quay.io/cockpit/tasks cockpit-tasks --verbose
 ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
-ExecStop=/usr/bin/podman network rm cockpit-tasks-%i
 
 [Install]
 WantedBy=multi-user.target
