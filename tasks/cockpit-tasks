@@ -9,11 +9,6 @@ COCKPIT_BOTS_BRANCH=${COCKPIT_BOTS_BRANCH:-main}
 WORKDIR="$PWD"
 BOTS_DIR="$WORKDIR"/bots
 
-# OpenShift instances with their random user don't set $HOME
-if [ -z "${HOME:-}" ] || [ "$HOME" = / ]; then
-    export HOME=/work
-fi
-
 echo "Starting testing"
 
 function update_bots() {
@@ -45,19 +40,10 @@ for i in $(seq 1 30); do
     update_bots
     cd "$BOTS_DIR"
 
-    # avoid stale state and sockets
-    virsh list --id --all | xargs --no-run-if-empty virsh destroy
-    pkill -9 virtqemud || true
-    while pgrep virtqemud >/dev/null; do sleep 0.5; done
-    rm -rf ~/.config/libvirt ~/.cache/libvirt
-
     # run-queue fails on empty queues; don't poll too often
     timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || slumber
-    # clean up after tests, in particular large qcow overlays
-    rm -rf "${TEST_OVERLAY_DIR:-/var/tmp}"/* || true
-    rm -rf /tmp/.cockpit-test-resources || true
 done
 
-# Prune old images
+# Prune old images on our local cache
 update_bots
 ./image-prune
