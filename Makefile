@@ -1,6 +1,5 @@
 all:
 	@echo "usage: make containers" >&2
-	@echo "       make tasks-shell" >&2
 	@echo "       make tasks-container" >&2
 	@echo "       make tasks-push" >&2
 	@echo "       make check" >&2
@@ -11,22 +10,10 @@ check:
 
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
-WEBHOOK_SECRETS := /var/lib/cockpit-secrets/webhook
-TASK_CACHE := /var/cache/cockpit-tasks
 DOCKER ?= $(shell which podman docker 2>/dev/null | head -n1)
 
 containers: tasks-container
 	@true
-
-tasks-shell:
-	$(DOCKER) run -ti --rm \
-		--shm-size=1024m \
-		--volume=$(CURDIR)/tasks:/usr/local/bin \
-		--volume=$(TASK_SECRETS):/run/secrets/tasks/:ro \
-		--volume=$(WEBHOOK_SECRETS):/run/secrets/webhook/:ro \
-		--volume=$(TASK_CACHE):/cache:rw \
-		--entrypoint=/bin/bash \
-        quay.io/cockpit/tasks -i
 
 tasks-container:
 	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks/container
