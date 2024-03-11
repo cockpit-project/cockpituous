@@ -79,7 +79,12 @@
 
       [container.secrets]
       # these are *host* paths, this is podman-remote
+      # FIXME: Split the upload/download secrets
       image-upload=[
+          '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
+          '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
+      ]
+      image-download=[
           '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
           '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
       ]
