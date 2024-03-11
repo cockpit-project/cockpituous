@@ -79,12 +79,17 @@
 
       [container.secrets]
       # these are *host* paths, this is podman-remote
-      # FIXME: Split the upload/download secrets
+      # secret from issue-scan for image refreshes
       image-upload=[
           '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
           '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
+          # password for console.redhat.com when image-create'ing rhel4edge
+          '--volume=/var/lib/cockpit-secrets/tasks/crc_passwd:/run/secrets/crc_passwd:ro',
+          '--env=COCKPIT_CRC_PASSWORD=/run/secrets/crc_passwd',
       ]
+      # secret from tests-scan for downloading RHEL images
       image-download=[
+          # FIXME: create a new "download only" S3 token
           '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
           '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
       ]
