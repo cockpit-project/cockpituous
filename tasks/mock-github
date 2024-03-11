@@ -19,10 +19,15 @@ from task.test_mock_server import MockHandler, MockServer
 
 repo = None
 sha = None
+log = None
 
 
 class Handler(MockHandler):
     def do_GET(self):
+        if log is not None:
+            print("GET", self.path, file=log)
+            log.flush()
+
         if self.path in self.server.data:
             self.replyJson(self.server.data[self.path])
         elif self.path.startswith(f'/repos/{repo}/pulls?'):
@@ -39,6 +44,10 @@ class Handler(MockHandler):
             self.send_error(404, 'Mock Not Found: ' + self.path)
 
     def do_POST(self):
+        if log is not None:
+            print("POST", self.path, self.rfile.read1().decode(), file=log)
+            log.flush()
+
         if self.path.startswith(f'/repos/{repo}/statuses/{sha}'):
             self.replyJson({})
         # new SHA from mock-pushed PR #2 for image-refresh
@@ -63,6 +72,7 @@ argparser.add_argument('--print-pr-event', action='store_true',
                        help="Print GitHub webhook pull_request event and exit")
 argparser.add_argument('--print-image-refresh-event', action='store_true',
                        help="Print GitHub webhook issue event for an image-refresh and exit")
+argparser.add_argument('--log', metavar="PATH", help="Log requests to this file")
 argparser.add_argument('repo', metavar='USER/PROJECT', help="GitHub user/org and project name")
 argparser.add_argument('sha', help="SHA to test in repo for the mock PR")
 args = argparser.parse_args()
@@ -125,6 +135,8 @@ if args.print_image_refresh_event:
     }, indent=4))
     exit(0)
 
+if args.log:
+    log = open(args.log, 'w')
 temp = tempfile.TemporaryDirectory()
 cache_dir = os.path.join(temp.name, 'cache')
 os.environ['XDG_CACHE_HOME'] = cache_dir

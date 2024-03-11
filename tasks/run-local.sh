@@ -301,19 +301,21 @@ test_image() {
 test_mock_pr() {
     podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
     create_job_runner_config mock
+
+    # test mock PR against our checkout, so that cloning will work
+    SHA=$(podman exec -i cockpituous-tasks git -C bots rev-parse HEAD)
+
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
-        # test mock PR against our checkout, so that cloning will work
-        SHA=\$(git rev-parse HEAD)
 
         # start mock GH server
-        PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
+        PYTHONPATH=. ./mock-github --log /tmp/mock.log cockpit-project/bots $SHA &
         GH_MOCK_PID=\$!
         export GITHUB_API=$GHAPI_URL_POD
         until curl --silent --fail \$GITHUB_API/repos/cockpit-project/bots; do sleep 0.1; done
 
         # simulate GitHub webhook event, put that into the webhook queue
-        PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots \$SHA | \
+        PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots $SHA | \
             ./publish-queue --amqp $AMQP_POD --create --queue webhook
 
         ./inspect-queue --amqp $AMQP_POD
@@ -337,6 +339,13 @@ test_mock_pr() {
     echo "--------------- mock PR test log end -------------"
     assert_in 'Test run finished, return code: 0\|Job ran successfully' "$LOG"
     assert_in 'Running on:.*cockpituous' "$LOG"
+
+    # 3 status updates posted
+    # FIXME: assert JSON more precisely once we rewrite in Python
+    GH_MOCK_LOG="$(podman  exec cockpituous-tasks cat /tmp/mock.log)"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*description.*Not yet tested" "$GH_MOCK_LOG"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*description.*In progress \\[cockpituous\\]" "$GH_MOCK_LOG"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*state.*success" "$GH_MOCK_LOG"
 }
 
 test_pr() {
@@ -402,19 +411,19 @@ test_mock_image_refresh() {
     podman cp "$MYDIR/mock-git-push" cockpituous-tasks:/usr/local/bin/git
     create_job_runner_config mock
 
+    # test mock PR against our checkout, so that cloning will work
+    SHA=$(podman exec -i cockpituous-tasks git -C bots rev-parse HEAD)
+
     podman exec -i cockpituous-tasks sh -euxc "
         cd bots
-        # test mock PR against our checkout, so that cloning will work
-        SHA=\$(git rev-parse HEAD)
-
         # start mock GH server
-        PYTHONPATH=. ./mock-github cockpit-project/bots \$SHA &
+        PYTHONPATH=. ./mock-github --log /tmp/mock.log cockpit-project/bots $SHA &
         GH_MOCK_PID=\$!
         export GITHUB_API=$GHAPI_URL_POD
         until curl --silent --fail \$GITHUB_API/repos/cockpit-project/bots; do sleep 0.1; done
 
         # simulate GitHub webhook event, put that into the webhook queue
-        PYTHONPATH=. ./mock-github --print-image-refresh-event cockpit-project/bots \$SHA | \
+        PYTHONPATH=. ./mock-github --print-image-refresh-event cockpit-project/bots $SHA | \
             ./publish-queue --amqp $AMQP_POD --create --queue webhook
 
         ./inspect-queue --amqp $AMQP_POD
@@ -462,6 +471,20 @@ test_mock_image_refresh() {
         grep "^fakeimage" /tmp/foonux.raw
         rm /tmp/foonux.raw
     '
+
+    # status updates posted to original bots SHA on which the image got triggered
+    # FIXME: assert JSON more precisely once we rewrite in Python (unpredictable JSON order)
+    GH_MOCK_LOG="$(podman  exec cockpituous-tasks cat /tmp/mock.log)"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*image-refresh/foonux" "$GH_MOCK_LOG"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*In progress \\[cockpituous\\]" "$GH_MOCK_LOG"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*success" "$GH_MOCK_LOG"
+
+    # and forwarded to the converted PR (new SHA)
+    assert_in "POST /repos/cockpit-project/bots/statuses/a1b2c3 .*success.*Forwarded status.*target_url" "$GH_MOCK_LOG"
+
+    # posts new comment with log
+    assert_in "POST /repos/cockpit-project/bots/issues/2/comments .*Success. Log: https.*" "$GH_MOCK_LOG"
+
 }
 
 test_queue() {
