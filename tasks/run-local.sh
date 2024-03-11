@@ -32,6 +32,13 @@ assert_in() {
     fi
 }
 
+assert_not_in() {
+    if echo "$2" | grep -q "$1"; then
+        echo "ERROR: unexpectedly found '$1' in '$2'" >&2
+        exit 1
+    fi
+}
+
 parse_options() {
     while getopts "his:t:p:r:" opt "$@"; do
         case $opt in
@@ -348,6 +355,69 @@ test_mock_pr() {
     assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*state.*success" "$GH_MOCK_LOG"
 }
 
+test_mock_cross_project_pr() {
+    podman cp "$MYDIR/mock-github" cockpituous-tasks:/work/bots/mock-github
+    create_job_runner_config mock
+
+    # test mock PR against our checkout, so that cloning will work
+    SHA=$(podman exec -i cockpituous-tasks git -C bots rev-parse HEAD)
+
+    podman exec -i cockpituous-tasks sh -euxc "
+        cd bots
+
+        # start mock GH server
+        PYTHONPATH=. ./mock-github --log /tmp/mock.log cockpit-project/bots $SHA &
+        GH_MOCK_PID=\$!
+        export GITHUB_API=$GHAPI_URL_POD
+        until curl --silent --fail \$GITHUB_API/repos/cockpit-project/bots; do sleep 0.1; done
+
+        # simulate GitHub webhook event, put that into the webhook queue
+        PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots $SHA | \
+            ./publish-queue --amqp $AMQP_POD --create --queue webhook
+
+        ./inspect-queue --amqp $AMQP_POD
+
+        # cross-project test request
+        export COCKPIT_TESTMAP_INJECT=main/unit-tests@cockpit-project/cockpituous
+
+        # first run-queue processes webhook → tests-scan → public queue
+        ./run-queue --amqp $AMQP_POD
+        ./inspect-queue --amqp $AMQP_POD
+
+        # second run-queue actually runs the test
+        ./run-queue --amqp $AMQP_POD
+
+        kill \$GH_MOCK_PID
+    "
+    set -x
+
+    LOGS_URL="$S3_URL_HOST/logs/"
+    CURL="curl --cacert $SECRETS/ca.pem --silent --fail --show-error"
+    LOG_MATCH="$($CURL $LOGS_URL| grep -o "pull-1-[[:alnum:]-]*-unit-tests-cockpit-project-cockpituous/log<")"
+    LOG_URL="${LOGS_URL}${LOG_MATCH%<}"
+    LOG="$($CURL "$LOG_URL")"
+    echo "--------------- mock PR test log -----------------"
+    echo  "$LOG"
+    echo "--------------- mock PR test log end -------------"
+    assert_in 'Test run finished, return code: 0\|Job ran successfully' "$LOG"
+    assert_in 'Running on:.*cockpituous' "$LOG"
+
+    # validate test attachment
+    BOGUS_LOG=$($CURL "${LOG_URL%/log}/bogus.log")
+    assert_in 'heisenberg compensator' "$BOGUS_LOG"
+
+    # 3 status updates posted to bots project (the PR we are testing)
+    # FIXME: assert JSON more precisely once we rewrite in Python
+    GH_MOCK_LOG="$(podman  exec cockpituous-tasks cat /tmp/mock.log)"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*description.*Not yet tested" "$GH_MOCK_LOG"
+    # old tests-invoke says "Testing in progress", job-runner says "In progress"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*description.*[iI]n progress \\[cockpituous\\]" "$GH_MOCK_LOG"
+    assert_in "POST /repos/cockpit-project/bots/statuses/$SHA .*state.*success" "$GH_MOCK_LOG"
+
+    # did not post status to cockpituous
+    assert_not_in "POST /repos/cockpit-project/cockpituous/statuses" "$GH_MOCK_LOG"
+}
+
 test_pr() {
     # need to use real GitHub token for this
     [ -z "$TOKEN" ] || cp -fv "$TOKEN" "$SECRETS"/webhook/.config--github-token
@@ -523,6 +593,7 @@ else
     test_podman
     # "almost" end-to-end, starting with GitHub webhook JSON payload injection; fully localy, no privs
     test_mock_pr
+    test_mock_cross_project_pr
     # similar structure for issue-scan for an image refresh
     test_mock_image_refresh
     # if we have a PR number, run a unit test inside local deployment, and update PR status
