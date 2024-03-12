@@ -5,7 +5,15 @@
     dest: /run/install-service
     mode: preserve
 
-- name: Create custom SELinux rules to fix Chromium
+- name: Create custom SELinux policy file contexts
+  copy:
+    dest: /tmp/cockpituous.fc
+    mode: 0644
+    content: |
+      /var/run/podman/podman.sock    system_u:object_r:container_file_t:s0
+  register: selinux_policy_fc
+
+- name: Create custom SELinux policy type enforcements
   copy:
     dest: /tmp/cockpituous.te
     mode: 0644
@@ -13,19 +21,30 @@
       module cockpituous 1.0;
       require {
               type container_t;
+              type container_file_t;
+              type container_runtime_t;
+              type init_t;
               class process execheap;
+              class sock_file { create unlink setattr };
+              class unix_stream_socket { connectto };
       }
+
+      # allow systemd to create the socket after changing its type
+      allow init_t container_file_t:sock_file { create unlink setattr };
+
+      # container can access that socket
+      allow container_t container_runtime_t:unix_stream_socket connectto;
 
       # HACK: See https://github.com/cockpit-project/cockpituous/issues/579
       allow container_t self:process execheap;
-  register: selinux_policy
+  register: selinux_policy_te
 
 - name: Install custom SELinux rules
   shell: |
     checkmodule -M -m -o /tmp/cockpituous.mod /tmp/cockpituous.te
-    semodule_package -o /tmp/cockpituous.pp -m /tmp/cockpituous.mod
+    semodule_package -o /tmp/cockpituous.pp -m /tmp/cockpituous.mod -f /tmp/cockpituous.fc
     semodule -i /tmp/cockpituous.pp
-  when: selinux_policy.changed
+  when: selinux_policy_fc.changed or selinux_policy_te.changed
 
 # This only applies to RH VPN; make that optional if we ever deploy to public infrastructure
 - name: Create npm configuration
