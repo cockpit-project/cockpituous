@@ -1,7 +1,19 @@
+- name: Create cockpituous group
+  group:
+    name: cockpituous
+    gid: 1111
+
+- name: Create cockpituous user
+  user:
+    name: cockpituous
+    group: cockpituous
+    create_home: false
+    uid: 1111
+
 - name: Set up Cockpit tasks cache directory
   file:
     path: /var/cache/cockpit-tasks/images
-    owner: '1111'
-    group: '1111'
+    owner: cockpituous
+    group: cockpituous
     state: directory
     setype: container_file_t

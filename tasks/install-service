@@ -19,7 +19,7 @@ TMPVOL=${TMPVOL:-"--tmpfs /tmp:size=14g"}
 systemctl stop 'cockpit-tasks@*.service'
 
 mkdir -p $SECRETS/tasks $SECRETS/webhook $CACHE
-chown -R 1111:1111 $SECRETS $CACHE
+chown -R cockpituous:cockpituous $SECRETS $CACHE
 chcon -R -t container_file_t $SECRETS $CACHE
 
 if [ $INSTANCES -eq 1 ]; then
@@ -56,7 +56,7 @@ ExecStartPre=/usr/bin/chcon -R -l s0 \${TEST_CACHE}/images/
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
 ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
 # idmapped mount would be better, but did not figure out how
-ExecStartPre=/usr/bin/chgrp 1111 %t/podman/podman.sock
+ExecStartPre=/usr/bin/chgrp cockpituous %t/podman/podman.sock
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
     --device=/dev/kvm --network=cockpit-tasks-%i \
     --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
