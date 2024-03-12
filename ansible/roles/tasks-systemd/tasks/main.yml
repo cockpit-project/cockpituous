@@ -40,6 +40,20 @@
       maxsockets=3
       cafile=/run/secrets/tasks/npm-registry.crt
 
+- name: Create podman.socket drop-in directory
+  file:
+    path: /etc/systemd/system/podman.socket.d
+    state: directory
+
+# idmapped mount would be better, but did not figure out how
+- name: Allow access to podman.socket to unprivileged container user
+  copy:
+    dest: /etc/systemd/system/podman.socket.d/container-access.conf
+    mode: 0644
+    content: |
+      [Socket]
+      SocketGroup=cockpituous
+
 - name: Create job-runner configuration
   copy:
     dest: /etc/job-runner.toml

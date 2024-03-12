@@ -55,8 +55,6 @@ ExecStartPre=-/usr/bin/podman network rm cockpit-tasks-%i
 ExecStartPre=/usr/bin/chcon -R -l s0 \${TEST_CACHE}/images/
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
 ExecStartPre=/usr/bin/podman network create cockpit-tasks-%i
-# idmapped mount would be better, but did not figure out how
-ExecStartPre=/usr/bin/chgrp cockpituous %t/podman/podman.sock
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
     --device=/dev/kvm --network=cockpit-tasks-%i \
     --memory=24g --pids-limit=16384 --shm-size=1024m ${TMPVOL:-} \
