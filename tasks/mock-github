@@ -73,6 +73,7 @@ argparser.add_argument('--print-pr-event', action='store_true',
 argparser.add_argument('--print-image-refresh-event', action='store_true',
                        help="Print GitHub webhook issue event for an image-refresh and exit")
 argparser.add_argument('--log', metavar="PATH", help="Log requests to this file")
+argparser.add_argument('--cockpituous-sha', metavar="SHA", help="resolve cockpituous main branch to this SHA")
 argparser.add_argument('repo', metavar='USER/PROJECT', help="GitHub user/org and project name")
 argparser.add_argument('sha', help="SHA to test in repo for the mock PR")
 args = argparser.parse_args()
@@ -111,6 +112,11 @@ GITHUB_DATA = {
     },
     f'/repos/{repo}/git/ref/heads/main': {
         'object': {'sha': sha},
+    },
+    # for cross-project test; job-runner uses it to determine the clone SHA
+    '/repos/cockpit-project/cockpituous/git/refs/heads/main': {
+        # that fallback is strictly wrong, but good enough
+        'object': {'sha': args.cockpituous_sha or "main"},
     },
 }
 
