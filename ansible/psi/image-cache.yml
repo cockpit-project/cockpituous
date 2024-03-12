@@ -24,8 +24,8 @@
         src: self-hosted
         dest: "/var/lib/cockpit-secrets/tasks/s3-keys/{{ hostvars[groups['psi_s3'][0]].ansible_host }}"
         state: link
-        owner: 1111
-        group: 1111
+        owner: cockpituous
+        group: cockpituous
 
     - name: Tell tasks containers to drain and restart
       command: pkill -ex cockpit-tasks
