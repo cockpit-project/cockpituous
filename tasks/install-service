@@ -47,9 +47,7 @@ ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
 ExecStartPre=/usr/bin/chcon -R -l s0 ${CACHE}/images/
 ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
 # job-runner doesn't need /images, but we still need it for the run-queue store-tests task
-# FIXME: /dev/kvm should be dropped, but fix bots run-queue for that (indication of whether to run kvm tasks)
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
-    --device=/dev/kvm \
     --volume=${CACHE}/images:/cache/images:rw \
     --volume=${SECRETS}/tasks:/run/secrets/tasks:ro \
     --volume=${SECRETS}/webhook:/run/secrets/webhook:ro \
