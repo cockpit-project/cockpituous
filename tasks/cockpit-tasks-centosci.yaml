@@ -18,6 +18,9 @@ spec:
       - name: cockpit-tasks
         image: quay.io/cockpit/tasks
         env:
+        # containers run as random user ID without passwd entry
+        - name: HOME
+          value: /work
         - name: RUN_STATISTICS_QUEUE
           value: '1'
         - name: COCKPIT_GITHUB_TOKEN_FILE
