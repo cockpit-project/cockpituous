@@ -159,7 +159,7 @@ class CockpituousHandler(github_handler.GithubHandler):
 
     def handle_issues_event(self, event, request):
         action = request['action']
-        if event == 'issues' and action not in ['opened', 'edited', 'labeled']:
+        if event == 'issues' and action not in ['edited', 'labeled']:
             logging.info("action %s unknown, skipping issues event" % action)
             return None
 
