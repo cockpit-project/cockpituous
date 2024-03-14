@@ -1,7 +1,6 @@
 all:
 	@echo "usage: make containers" >&2
 	@echo "       make tasks-container" >&2
-	@echo "       make tasks-push" >&2
 	@echo "       make check" >&2
 
 check:
@@ -18,9 +17,6 @@ containers: tasks-container
 tasks-container:
 	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks/container
 	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
-
-tasks-push:
-	./push-container quay.io/cockpit/tasks
 
 tasks-secrets:
 	@cd tasks && ./build-secrets $(TASK_SECRETS)
