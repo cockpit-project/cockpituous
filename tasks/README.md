@@ -60,29 +60,30 @@ Some helpful commands:
 
 # Deploying locally for development, integration tests
 
-For hacking on the webhook, task container, bots infrastructure,, or validating
+For hacking on the webhook, task container, bots infrastructure, or validating
 new container images, you can also run a [podman pod](http://docs.podman.io/en/latest/pod.html)
 locally with  RabbitMQ, webhook, minio S3, and tasks containers.
 Without arguments this will run some purely local integration tests:
 
-    tasks/run-local.sh
+    pytest
 
-This will also generate the secrets in a temporary directory, unless they
-already exist in `tasks/credentials/`. By default this will use the
+This will also generate the secrets in a temporary directory.
+By default this will use the
 [`ghcr.io/cockpit-project/tasks:latest`](https://ghcr.io/cockpit-project/tasks)
-container, but you can run a different tag by setting `$TASKS_TAG`.
+container, but you can run a different image by setting `$TASKS_IMAGE`.
 
 You can also test the whole GitHub → webhook → tasks → GitHub status workflow
-on some cockpituous PR with specifying the PR number and a GitHub token:
+on some cockpituous PR with specifying the PR number, your GitHub token, and
+optionally a non-default repository for testing against a fork:
 
-    tasks/run-local.sh -p 123 -t ~/.config/cockpit-dev/github-token
+    pytest -vvsk test_real_pr --pr 123 --pr-repository yourfork/cockpituous --github-token=/home/user/.config/cockpit-dev/github-token
 
 This will run tests-scan/tests-trigger on the given PR and trigger an
 [unit-tests](../.cockpit-ci/run) test which simply does `make check`.
 
 You can get an interactive shell with
 
-    tasks/run-local.sh -i
+    pytest -sm shell
 
 to run things manually. For example, use `publish-queue` to inject a job into
 AMQP, or run `job-runner` or some bots command.

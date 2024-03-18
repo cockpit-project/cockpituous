@@ -7,7 +7,7 @@
     dest: /run/cockpit-tasks-webhook.yaml
     mode: preserve
 
-# keep this in sync with tasks/run-local.sh
+# keep this in sync with test/test_deployment.py
 - name: Generate flat files from RabbitMQ config map
   shell: |
     rm -rf /etc/rabbitmq

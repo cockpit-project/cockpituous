@@ -10,9 +10,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y make python3-pyflakes python3-pycodestyle
+          sudo apt-get install -y make python3-pyflakes python3-pycodestyle python3-pip python3-pytest
+          # `pip install .[test]` does not work properly on Ubuntu 22.04
+          sudo pip install ruff mypy types-PyYAML
 
-      - name: Run unit tests
+      - name: Run lint tests
         run: make check
 
   tasks:
@@ -34,6 +36,11 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git rebase origin/main
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make python3-pytest
 
       # HACK: Ubuntu 22.04 has podman 3.4, which isn't compatible with podman-remote 4 in our tasks container
       # This PPA is a backport of podman 4.3 from Debian 12; drop this when moving `runs-on:` to ubuntu-24.04
@@ -57,6 +64,6 @@ jobs:
 
       - name: Test local deployment
         run: |
-          echo '${{ secrets.GITHUB_TOKEN }}' > ~/.config/github-token
+          echo '${{ secrets.GITHUB_TOKEN }}' > github-token
           PRN=$(echo "$GITHUB_REF" | cut -f3 -d '/')
-          tasks/run-local.sh -p $PRN -t ~/.config/github-token
+          python3 -m pytest -vv --pr $PRN --pr-repository '${{ github.repository }}' --github-token=github-token
