@@ -69,7 +69,7 @@ Without arguments this will run some purely local integration tests:
 
 This will also generate the secrets in a temporary directory, unless they
 already exist in `tasks/credentials/`. By default this will use the
-[`quay.io/cockpit/tasks:latest`](https://quay.io/repository/cockpit/tasks?tab=tags)
+[`ghcr.io/cockpit-project/tasks:latest`](https://ghcr.io/cockpit-project/tasks)
 container, but you can run a different tag by setting `$TASKS_TAG`.
 
 You can also test the whole GitHub → webhook → tasks → GitHub status workflow
@@ -94,7 +94,7 @@ This container can also be used for local development with
 development environment that's independent from the host:
 
 ```sh
-toolbox create --image quay.io/cockpit/tasks cockpit
+toolbox create --image ghcr.io/cockpit-project/tasks cockpit
 toolbox enter cockpit
 ```
 
@@ -122,7 +122,7 @@ container like this:
 ```sh
 podman run -it --rm --device=/dev/kvm --memory=6g --pids-limit=4096 --shm-size=256m \
     --security-opt label=disable -v ~/.cache/cockpit-images:/cache/images \
-    -e TEST_JOBS=2 quay.io/cockpit/tasks bash
+    -e TEST_JOBS=2 ghcr.io/cockpit-project/tasks bash
 ```
 
 Inside, you can then run a test, for example

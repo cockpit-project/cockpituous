@@ -33,7 +33,7 @@ ExecStart=/usr/bin/podman run \
     --pull=always \
     -e AMQP_SERVER=localhost:5671 \
     -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
-    quay.io/cockpit/tasks webhook
+    ghcr.io/cockpit-project/tasks webhook
 
 ExecStop=/usr/bin/podman pod rm -f cockpituous
 

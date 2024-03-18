@@ -39,7 +39,7 @@ class Handler(MockHandler):
                 "head": {"sha": "a1b2c3"},
             })
         elif self.path == f'/{repo}/{sha}/.cockpit-ci/container':
-            self.replyData('quay.io/cockpit/tasks')
+            self.replyData('ghcr.io/cockpit-project/tasks')
         else:
             self.send_error(404, 'Mock Not Found: ' + self.path)
 

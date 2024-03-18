@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 3600
       containers:
       - name: cockpit-tasks
-        image: quay.io/cockpit/tasks
+        image: ghcr.io/cockpit-project/tasks
         env:
         # containers run as random user ID without passwd entry
         - name: HOME

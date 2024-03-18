@@ -17,7 +17,7 @@
     shell: podman rmi --all || true
 
   - name: Pre-pull current container image to avoid long downtime
-    command: podman pull quay.io/cockpit/tasks
+    command: podman pull ghcr.io/cockpit-project/tasks
 
   - name: Tell tasks containers to drain and restart
     command: pkill -ex cockpit-tasks
@@ -30,7 +30,7 @@
     shell: podman rmi --all || true
 
   - name: Pre-pull current container image to avoid long downtime
-    command: podman pull quay.io/cockpit/tasks
+    command: podman pull ghcr.io/cockpit-project/tasks
 
   - name: Restart webhook pod
     command: systemctl restart cockpituous-webhook.service

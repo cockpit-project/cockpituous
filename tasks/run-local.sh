@@ -226,7 +226,7 @@ EOF
             --env=AMQP_SERVER=$AMQP_POD \
             --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
             --env=COCKPIT_GITHUB_WEBHOOK_TOKEN_FILE=/run/secrets/webhook/.config--github-webhook-token \
-            quay.io/cockpit/tasks:${TASKS_TAG:-latest} webhook
+            ghcr.io/cockpit-project/tasks:${TASKS_TAG:-latest} webhook
     fi
 
     # wait until AMQP initialized
@@ -260,7 +260,7 @@ EOF
         --env=GIT_AUTHOR_NAME=Cockpituous \
         --env=GIT_AUTHOR_EMAIL=cockpituous@cockpit-project.org \
         --env=SKIP_STATIC_CHECK=1 \
-        quay.io/cockpit/tasks:${TASKS_TAG:-latest} bash
+        ghcr.io/cockpit-project/tasks:${TASKS_TAG:-latest} bash
 
     # check out the correct bots, as part of what cockpit-tasks would usually do
     podman exec -i cockpituous-tasks sh -euc \
@@ -578,7 +578,7 @@ test_podman() {
     # this will be covered implicitly by job-runner, but as a more basal plumbing test this is easier to debug
     out="$(podman exec -i cockpituous-tasks podman-remote --url unix:///podman.sock ps)"
     assert_in 'cockpituous-tasks' "$out"
-    out="$(podman exec -i cockpituous-tasks podman-remote --url unix:///podman.sock run -it --rm quay.io/cockpit/tasks:latest whoami)"
+    out="$(podman exec -i cockpituous-tasks podman-remote --url unix:///podman.sock run -it --rm ghcr.io/cockpit-project/tasks:latest whoami)"
     assert_in '^user' "$out"
 }
 
