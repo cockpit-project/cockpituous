@@ -15,8 +15,8 @@ containers: tasks-container
 	@true
 
 tasks-container:
-	$(DOCKER) build -t quay.io/cockpit/tasks:$(TAG) tasks/container
-	$(DOCKER) tag quay.io/cockpit/tasks:$(TAG) quay.io/cockpit/tasks:latest
+	$(DOCKER) build -t ghcr.io/cockpit-project/tasks:$(TAG) tasks/container
+	$(DOCKER) tag ghcr.io/cockpit-project/tasks:$(TAG) ghcr.io/cockpit-project/tasks:latest
 
 tasks-secrets:
 	@cd tasks && ./build-secrets $(TASK_SECRETS)

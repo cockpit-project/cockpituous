@@ -45,7 +45,7 @@ TimeoutStartSec=10min
 ExecStartPre=-/usr/bin/podman rm -f cockpit-tasks-%i
 # HACK: sometimes images get an MCS category which makes them undeletable by the container
 ExecStartPre=/usr/bin/chcon -R -l s0 ${CACHE}/images/
-ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull quay.io/cockpit/tasks
+ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull ghcr.io/cockpit-project/tasks
 # job-runner doesn't need /images, but we still need it for the run-queue store-tests task
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
     --volume=${CACHE}/images:/cache/images:rw \
@@ -63,7 +63,7 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --env=GIT_AUTHOR_EMAIL=cockpituous@cockpit-project.org \
     --env=TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO} \
-    quay.io/cockpit/tasks cockpit-tasks --verbose
+    ghcr.io/cockpit-project/tasks cockpit-tasks --verbose
 ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
 
 [Install]

@@ -35,7 +35,7 @@ spec:
               memory: 300M
               cpu: 200m
         - name: webhook
-          image: quay.io/cockpit/tasks
+          image: ghcr.io/cockpit-project/tasks
           ports:
             - containerPort: 8080
               protocol: TCP
