@@ -6,6 +6,8 @@ all:
 check:
 	python3 -m pyflakes tasks tasks/container/webhook
 	python3 -m pycodestyle --max-line-length=120 --ignore=E722 tasks tasks/container/webhook
+	if command -v mypy >/dev/null; then mypy test; else echo "SKIP: mypy not installed"; fi
+	if command -v ruff >/dev/null; then ruff check test; else echo "SKIP: ruff not installed"; fi
 
 TAG := $(shell date --iso-8601)
 TASK_SECRETS := /var/lib/cockpit-secrets/tasks
