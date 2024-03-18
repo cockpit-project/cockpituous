@@ -19,10 +19,10 @@ function update_bots() {
     fi
 }
 
-# wait between 1 and 10 minutes, but not in an interactive terminal (annoying for debugging)
+# wait between 1 and 10 minutes, with an override to speed up tests
 function slumber() {
-    if [ -t 0 ]; then
-        sleep 10
+    if [ -n "${SLUMBER:-}" ]; then
+        sleep "$SLUMBER"
     else
         sleep $(shuf -i ${1:-60-600} -n 1)
     fi
