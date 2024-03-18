@@ -8,8 +8,8 @@ on:
 # where different runners pick different tags (eg: for builds near midnight, or
 # in different time zones).  The manifest job picks the final name.
 env:
-  tag: quay.io/cockpit/tasks
-  tmptag: quay.io/cockpit/tasks-tmp:${{ github.run_id }}.${{ github.run_attempt }}
+  tag: ghcr.io/${{ github.repository_owner }}/tasks
+  tmptag: ghcr.io/${{ github.repository_owner }}/tasks-tmp:${{ github.run_id }}.${{ github.run_attempt }}
 
 jobs:
   build:
@@ -17,12 +17,11 @@ jobs:
       matrix:
         build:
           - label: amd64
-            runner: buildjet-2vcpu-ubuntu-2204
+            runner: ubuntu-22.04
           - label: arm64
             runner: buildjet-2vcpu-ubuntu-2204-arm
 
     runs-on: ${{ matrix.build.runner }}
-    environment: quay.io
     timeout-minutes: 10
 
     steps:
@@ -31,9 +30,9 @@ jobs:
         name: Log in to container registry
         uses: docker/login-action@v3
         with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_BOTUSER }}
-          password: ${{ secrets.QUAY_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Checkout
         uses: actions/checkout@v4
@@ -49,14 +48,13 @@ jobs:
   manifest:
     needs: build
 
-    runs-on: buildjet-2vcpu-ubuntu-2204
-    environment: quay.io
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
 
     steps:
       -
         name: Login in to container registry
-        run: podman login -u ${{ secrets.QUAY_BOTUSER }} -p ${{ secrets.QUAY_TOKEN }} quay.io
+        run: podman login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io
       -
         name: Create manifest
         run: podman manifest create tasks '${{ env.tmptag }}'-{amd,arm}64
