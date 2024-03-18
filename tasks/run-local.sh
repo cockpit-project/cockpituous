@@ -435,7 +435,7 @@ test_pr() {
 
     # run the main loop in the background; we could do this with a single run-queue invocation,
     # but we want to test the cockpit-tasks script
-    podman exec -i cockpituous-tasks cockpit-tasks &
+    podman exec -i --env=SLUMBER=1 cockpituous-tasks cockpit-tasks &
     TASKS_PID=$!
 
     podman exec -i cockpituous-tasks sh -euxc "
