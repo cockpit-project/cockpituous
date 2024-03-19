@@ -25,6 +25,8 @@ spec:
           value: '1'
         - name: COCKPIT_GITHUB_TOKEN_FILE
           value: /run/secrets/webhook/.config--github-token
+        - name: COCKPIT_S3_KEY_DIR
+          value: /run/secrets/s3-keys
         - name: COCKPIT_IMAGES_DATA_DIR
           value: /cache/images
         - name: GIT_COMMITTER_NAME
@@ -36,8 +38,11 @@ spec:
         - name: GIT_AUTHOR_EMAIL
           value: cockpituous@cockpit-project.org
         volumeMounts:
-        - name: secrets
+        - name: tasks-secrets
           mountPath: /run/secrets/tasks
+          readOnly: true
+        - name: s3-secrets
+          mountPath: /run/secrets/s3-keys
           readOnly: true
         - name: webhook-secrets
           mountPath: /run/secrets/webhook
@@ -55,9 +60,12 @@ spec:
             memory: 256Mi
             cpu: 0.2
       volumes:
-      - name: secrets
+      - name: tasks-secrets
         secret:
           secretName: cockpit-tasks-secrets
+      - name: s3-secrets
+        secret:
+          secretName: cockpit-s3-secrets
       - name: webhook-secrets
         secret:
           secretName: webhook-secrets
