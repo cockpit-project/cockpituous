@@ -67,7 +67,7 @@ RUN dnf -y update && \
     dnf -y builddep --setopt=install_weak_deps=False /tmp/cockpit.spec && \
     rm /tmp/cockpit.spec && \
     dnf clean all && \
-    pip install ruff
+    pip install ruff types-PyYAML
 
 COPY cockpit-tasks webhook github_handler.py /usr/local/bin/
 
