@@ -1,5 +1,0 @@
-if [ -z "${SSHPASS:-}" ]; then
-    read -s -p "Enter password for ${idrac_ssh}: " SSHPASS
-    export SSHPASS
-    echo
-fi

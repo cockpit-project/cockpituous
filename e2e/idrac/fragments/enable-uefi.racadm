@@ -1,3 +1,0 @@
-racadm set bios.BiosBootSettings.BootMode Uefi
-racadm jobqueue create BIOS.Setup.1-1
-racadm serveraction powercycle

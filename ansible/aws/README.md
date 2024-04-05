@@ -34,7 +34,7 @@ Host 10.29.*  *.compute-1.amazonaws.com
    UserKnownHostsFile /dev/null
 ```
 
-The [users role](../roles/users/tasks/main.yml) will change them to our regular keys that we also use for e2e. As ssh automatically falls back to your primary key, ssh still works.
+The [users role](../roles/users/tasks/main.yml) will change them to our regular keys. As ssh automatically falls back to your primary key, ssh still works.
 
 Instances
 ---------

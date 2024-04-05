@@ -8,7 +8,7 @@
     - name: Restart OpenShift tasks containers
       shell: "{{ oc_command }} get -o name -l infra=cockpit-tasks pods | xargs -l -r {{ oc_command }} delete --wait=false"
 
-- hosts: e2e tag_ServiceComponent_Tasks openstack_tasks
+- hosts: tag_ServiceComponent_Tasks openstack_tasks
   gather_facts: false
 
   tasks:
