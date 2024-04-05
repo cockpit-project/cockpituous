@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # deploy this script with:
-# ansible -i inventory -m include_role -a name=s3-systemd e2e_s3
+# ansible -i inventory -m include_role -a name=s3-systemd
 set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
