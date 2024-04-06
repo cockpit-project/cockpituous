@@ -104,6 +104,10 @@
           '--env=COCKPIT_IMAGES_DATA_DIR=/cache/images',
           '--volume=/var/cache/cockpit-tasks/images:/cache/images:rw',
 
+          # persistent git-utils.sh cache
+          '--env=XDG_CACHE_HOME=/cache/',
+          '--volume=cockpituous-git-cache:/cache/cockpit-dev:rw',
+
           # local image stores
           '--env=COCKPIT_IMAGE_STORES_FILE=/config/image-stores',
           '--volume=/var/cache/cockpit-tasks/image-stores:/config/image-stores:ro',
