@@ -1,0 +1,17 @@
+---
+- name: Configure instances
+  hosts: localvm
+  roles:
+    - role: users
+      vars:
+        user: admin
+    - ci-data-cache
+    - nested-kvm
+    - install-secrets-dir
+    - role: tasks-systemd
+      vars:
+        instances: 2
+  tasks:
+    - name: Set useful host name
+      hostname:
+        name: "{{ hostname | default('cockpit-local') }}"
