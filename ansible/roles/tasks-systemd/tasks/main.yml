@@ -85,7 +85,7 @@
       [logs.s3]
       # bots lib/stores.py LOG_STORE
       url = 'https://cockpit-logs.us-east-1.linodeobjects.com/'
-      key = [{file="/run/secrets/tasks/s3-keys/cockpit-logs.us-east-1.linodeobjects.com"}]
+      key = [{file="/run/secrets/s3-keys/cockpit-logs.us-east-1.linodeobjects.com"}]
 
       [container]
       command = ['podman-remote', '--url=unix:///podman.sock']
@@ -128,7 +128,7 @@
       # these are *host* paths, this is podman-remote
       # secret from issue-scan for image refreshes
       image-upload=[
-          '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
+          '--volume=/var/lib/cockpit-secrets/s3-keys/:/run/secrets/s3-keys:ro',
           '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
           # password for console.redhat.com when image-create'ing rhel4edge
           '--volume=/var/lib/cockpit-secrets/tasks/crc_passwd:/run/secrets/crc_passwd:ro',
@@ -137,7 +137,7 @@
       # secret from tests-scan for downloading RHEL images
       image-download=[
           # FIXME: create a new "download only" S3 token
-          '--volume=/var/lib/cockpit-secrets/tasks/s3-keys/:/run/secrets/s3-keys:ro',
+          '--volume=/var/lib/cockpit-secrets/s3-keys/:/run/secrets/s3-keys:ro',
           '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
       ]
       github-token=[

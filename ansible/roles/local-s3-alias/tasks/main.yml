@@ -1,7 +1,7 @@
 - name: Create s3-keys alias
   file:
     src: self-hosted
-    dest: "/var/lib/cockpit-secrets/tasks/s3-keys/{{ hostvars[groups['psi_s3'][0]].ansible_host }}"
+    dest: "/var/lib/cockpit-secrets/s3-keys/{{ hostvars[groups['psi_s3'][0]].ansible_host }}"
     state: link
     owner: cockpituous
     group: cockpituous
