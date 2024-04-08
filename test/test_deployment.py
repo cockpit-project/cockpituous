@@ -36,6 +36,7 @@ class Config:
     webhook: Path
     tasks: Path
     s3_keys: Path
+    s3_server: Path
 
 
 @pytest.fixture(scope='session')
@@ -68,15 +69,19 @@ def config(tmp_path_factory) -> Config:
     # default to dummy token, tests need to opt into real one with user_github_token
     (config.webhook / '.config--github-token').write_text('0123abc')
 
-    # tasks secrets
-    config.tasks = config.secrets / 'tasks'
-    config.tasks.mkdir()
-    subprocess.run(ROOT_DIR / 'local-s3/generate-s3-cert.sh', cwd=config.tasks, check=True)
+    # minio S3 certificate
+    config.s3_server = config.secrets / 's3-server'
+    config.s3_server.mkdir()
+    subprocess.run(ROOT_DIR / 'local-s3/generate-s3-cert.sh', cwd=config.s3_server, check=True)
 
     # minio S3 key
     config.s3_keys = config.secrets / 's3-keys'
     config.s3_keys.mkdir()
     (config.s3_keys / 'localhost.localdomain').write_text('cockpituous foobarfoo')
+
+    # tasks secrets: none right now, but do create an empty directory to keep production structure
+    config.tasks = config.secrets / 'tasks'
+    config.tasks.mkdir()
 
     # need to make secrets world-readable, as containers run as non-root
     subprocess.run(['chmod', '-R', 'go+rX', configdir], check=True)
@@ -139,8 +144,8 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
     # minio S3 store
     data.s3 = f'cockpituous-s3-{test_instance}'
     subprocess.run(['podman', 'run', '-d', '--name', data.s3, f'--pod={data.pod}', *launch_args,
-                    '-v', f'{config.tasks}/s3-server.key:/root/.minio/certs/private.key:ro',
-                    '-v', f'{config.tasks}/s3-server.pem:/root/.minio/certs/public.crt:ro',
+                    '-v', f'{config.s3_server}/s3-server.key:/root/.minio/certs/private.key:ro',
+                    '-v', f'{config.s3_server}/s3-server.pem:/root/.minio/certs/public.crt:ro',
                     '-e', 'MINIO_ROOT_USER=minioadmin',
                     '-e', 'MINIO_ROOT_PASSWORD=minioadmin',
                     'quay.io/minio/minio', 'server', '/data', '--console-address', ':9001'],
