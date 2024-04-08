@@ -39,6 +39,9 @@ After=podman.socket
 [Service]
 Slice=cockpittasks.slice
 Restart=always
+# cockpit-tasks exits with 100 in IDLE_POWEROFF mode when queue is running low
+SuccessExitStatus=100
+RestartPreventExitStatus=100
 RestartSec=60
 # give image pull enough time
 TimeoutStartSec=10min
@@ -63,12 +66,23 @@ ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOS
     --env=GIT_AUTHOR_EMAIL=cockpituous@cockpit-project.org \
     --env=TEST_NOTIFICATION_MX=${TEST_NOTIFICATION_MX} \
     --env=TEST_NOTIFICATION_TO=${TEST_NOTIFICATION_TO} \
+    --env=IDLE_POWEROFF=${IDLE_POWEROFF:-} \
     ghcr.io/cockpit-project/tasks cockpit-tasks --verbose
 ExecStop=/usr/bin/podman rm -f cockpit-tasks-%i
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# mode for elastic cloud runners
+if [ -n "${IDLE_POWEROFF:-}" ]; then
+    mkdir -p /etc/systemd/system/cockpittasks.slice.d
+    cat <<EOF > /etc/systemd/system/cockpittasks.slice.d/poweroff.conf
+    [Unit]
+    StopWhenUnneeded=yes
+    SuccessAction=poweroff-immediate
+EOF
+fi
 
 systemctl daemon-reload
 

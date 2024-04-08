@@ -20,7 +20,17 @@ function update_bots() {
 }
 
 # wait between 1 and 10 minutes, with an override to speed up tests
+# in IDLE_POWEROFF mode, also check queue size
 function slumber() {
+    if [ -n "${IDLE_POWEROFF:-}" ] && [ -e ./inspect-queue ]; then
+        # only consider job-runner entries, not statistics or webhook
+        NUM_JOBS=$(./inspect-queue | grep --count '"job":')
+        if [ "$NUM_JOBS" -lt 10 ]; then
+            echo "Job queue running low, exiting"
+            exit 100
+        fi
+    fi
+
     if [ -n "${SLUMBER:-}" ]; then
         sleep "$SLUMBER"
     else

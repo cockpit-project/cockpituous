@@ -146,4 +146,5 @@
     export INSTANCES={{ instances | default(1) }}
     export TEST_NOTIFICATION_MX={{ notification_mx | default('') }}
     export TEST_NOTIFICATION_TO={{ notification_to | default('') }}
+    export IDLE_POWEROFF={{ idle_poweroff | default('') }}
     /run/install-service
