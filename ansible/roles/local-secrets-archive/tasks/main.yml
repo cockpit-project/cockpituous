@@ -17,4 +17,4 @@
    become: false
    run_once: yes
    shell: |
-     tar -C $XDG_RUNTIME_DIR/ci-secrets  -hz --hard-dereference -c webhook s3-keys tasks > $XDG_RUNTIME_DIR/ci-secrets.tar.gz
+     tar -C $XDG_RUNTIME_DIR/ci-secrets  -hz --hard-dereference -c webhook s3-keys s3-server tasks > $XDG_RUNTIME_DIR/ci-secrets.tar.gz
