@@ -10,7 +10,7 @@ The container has optional mounts:
    mounted from `/var/cache/cockpit-tasks/images`.
  * S3 access tokens for image and log buckets. Defined by `$COCKPIT_S3_KEY_DIR`
    env variable, conventionally `/run/secrets/s3-keys`.
-   On production hosts, this is mounted from `/var/lib/cockpit-secrets/tasks/s3-keys`.
+   On production hosts, this is mounted from `/var/lib/cockpit-secrets/s3-keys`.
  * A directory for GitHub and AMQP secrets. Used by both the tasks and the the webhook container.
    Must be in `/run/secrets/webhook` (bots currently assumes that).
    * `.config--github-token`: GitHub token to create and update issues and PRs.

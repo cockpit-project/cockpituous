@@ -49,12 +49,13 @@ ExecStartPre=/usr/bin/flock /tmp/cockpit-image-pull podman pull ghcr.io/cockpit-
 ExecStart=/usr/bin/podman run --name=cockpit-tasks-%i --hostname=${CONTAINER_HOSTNAME} \
     --volume=${CACHE}/images:/cache/images:rw \
     --volume=${SECRETS}/tasks:/run/secrets/tasks:ro \
+    --volume=${SECRETS}/s3-keys:/run/secrets/s3-keys:ro \
     --volume=${SECRETS}/webhook:/run/secrets/webhook:ro \
     --volume=/etc/job-runner.toml:/config/job-runner.toml:ro \
     --volume=%t/podman/podman.sock:/podman.sock:rw \
     --env=JOB_RUNNER_CONFIG=/config/job-runner.toml \
     --env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token \
-    --env=COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys \
+    --env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys \
     --env=COCKPIT_IMAGES_DATA_DIR=/cache/images \
     --env=GIT_COMMITTER_NAME=Cockpituous \
     --env=GIT_COMMITTER_EMAIL=cockpituous@cockpit-project.org \

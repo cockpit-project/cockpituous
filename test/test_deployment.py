@@ -35,6 +35,7 @@ class Config:
     secrets: Path
     webhook: Path
     tasks: Path
+    s3_keys: Path
 
 
 @pytest.fixture(scope='session')
@@ -71,9 +72,11 @@ def config(tmp_path_factory) -> Config:
     config.tasks = config.secrets / 'tasks'
     config.tasks.mkdir()
     subprocess.run(ROOT_DIR / 'local-s3/generate-s3-cert.sh', cwd=config.tasks, check=True)
+
     # minio S3 key
-    (config.tasks / 's3-keys').mkdir()
-    (config.tasks / 's3-keys/localhost.localdomain').write_text('cockpituous foobarfoo')
+    config.s3_keys = config.secrets / 's3-keys'
+    config.s3_keys.mkdir()
+    (config.s3_keys / 'localhost.localdomain').write_text('cockpituous foobarfoo')
 
     # need to make secrets world-readable, as containers run as non-root
     subprocess.run(['chmod', '-R', 'go+rX', configdir], check=True)
@@ -156,7 +159,7 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
                    check=True)
 
     # wait until S3 started, create bucket
-    (s3user, s3key) = (config.tasks / 's3-keys/localhost.localdomain').read_text().strip().split()
+    (s3user, s3key) = (config.s3_keys / 'localhost.localdomain').read_text().strip().split()
     exec_c(data.mc, f'''
 set -e
 cat /etc/pki/ca-trust/source/anchors/ca.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
@@ -175,6 +178,7 @@ mc admin policy attach minio/ readwrite --user {s3user}
                     '-v', f'{PODMAN_SOCKET}:/podman.sock',
                     '-v', f'{config.webhook}:/run/secrets/webhook:ro',
                     '-v', f'{config.tasks}:/run/secrets/tasks:ro',
+                    '-v', f'{config.s3_keys}:/run/secrets/s3-keys:ro',
                     '-e', 'COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/webhook/.config--github-token',
                     '-e', 'COCKPIT_CA_PEM=/run/secrets/webhook/ca.pem',
                     '-e', f'COCKPIT_BOTS_REPO={os.getenv("COCKPIT_BOTS_REPO", "")}',
@@ -183,7 +187,7 @@ mc admin policy attach minio/ readwrite --user {s3user}
                     '-e', 'JOB_RUNNER_CONFIG=/run/secrets/tasks/job-runner.toml',
                     '-e', f'AMQP_SERVER={AMQP_POD}',
                     '-e', f'S3_LOGS_URL={S3_URL_POD}/logs/',
-                    '-e', 'COCKPIT_S3_KEY_DIR=/run/secrets/tasks/s3-keys',
+                    '-e', 'COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
                     '-e', f'COCKPIT_IMAGE_UPLOAD_STORE={S3_URL_POD}/images/',
                     '-e', 'COCKPIT_IMAGES_DATA_DIR=/cache/images',
                     '-e', 'GIT_COMMITTER_NAME=Cockpituous',
@@ -312,7 +316,7 @@ def generate_config(config: Config, forge_opts: str, run_args: str) -> Path:
         [logs.s3]
         url = '{S3_URL_POD}/logs'
         ca = [{{file='/run/secrets/webhook/ca.pem'}}]
-        key = [{{file="/run/secrets/tasks/s3-keys/localhost.localdomain"}}]
+        key = [{{file="/run/secrets/s3-keys/localhost.localdomain"}}]
 
         [container]
         command = ['podman-remote', '--url=unix:///podman.sock']
@@ -328,7 +332,7 @@ def generate_config(config: Config, forge_opts: str, run_args: str) -> Path:
         [container.secrets]
         # these are *host* paths, this is podman-remote
         image-upload=[
-            '--volume={config.tasks}/s3-keys:/run/secrets/s3-keys:ro',
+            '--volume={config.s3_keys}:/run/secrets/s3-keys:ro',
             '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
             '--volume={config.webhook}/ca.pem:/run/secrets/ca.pem:ro',
             '--env=COCKPIT_CA_PEM=/run/secrets/ca.pem',
