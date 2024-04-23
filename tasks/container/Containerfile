@@ -50,12 +50,14 @@ RUN dnf -y update && \
         python3-pytest-asyncio \
         python3-pytest-timeout \
         python3-pyyaml \
+        python3-types-pyyaml \
         python3-vulture \
         python3-wheel \
         qemu-kvm-core \
         rpm-build \
         rpmdevtools \
         rsync \
+        ruff \
         socat \
         strace \
         tar \
@@ -66,8 +68,7 @@ RUN dnf -y update && \
     curl -o /tmp/cockpit.spec -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec && \
     dnf -y builddep --setopt=install_weak_deps=False /tmp/cockpit.spec && \
     rm /tmp/cockpit.spec && \
-    dnf clean all && \
-    pip install ruff types-PyYAML
+    dnf clean all
 
 COPY cockpit-tasks webhook github_handler.py /usr/local/bin/
 
