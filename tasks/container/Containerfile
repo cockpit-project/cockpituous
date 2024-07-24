@@ -6,6 +6,7 @@ RUN dnf -y update && \
         'dnf-command(builddep)' \
         adobe-source-code-pro-fonts \
         byobu \
+        chromedriver \
         chromium-headless \
         curl \
         dbus-daemon \
