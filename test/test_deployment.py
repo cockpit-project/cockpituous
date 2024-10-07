@@ -96,7 +96,7 @@ def config(tmp_path_factory) -> Config:
     return config
 
 
-@pytest.fixture()
+@pytest.fixture
 def user_github_token(config: Config, request) -> None:
     if request.config.getoption('github_token'):
         shutil.copy(request.config.getoption('--github-token'), config.webhook / '.config--github-token')
@@ -281,14 +281,14 @@ def get_s3(config: Config, pod: PodData, path: str) -> str:
 # Per test fixtures
 #
 
-@pytest.fixture()
+@pytest.fixture
 def bots_sha(pod: PodData) -> str:
     """Return the SHA of the bots checkout"""
 
     return exec_c_out(pod.tasks, 'git -C bots rev-parse HEAD').strip()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_github(pod: PodData, bots_sha: str) -> Iterator[str]:
     """Start mock GitHub API server
 
@@ -353,14 +353,14 @@ def generate_config(config: Config, forge_opts: str, run_args: str) -> Path:
     return job_conf
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_runner_config(config: Config, pod: PodData) -> Path:
     return generate_config(config,
                            forge_opts=f'api-url = "{GHAPI_URL_POD}"',
                            run_args=f'"--pod={pod.pod}", "--env=GITHUB_API={GHAPI_URL_POD}"')
 
 
-@pytest.fixture()
+@pytest.fixture
 def real_runner_config(config: Config) -> Path:
     return generate_config(config, forge_opts='', run_args='')
 
@@ -678,7 +678,7 @@ def test_real_pr(config: Config, request, pod: PodData, bots_sha: str, real_runn
 # Interactive scenarios
 #
 
-@pytest.mark.shell()
+@pytest.mark.shell
 def test_shell(pod: PodData, user_github_token) -> None:
     """interactive shell for development; run with `pytest -sm shell`"""
 
