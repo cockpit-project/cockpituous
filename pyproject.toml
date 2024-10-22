@@ -62,3 +62,7 @@ select = [
     "W",       # warnings (mostly whitespace)
     "YTT",     # flake8-2020
 ]
+
+ignore = [
+    "PT001", "PT023", # different versions can't make up their mind how to write decorators
+]
