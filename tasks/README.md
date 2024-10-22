@@ -123,7 +123,7 @@ container like this:
 ```sh
 podman run -it --rm --device=/dev/kvm --memory=6g --pids-limit=4096 --shm-size=256m \
     --security-opt label=disable -v ~/.cache/cockpit-images:/cache/images \
-    -e TEST_JOBS=2 ghcr.io/cockpit-project/tasks bash
+    -e COCKPIT_IMAGES_DATA_DIR=/cache/images -e TEST_JOBS=2 ghcr.io/cockpit-project/tasks
 ```
 
 Inside, you can then run a test, for example
