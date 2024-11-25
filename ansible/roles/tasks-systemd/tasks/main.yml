@@ -116,8 +116,9 @@
           '--volume=/var/lib/cockpit-secrets/tasks/npm-registry.crt:/run/secrets/tasks/npm-registry.crt:ro',
 
           # various configuration
-          '--volume=/etc/npmrc:/etc/npmrc:ro',
-          '--env=NODE_EXTRA_CA_CERTS=/run/secrets/tasks/npm-registry.crt',
+          # https://issues.redhat.com/browse/SPRE-880
+          # '--volume=/etc/npmrc:/etc/npmrc:ro',
+          # '--env=NODE_EXTRA_CA_CERTS=/run/secrets/tasks/npm-registry.crt',
           '--env=TEST_JOBS={{ TEST_JOBS | default(8) }}',
           # copy git settings from main tasks container
           '--env=GIT_COMMITTER_*',
