@@ -3,6 +3,9 @@ name: build-tasks
 on:
   # this is meant to be run on an approved PR branch for convenience
   workflow_dispatch:
+  # Run this on Saturday early morning (UTC), our projects try to update Sunday night
+  schedule:
+    - cron: '3 00 * * 6'
 
 # We derive a unique ID here to make sure that we don't get into a situation
 # where different runners pick different tags (eg: for builds near midnight, or
