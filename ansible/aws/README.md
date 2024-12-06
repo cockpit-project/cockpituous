@@ -59,7 +59,8 @@ If you run more than one at a time, set a custom host name with `-e hostname=coc
 
 Webhook setup
 -------------
-AWS runs our primary webhook. Deploy or update it with:
+Our primary webhook runs in CentOS CI. If that goes down, we can bring up a
+fallback in AWS. Deploy or update it with:
 
     ansible-playbook -i inventory aws/launch-webhook.yml
 
