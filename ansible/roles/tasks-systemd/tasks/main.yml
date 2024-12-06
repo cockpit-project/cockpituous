@@ -145,6 +145,18 @@
           '--env=COCKPIT_GITHUB_TOKEN_FILE=/run/secrets/github-token',
       ]
 
+- name: Create janitor service
+  copy:
+    src: "{{ role_path }}/cockpituous-janitor.service"
+    dest: /etc/systemd/system/cockpituous-janitor.service
+    mode: preserve
+
+- name: Create janitor timer
+  copy:
+    src: "{{ role_path }}/cockpituous-janitor.timer"
+    dest: /etc/systemd/system/cockpituous-janitor.timer
+    mode: preserve
+
 - name: Set up systemd service for cockpit/tasks
   shell: |
     export INSTANCES={{ instances | default(1) }}
