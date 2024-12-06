@@ -10,7 +10,7 @@
     dest: /tmp/cockpituous.fc
     mode: 0644
     content: |
-      /var/run/podman/podman.sock    system_u:object_r:container_file_t:s0
+      /run/podman/podman.sock    system_u:object_r:container_file_t:s0
   register: selinux_policy_fc
 
 - name: Create custom SELinux policy type enforcements
@@ -43,7 +43,8 @@
   shell: |
     checkmodule -M -m -o /tmp/cockpituous.mod /tmp/cockpituous.te
     semodule_package -o /tmp/cockpituous.pp -m /tmp/cockpituous.mod -f /tmp/cockpituous.fc
-    semodule -i /tmp/cockpituous.pp
+    # needs to be higher than extra_varrun
+    semodule -v --priority=500 -i /tmp/cockpituous.pp
   when: selinux_policy_fc.changed or selinux_policy_te.changed
 
 # This only applies to RH VPN; make that optional if we ever deploy to public infrastructure
