@@ -1,0 +1,7 @@
+[Unit]
+Description=Regularly clean up cockpituous cruft
+
+[Timer]
+OnBootSec=1h
+OnUnitActiveSec=24h
+AccuracySec=15min

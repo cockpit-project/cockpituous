@@ -1,0 +1,9 @@
+[Unit]
+Description=Clean up cockpituous cruft
+
+[Service]
+Type=oneshot
+# remove leftover containers
+ExecStart=/bin/sh -ec 'podman ps -q --filter status=exited | xargs -r podman rm'
+# remove old task images
+ExecStart=/usr/bin/podman image prune --all --force

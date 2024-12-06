@@ -35,6 +35,7 @@ cat <<EOF > /etc/systemd/system/cockpit-tasks@.service
 Description=Cockpit Tasks %i
 Requires=podman.socket
 After=podman.socket
+Wants=cockpituous-janitor.timer
 
 [Service]
 Restart=always
