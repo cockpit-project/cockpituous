@@ -20,7 +20,7 @@ jobs:
       matrix:
         build:
           - label: amd64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
           - label: arm64
             runner: buildjet-2vcpu-ubuntu-2204-arm
 
@@ -50,7 +50,7 @@ jobs:
   manifest:
     needs: build
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     steps:
