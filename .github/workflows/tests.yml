@@ -2,7 +2,7 @@ name: tests
 on: [pull_request]
 jobs:
   unit-tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -11,14 +11,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y make python3-pyflakes python3-pycodestyle python3-pip python3-pytest
-          # `pip install .[test]` does not work properly on Ubuntu 22.04
-          sudo pip install ruff mypy types-PyYAML
+          sudo pip install .[test]
 
       - name: Run lint tests
         run: make check
 
   tasks:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       # enough permissions for tests-scan to work
       pull-requests: read
@@ -41,14 +40,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y make python3-pytest
-
-      # HACK: Ubuntu 22.04 has podman 3.4, which isn't compatible with podman-remote 4 in our tasks container
-      # This PPA is a backport of podman 4.3 from Debian 12; drop this when moving `runs-on:` to ubuntu-24.04
-      - name: Update to newer podman
-        run: |
-          sudo add-apt-repository -y ppa:quarckster/containers
-          sudo apt install -y podman
-          systemctl --user daemon-reload
 
       - name: Check which containers changed
         id: containers_changed
