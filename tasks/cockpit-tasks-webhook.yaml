@@ -39,7 +39,7 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
-          command: [ "webhook" ]
+          command: [ "sh", "-ec", "sleep 10; exec webhook" ]
           volumeMounts:
           - name: webhook-secrets
             mountPath: /run/secrets/webhook
