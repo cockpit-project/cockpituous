@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-import os
-import sys
-import logging
-import subprocess
+import contextlib
 import http.server
 import json
-import contextlib
+import logging
+import os
 import ssl
+import subprocess
+import sys
 import time
 
 import pika
@@ -34,7 +34,7 @@ fi
 
 
 def setup_home():
-    '''Prepare temporary home directory from secrets'''
+    """Prepare temporary home directory from secrets"""
 
     if os.path.isdir(HOME_DIR):
         return
@@ -76,7 +76,7 @@ def distributed_queue(amqp_server):
 
 
 def scan_tasks():
-    '''scan project PRs and issues to (re)build the tasks queue'''
+    """scan project PRs and issues to (re)build the tasks queue"""
 
     from lib import testmap
     from task.distributed_queue import DEFAULT_AMQP_SERVER
@@ -89,7 +89,7 @@ def scan_tasks():
             with distributed_queue(AMQP_SERVER):
                 break
         except pika.exceptions.AMQPError as e:
-            logging.info(f"Failed to connect to AMQP, attempt #{retry}: {e}")
+            logging.info("Failed to connect to AMQP, attempt #%i: %s", retry, e)
             time.sleep(5)
 
     for project in testmap.projects():
@@ -135,7 +135,7 @@ class CockpituousHandler(github_handler.GithubHandler):
             logging.info("pull request was merged, ensuring cockpit checkout is latest main")
             ensure_bots_checkout()
         elif action not in ['opened', 'synchronize', 'edited', 'labeled']:
-            logging.info("action %s unknown, skipping pull request event" % action)
+            logging.info("action %s unknown, skipping pull request event", action)
             return None
 
         publish_to_queue('webhook', event, request)
@@ -160,7 +160,7 @@ class CockpituousHandler(github_handler.GithubHandler):
     def handle_issues_event(self, event, request):
         action = request['action']
         if event == 'issues' and action not in ['edited', 'labeled']:
-            logging.info("action %s unknown, skipping issues event" % action)
+            logging.info("action %s unknown, skipping issues event", action)
             return None
 
         publish_to_queue('webhook', event, request)
