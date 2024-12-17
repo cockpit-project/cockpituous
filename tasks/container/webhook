@@ -88,7 +88,7 @@ def scan_tasks():
         try:
             with distributed_queue(AMQP_SERVER):
                 break
-        except pika.exceptions.AMQPError as e:
+        except (OSError, pika.exceptions.AMQPError) as e:
             logging.info("Failed to connect to AMQP, attempt #%i: %s", retry, e)
             time.sleep(5)
 
