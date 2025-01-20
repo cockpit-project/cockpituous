@@ -7,7 +7,7 @@ RUN dnf -y update && \
         adobe-source-code-pro-fonts \
         byobu \
         chromedriver \
-        chromium-headless \
+        chromium \
         curl \
         dbus-daemon \
         dbus-glib \
