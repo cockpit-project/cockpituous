@@ -29,7 +29,6 @@ RUN dnf -y update && \
         libvirt-daemon-driver-qemu \
         libvirt-daemon-driver-storage-core \
         libvirt-python3 \
-        lorax \
         nc \
         net-tools \
         nodejs-devel \
