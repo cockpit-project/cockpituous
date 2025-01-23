@@ -44,6 +44,7 @@ RUN dnf -y update && \
         python3-build \
         python3-flake8 \
         python3-mypy \
+        python3-mwclient \
         python3-pcp \
         python3-pika \
         python3-pillow \
@@ -56,6 +57,7 @@ RUN dnf -y update && \
         python3-types-pyyaml \
         python3-vulture \
         python3-wheel \
+        python3-wikitcms \
         qemu-kvm-core \
         rpm-build \
         rpmdevtools \
