@@ -45,6 +45,7 @@ RUN dnf -y update && \
         python3-flake8 \
         python3-mypy \
         python3-mwclient \
+        python3-openidc-client \
         python3-pcp \
         python3-pika \
         python3-pillow \
