@@ -149,6 +149,10 @@
           '--volume=/var/lib/cockpit-secrets/tasks/fedora-wiki.json:/run/secrets/fedora-wiki.json:ro',
           '--env=COCKPIT_FEDORA_WIKI_TOKEN=/run/secrets/fedora-wiki.json',
       ]
+      fedora-wiki-staging=[
+        '--volume=/var/lib/cockpit-secrets/tasks/fedora-wiki-staging.json:/run/secrets/fedora-wiki-staging.json:ro',
+        '--env=COCKPIT_FEDORA_WIKI_STAGING_TOKEN=/run/secrets/fedora-wiki-staging.json',
+      ]
 
 - name: Create janitor service
   copy:
