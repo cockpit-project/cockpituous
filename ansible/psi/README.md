@@ -5,7 +5,7 @@ We have a "front-door-ci" project on the PSI OpenStack clouds rhos-d and rhos-01
 
 Access
 ------
-Sign into the OpenShift web console on https://api.rhos-01.prod.psi.rdu2.redhat.com with the usual "Red Hat Employment SSO" method. You need to be in the [front-door-ci group](https://rover.redhat.com/groups/group/front-door-ci) for this.
+Sign into the OpenShift web console on https://api.rhos-01.prod.psi.rdu2.redhat.com with selecting "Keystone credentials" method, and then domain "redhat.com", your RedHat user name, and your PIN+TAN. You need to be in the [front-door-ci group](https://rover.redhat.com/groups/group/front-door-ci) for this.
 
 The only change that was, and currently needs to be done manually is to add SSH, HTTP, and ICMP to the "default" security group. This step may be automated in the future.
 
