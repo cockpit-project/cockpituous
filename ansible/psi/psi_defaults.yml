@@ -1,6 +1,6 @@
 ---
 psi_cloud: "rhos-01"
-psi_image: "Fedora-Cloud-Base-39-latest"
+psi_image: "Fedora-Cloud-Base-42-latest"
 psi_user: "fedora"
 # 16 VCPUs, 32 GiB RAM, 160 GB disk
 psi_flavor: "ci.standard.xxxl"
