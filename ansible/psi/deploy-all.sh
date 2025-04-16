@@ -9,7 +9,7 @@ cd "$(dirname $(dirname $(realpath $0)))"
 FIRST=${FIRST:-1}
 
 # number of instances; limited by quota
-NUM=35
+NUM=37
 
 parallel -i -j4 ansible-playbook -i inventory/ -e instance_name='rhos-01-{}' psi/launch-tasks.yml -- $(seq $FIRST $NUM)
 
