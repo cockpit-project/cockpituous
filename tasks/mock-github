@@ -11,6 +11,7 @@
 # first to process webhook → tests-scan → public, second to actually run it
 
 import argparse
+import base64
 import json
 import os
 import tempfile
@@ -40,6 +41,10 @@ class Handler(MockHandler):
             })
         elif self.path == f'/{repo}/{sha}/.cockpit-ci/container':
             self.replyData('ghcr.io/cockpit-project/tasks')
+        elif self.path == f'/repos/{repo}/contents/.cockpit-ci/container?ref={sha}':
+            self.replyJson({
+                'content': base64.b64encode(b'ghcr.io/cockpit-project/tasks').decode()
+            })
         else:
             self.send_error(404, 'Mock Not Found: ' + self.path)
 
