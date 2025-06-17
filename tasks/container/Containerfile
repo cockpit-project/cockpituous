@@ -10,20 +10,15 @@ RUN dnf -y update && \
         chromium \
         curl \
         dbus-daemon \
-        dbus-glib \
         diffstat \
-        expect \
         firefox \
         fpaste \
-        gcc-c++ \
         genisoimage \
-        git \
-        gnupg \
+        git-core \
         google-noto-cjk-fonts-common \
         intltool \
         jq \
         lcov \
-        libXt \
         libappstream-glib \
         libvirt-client \
         libvirt-daemon-driver-qemu \
