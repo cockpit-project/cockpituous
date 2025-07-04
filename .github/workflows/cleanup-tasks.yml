@@ -1,0 +1,51 @@
+name: cleanup-tasks
+on:
+  workflow_dispatch:
+  # Run this before build-tasks
+  schedule:
+    - cron: '2 00 * * 6'
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: read
+      # enable this once removing dry mode
+      # packages: write
+
+    steps:
+      - name: Check out bots
+        uses: actions/checkout@v4
+        with:
+          repository: cockpit-project/bots
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-aiohttp
+
+      - name: Set up token
+        run: |
+          mkdir -p ~/.config/cockpit-dev
+          echo "${{ secrets.GITHUB_TOKEN }}" > ~/.config/cockpit-dev/github-token
+
+      - name: Get used images
+        id: get_used_tags
+        run: |
+          used=$(./used-tasks-tags)
+          echo "Used tags: $used"
+          echo "used=$used" >> $GITHUB_OUTPUT
+
+      # https://github.com/marketplace/actions/ghcr-io-cleanup-action
+      - name: Clean up unused images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          packages: tasks,tasks-tmp
+          keep-n-tagged: 6
+          delete-untagged: true
+          delete-partial-images: true
+          delete-orphaned-images: true
+          # start with dry mode
+          dry-run: true
+          validate: true
+          exclude-tags: ${{ steps.get_used_tags.outputs.used }}
