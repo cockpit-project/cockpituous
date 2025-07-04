@@ -5,5 +5,7 @@ Description=Clean up cockpituous cruft
 Type=oneshot
 # remove leftover containers
 ExecStart=/bin/sh -ec 'podman ps -q --filter status=exited | xargs -r podman rm'
+# HACK: remove killed containers
+ExecStart=/bin/sh -ec 'podman ps -q --filter status=created --filter until=$(date +%%s -d "1 hour ago") | xargs -r podman rm'
 # remove old task images
 ExecStart=/usr/bin/podman image prune --all --force
