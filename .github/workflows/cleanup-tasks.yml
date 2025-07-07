@@ -9,9 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      packages: read
-      # enable this once removing dry mode
-      # packages: write
+      packages: write
 
     steps:
       - name: Check out bots
@@ -45,7 +43,5 @@ jobs:
           delete-untagged: true
           delete-partial-images: true
           delete-orphaned-images: true
-          # start with dry mode
-          dry-run: true
           validate: true
           exclude-tags: ${{ steps.get_used_tags.outputs.used }}
