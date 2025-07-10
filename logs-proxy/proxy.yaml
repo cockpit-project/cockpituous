@@ -1,0 +1,88 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logs-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      infra: logs-proxy
+  template:
+    metadata:
+      name: logs-proxy
+      labels:
+        infra: logs-proxy
+    spec:
+      containers:
+      - name: app
+        image: docker.io/library/python:3-alpine
+        command: ["python3", "/app/s3-proxy.py", "https://cockpit-logs.us-east-1.linodeobjects.com", "10080"]
+        volumeMounts:
+        - name: logs-proxy-app
+          mountPath: /app/
+          readOnly: true
+        - name: s3-credentials
+          mountPath: /s3
+          readOnly: true
+
+      - name: anubis
+        image: ghcr.io/techarohq/anubis:latest
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+            name: anubis-port
+        env:
+          # https://anubis.techaro.lol/docs/admin/installation/
+          - name: BIND
+            value: ":8080"
+          - name: METRICS_BIND
+            value: ":9099"
+          - name: SERVE_ROBOTS_TXT
+            value: "true"
+          - name: TARGET
+            # app container listens on port 10080
+            value: "http://localhost:10080/"
+          - name: DIFFICULTY
+            value: "6"
+          - name: COOKIE_EXPIRATION_TIME
+            value: "24h"
+
+      volumes:
+      - name: logs-proxy-app
+        configMap:
+          name: logs-proxy-app
+          defaultMode: 0755
+      - name: s3-credentials
+        secret:
+          secretName: cockpit-s3-log-read-secrets
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: logs-http
+spec:
+  clusterIP: None
+  selector:
+    infra: logs-proxy
+  ports:
+  # we use edge termination, so talk to plain http
+  - targetPort: anubis-port
+    port: 8080
+    protocol: TCP
+    name: anubis-port
+
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: logs
+spec:
+  to:
+    kind: Service
+    name: logs-http
+  port:
+    targetPort: anubis-port
+  tls:
+    termination: edge
