@@ -88,6 +88,8 @@
       # bots lib/stores.py LOG_STORE
       url = 'https://cockpit-logs.us-east-1.linodeobjects.com/'
       key = [{file="/run/secrets/s3-keys/cockpit-logs.us-east-1.linodeobjects.com"}]
+      proxy_url = 'https://logs-cockpit.apps.ocp.cloud.ci.centos.org/'
+      acl = 'authenticated-read'
 
       [container]
       command = ['podman-remote', '--url=unix:///podman.sock']
