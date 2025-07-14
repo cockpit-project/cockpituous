@@ -22,6 +22,8 @@ PODMAN_SOCKET = Path(os.getenv('XDG_RUNTIME_DIR', '/run'), 'podman', 'podman.soc
 AMQP_POD = 'localhost:5671'
 # S3 address from inside cockpituous pod
 S3_URL_POD = 'https://localhost.localdomain:9000'
+# S3 proxy URL for logs, used in mock_runner_proxy_config
+S3_PROXY_URL = 'https://logs.example.com/'
 # mock GitHub API running in tasks pod
 GHAPI_URL_POD = 'http://127.0.0.7:8443'
 
@@ -319,7 +321,7 @@ def mock_github(pod: PodData, bots_sha: str) -> Iterator[str]:
     mock_github.wait()
 
 
-def generate_config(config: Config, forge_opts: str, run_args: str) -> Path:
+def generate_config(config: Config, forge_opts: str, s3_opts: str, run_args: str) -> Path:
     conf = textwrap.dedent(f'''\
         [logs]
         driver='s3'
@@ -332,6 +334,7 @@ def generate_config(config: Config, forge_opts: str, run_args: str) -> Path:
         url = '{S3_URL_POD}/logs'
         ca = [{{file='/run/secrets/webhook/ca.pem'}}]
         key = [{{file="/run/secrets/s3-keys/localhost.localdomain"}}]
+        {s3_opts}
 
         [container]
         command = ['podman-remote', '--url=unix:///podman.sock']
@@ -367,12 +370,21 @@ def generate_config(config: Config, forge_opts: str, run_args: str) -> Path:
 def mock_runner_config(config: Config, pod: PodData) -> Path:
     return generate_config(config,
                            forge_opts=f'api-url = "{GHAPI_URL_POD}"',
+                           s3_opts='',
+                           run_args=f'"--pod={pod.pod}", "--env=GITHUB_API={GHAPI_URL_POD}"')
+
+
+@pytest.fixture()
+def mock_runner_proxy_config(config: Config, pod: PodData) -> Path:
+    return generate_config(config,
+                           forge_opts=f'api-url = "{GHAPI_URL_POD}"',
+                           s3_opts=f'proxy_url = "{S3_PROXY_URL}"\nacl = "authenticated-read"',
                            run_args=f'"--pod={pod.pod}", "--env=GITHUB_API={GHAPI_URL_POD}"')
 
 
 @pytest.fixture()
 def real_runner_config(config: Config) -> Path:
-    return generate_config(config, forge_opts='', run_args='')
+    return generate_config(config, forge_opts='', s3_opts='', run_args='')
 
 
 #
@@ -495,6 +507,44 @@ def test_mock_pr(config: Config,
         "description": f"Success [{pod.pod}]",
         "context": "unit-tests",
         "target_url": f"https://localhost.localdomain:9000/logs/{slug}.html"
+    }
+
+
+def test_mock_pr_url_proxy(config: Config,
+                           pod: PodData,
+                           clean_s3,
+                           bots_sha: str,
+                           mock_github,
+                           mock_runner_proxy_config) -> None:
+    """end to end test with proxy_url configuration"""
+
+    exec_c(pod.tasks, make_pr_event_commands(mock_github), timeout=360)
+
+    # check log in S3
+    # looks like <Key>pull-1-a4d25bb9-20240315-135902-unit-tests/log</Key>
+    m = re.search(r'pull-1-[a-z0-9-]*-unit-tests/log(?=<)', get_s3(config, pod, 'logs/'))
+    assert m
+    slug = m.group(0)
+    log = get_s3(config, pod, f'logs/{slug}')
+    assert 'Job ran successfully' in log
+    assert re.search(r'Running on:\s+cockpituous', log)
+
+    # 3 status updates posted, with proxy target URLs
+    gh_mock_log = exec_c_out(pod.tasks, 'cat /tmp/mock.log')
+    jsons = re.findall(f'POST /repos/cockpit-project/bots/statuses/{bots_sha} (.*)$', gh_mock_log, re.M)
+    assert len(jsons) == 3
+    assert json.loads(jsons[0]) == {"state": "pending", "description": "Not yet tested", "context": "unit-tests"}
+    assert json.loads(jsons[1]) == {
+        "state": "pending",
+        "description": f"In progress [{pod.pod}]",
+        "context": "unit-tests",
+        "target_url": f"{S3_PROXY_URL}{slug}.html"
+    }
+    assert json.loads(jsons[2]) == {
+        "state": "success",
+        "description": f"Success [{pod.pod}]",
+        "context": "unit-tests",
+        "target_url": f"{S3_PROXY_URL}{slug}.html"
     }
 
 
