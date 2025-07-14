@@ -232,6 +232,16 @@ mc admin policy attach minio/ readwrite --user {s3user}
     subprocess.run(['podman', 'pod', 'rm', '-f', data.pod], check=True)
 
 
+@pytest.fixture()
+def clean_s3(pod: PodData) -> None:
+    """Remove all S3 objects in the logs and images buckets
+
+    This is used to clean up after tests that leave S3 objects behind.
+    """
+    exec_c(pod.mc, 'mc rm --recursive --force minio/logs')
+    exec_c(pod.mc, 'mc rm --recursive --force minio/images')
+
+
 #
 # Utilities
 #
@@ -426,7 +436,12 @@ def test_queue(pod: PodData) -> None:
     assert 'queue public does not exist' in out or 'queue public is empty' in out
 
 
-def test_mock_pr(config: Config, pod: PodData, bots_sha: str, mock_github, mock_runner_config) -> None:
+def test_mock_pr(config: Config,
+                 pod: PodData,
+                 clean_s3,
+                 bots_sha: str,
+                 mock_github,
+                 mock_runner_config) -> None:
     """almost end-to-end PR test
 
     Starting with GitHub webhook JSON payload injection; fully local, no privileges needed.
@@ -478,8 +493,12 @@ def test_mock_pr(config: Config, pod: PodData, bots_sha: str, mock_github, mock_
     }
 
 
-def test_mock_cross_project_pr(config: Config, pod: PodData, bots_sha: str,
-                               mock_github, mock_runner_config) -> None:
+def test_mock_cross_project_pr(config: Config,
+                               pod: PodData,
+                               clean_s3,
+                               bots_sha: str,
+                               mock_github,
+                               mock_runner_config) -> None:
     """almost end-to-end PR cross-project test
 
     Starting with GitHub webhook JSON payload injection; fully local, no privileges needed.
