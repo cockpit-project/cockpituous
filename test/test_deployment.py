@@ -436,18 +436,10 @@ def test_queue(pod: PodData) -> None:
     assert 'queue public does not exist' in out or 'queue public is empty' in out
 
 
-def test_mock_pr(config: Config,
-                 pod: PodData,
-                 clean_s3,
-                 bots_sha: str,
-                 mock_github,
-                 mock_runner_config) -> None:
-    """almost end-to-end PR test
-
-    Starting with GitHub webhook JSON payload injection; fully local, no privileges needed.
-    """
-    exec_c(pod.tasks, f'''set -ex
-      {mock_github}
+def make_pr_event_commands(env: str) -> str:
+    """Create tasks container commands to simulate and process a PR event"""
+    return f'''set -ex
+      {env}
 
       cd bots
 
@@ -463,7 +455,20 @@ def test_mock_pr(config: Config,
 
       # second run-queue actually runs the test
       ./run-queue --amqp {AMQP_POD}
-      ''', timeout=360)
+      '''
+
+
+def test_mock_pr(config: Config,
+                 pod: PodData,
+                 clean_s3,
+                 bots_sha: str,
+                 mock_github,
+                 mock_runner_config) -> None:
+    """almost end-to-end PR test
+
+    Starting with GitHub webhook JSON payload injection; fully local, no privileges needed.
+    """
+    exec_c(pod.tasks, make_pr_event_commands(mock_github), timeout=360)
 
     # check log in S3
     # looks like <Key>pull-1-a4d25bb9-20240315-135902-unit-tests/log</Key>
@@ -503,27 +508,8 @@ def test_mock_cross_project_pr(config: Config,
 
     Starting with GitHub webhook JSON payload injection; fully local, no privileges needed.
     """
-    exec_c(pod.tasks, f'''set -ex
-      {mock_github}
-
-      cd bots
-
-      # simulate GitHub webhook event, put that into the webhook queue
-      PYTHONPATH=. ./mock-github --print-pr-event cockpit-project/bots $SHA | \
-          ./publish-queue --amqp {AMQP_POD} --create --queue webhook
-
-      ./inspect-queue --amqp {AMQP_POD}
-
-      # cross-project test request
-      export COCKPIT_TESTMAP_INJECT=main/unit-tests@cockpit-project/cockpituous
-
-      # first run-queue processes webhook → tests-scan → public queue
-      ./run-queue --amqp {AMQP_POD}
-      ./inspect-queue --amqp {AMQP_POD}
-
-      # second run-queue actually runs the test
-      ./run-queue --amqp {AMQP_POD}
-      ''', timeout=360)
+    cross_env = 'export COCKPIT_TESTMAP_INJECT=main/unit-tests@cockpit-project/cockpituous'
+    exec_c(pod.tasks, make_pr_event_commands(mock_github + '\n' + cross_env), timeout=360)
 
     # check log in S3
     # looks like <Key>pull-1-a4d25bb9-20240315-135902-unit-tests.../log</Key>
