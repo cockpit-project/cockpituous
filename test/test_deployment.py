@@ -305,7 +305,7 @@ def mock_github(pod: PodData, bots_sha: str) -> Iterator[str]:
 
     yield f'export GITHUB_API={GHAPI_URL_POD}; SHA={bots_sha}'
 
-    mock_github.kill()
+    exec_c_out(pod.tasks, 'pkill -f mock-github')
     mock_github.wait()
 
 
