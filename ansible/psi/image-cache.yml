@@ -22,3 +22,9 @@
 
     - name: Tell tasks containers to drain and restart
       command: pkill -ex cockpit-tasks
+
+- name: Set up S3 image cache secret
+  hosts: openstack_tasks
+  gather_facts: false
+  roles:
+    - local-s3-alias
