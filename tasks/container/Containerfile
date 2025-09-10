@@ -65,6 +65,7 @@ RUN dnf -y update && \
         valgrind \
         vim-enhanced \
         virt-install \
+        vhost-device-vsock \
         && \
     curl -o /tmp/cockpit.spec -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec && \
     dnf -y builddep --setopt=install_weak_deps=False /tmp/cockpit.spec && \
