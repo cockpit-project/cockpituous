@@ -84,6 +84,10 @@
       [forge.github]
       token = [{file="/run/secrets/webhook/.config--github-token"}]
 
+      [forge.codeberg]
+      token = [{file="/run/secrets/webhook/.config--codeberg-token"}]
+      post = true
+
       [logs.s3]
       # bots lib/stores.py LOG_STORE
       url = 'https://cockpit-logs.us-east-1.linodeobjects.com/'
