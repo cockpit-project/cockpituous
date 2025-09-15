@@ -328,6 +328,7 @@ def generate_config(config: Config, forge_opts: str, s3_opts: str, run_args: str
 
         [forge.github]
         token = [{{file="/run/secrets/webhook/.config--github-token"}}]
+        post = true
         {forge_opts}
 
         [logs.s3]
