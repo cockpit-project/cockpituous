@@ -19,18 +19,6 @@ function update_bots() {
     fi
 }
 
-# wait between 1 and 10 minutes, with an override to speed up tests
-function slumber() {
-    if [ -n "${SLUMBER:-}" ]; then
-        sleep "$SLUMBER"
-    else
-        sleep $(shuf -i ${1:-60-600} -n 1)
-    fi
-}
-
-# on mass deployment, avoid GitHub stampede
-slumber 0-120
-
 # Consume from queue 30 times, then restart; listen to SIGTERM for orderly shutdown
 shutdown=
 trap "echo 'received SIGTERM, stopping main loop'; shutdown=1" TERM
@@ -41,7 +29,7 @@ for i in $(seq 1 30); do
     cd "$BOTS_DIR"
 
     # run-queue fails on empty queues; don't poll too often
-    timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || slumber
+    timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || sleep 10
 done
 
 # Prune old images on our local cache
