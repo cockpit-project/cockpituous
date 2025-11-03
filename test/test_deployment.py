@@ -310,15 +310,25 @@ def mock_github(pod: PodData, bots_sha: str) -> Iterator[str]:
                    check=True)
 
     mock_github = subprocess.Popen(
-        ['podman', 'exec', '-i',  '--env=PYTHONPATH=bots', pod.tasks,
+        ['podman', 'exec', '-i', '--env=PYTHONPATH=bots', pod.tasks,
          'bots/mock-github', '--log', '/tmp/mock.log', 'cockpit-project/bots', bots_sha])
     # wait until it started
     exec_c_out(pod.tasks, f'curl --retry 5 --retry-connrefused --fail {GHAPI_URL_POD}/repos/cockpit-project/bots')
 
-    yield f'export GITHUB_API={GHAPI_URL_POD}; SHA={bots_sha}'
-
-    exec_c_out(pod.tasks, 'pkill -f mock-github')
-    mock_github.wait()
+    try:
+        yield f'export GITHUB_API={GHAPI_URL_POD}; SHA={bots_sha}'
+    finally:
+        # Clean up mock-github processes (parent and multiprocessing child)
+        # Run pkill separately to avoid self-matching in shell script
+        for p in ['bots/mock-github', 'test_mock_server']:
+            subprocess.run(['podman', 'exec', pod.tasks, 'pkill', '-9', '-f', p])
+        exec_c(pod.tasks, '''
+        fuser -k -9 8443/tcp 2>/dev/null || true
+        # Wait for port to be released
+        while fuser 8443/tcp 2>/dev/null; do sleep 0.1; done
+        rm -f /tmp/mock.log
+        ''')
+        mock_github.wait()
 
 
 def generate_config(config: Config, forge_opts: str, s3_opts: str, run_args: str) -> Path:
