@@ -14,7 +14,7 @@ systemctl stop cockpit-s3.service || true
 
 if [ -z "${DISABLE_TLS:-}" ]; then
 
-    CERT_VOLS="-v $SECRETS/s3-server/s3-server.key:/root/.minio/certs/private.key:ro -v $SECRETS/s3-server/s3-server.pem:/root/.minio/certs/public.crt:ro"
+    CERT_VOLS="-v $SECRETS/s3-server/s3-server.key:/.minio/certs/private.key:ro,z -v $SECRETS/s3-server/s3-server.pem:/.minio/certs/public.crt:ro,z"
     PORT=443
     PROTOCOL=https
 else
@@ -32,7 +32,7 @@ Restart=always
 RestartSec=60
 ExecStartPre=-$RUNC rm -f cockpit-s3
 ExecStartPre=/bin/sh -c 'dd if=/dev/urandom bs=12 count=1 status=none | base64 > /run/cockpit-s3.rootpassword.txt'
-ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=$PORT:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) $CERT_VOLS -v images-minio-data:/data:rw quay.io/minio/minio server /data"
+ExecStart=/bin/sh -xc "$RUNC run --name=cockpit-s3 --publish=$PORT:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=\$(cat /run/cockpit-s3.rootpassword.txt) $CERT_VOLS -v images-minio-data:/data:U,rw quay.io/hummingbird/minio server /data"
 ExecStartPost=/usr/local/lib/setup-s3.sh
 ExecStartPost=/bin/rm -f /run/cockpit-s3.rootpassword.txt
 ExecStop=$RUNC rm -f cockpit-s3
@@ -52,7 +52,7 @@ mkdir -p "$MC_CONFIG/certs/CAs"
 cp "$SECRETS/webhook/ca.pem" "$MC_CONFIG/certs/CAs/ca.crt"
 
 run_mc() {
-    $RUNC run --rm --network=host -v "$MC_CONFIG:/root/.mc:z" quay.io/minio/mc "\$@"
+    $RUNC run --rm --network=host -v "$MC_CONFIG:/mc/.mc:U,z" quay.io/hummingbird/minio-client "\$@"
 }
 
 # Wait for S3 to be ready by retrying alias set
