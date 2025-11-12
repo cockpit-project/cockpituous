@@ -8,6 +8,7 @@ set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
 RUNC=$(which podman)
+MC_CONFIG=/var/lib/cockpit-mc
 
 systemctl stop cockpit-s3.service || true
 
@@ -44,18 +45,24 @@ cat <<EOF > /usr/local/lib/setup-s3.sh
 #!/bin/sh
 set -eu
 read s3user s3key < "$SECRETS/s3-keys/self-hosted"
-$RUNC run --interactive --rm --network=host \
-    -v "$SECRETS"/webhook/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro \
-    --entrypoint /bin/sh quay.io/minio/mc <<EOC
-set -e
-cat /etc/pki/ca-trust/source/anchors/ca.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-until mc alias set minio ${PROTOCOL}://localhost minioadmin \$(cat /run/cockpit-s3.rootpassword.txt); do sleep 1; done
+
+# Set up persistent mc config directory with CA certificate
+rm -rf "$MC_CONFIG"
+mkdir -p "$MC_CONFIG/certs/CAs"
+cp "$SECRETS/webhook/ca.pem" "$MC_CONFIG/certs/CAs/ca.crt"
+
+run_mc() {
+    $RUNC run --rm --network=host -v "$MC_CONFIG:/root/.mc:z" quay.io/minio/mc "\$@"
+}
+
+# Wait for S3 to be ready by retrying alias set
+until run_mc alias set minio ${PROTOCOL}://localhost minioadmin \$(cat /run/cockpit-s3.rootpassword.txt); do sleep 1; done
+
 # this fails with non-zero as the directory already exists; that's fine
-mc mb minio/images || true
-mc policy set download minio/images
-mc admin user add minio/ '\$s3user' '\$s3key'
-mc admin policy attach minio/ readwrite --user '\$s3user'
-EOC
+run_mc mb minio/images || true
+run_mc policy set download minio/images
+run_mc admin user add minio/ "\$s3user" "\$s3key"
+run_mc admin policy attach minio/ readwrite --user "\$s3user"
 EOF
 chmod a+x /usr/local/lib/setup-s3.sh
 
