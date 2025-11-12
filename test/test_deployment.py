@@ -129,14 +129,13 @@ class PodData:
     secrets_path: Path
     mc_dir: Path
 
-    def run_mc(self, command: str) -> None:
-        """Run shell command(s) in minio mc container"""
+    def run_mc(self, argv: list[str]) -> None:
+        """Run mc command in minio mc container"""
         subprocess.run(
             ['podman', 'run', '--rm', '-i', f'--pod={self.pod}',
-             '--entrypoint', 'sh',
              '-v', f'{self.mc_dir}:/root/.mc:z',
              'quay.io/minio/mc',
-             '-ec', command],
+             *argv],
             check=True,
             timeout=30,  # avoid hanging tests
             input=None
@@ -183,15 +182,23 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
 
     # wait until S3 started, create bucket
     (s3user, s3key) = (config.s3_keys / 'localhost.localdomain').read_text().strip().split()
-    data.run_mc(f'''
-until mc alias set minio '{S3_URL_POD}' minioadmin minioadmin; do sleep 1; done
-mc mb minio/images
-mc mb minio/logs
-mc anonymous set download minio/images
-mc anonymous set download minio/logs
-mc admin user add minio/ {s3user} {s3key}
-mc admin policy attach minio/ readwrite --user {s3user}
-''')
+
+    # Wait for S3 to be ready by retrying alias set
+    for _ in range(30):
+        try:
+            data.run_mc(['alias', 'set', 'minio', S3_URL_POD, 'minioadmin', 'minioadmin'])
+            break
+        except subprocess.CalledProcessError:
+            time.sleep(1)
+    else:
+        raise RuntimeError('S3 did not start in time')
+
+    data.run_mc(['mb', 'minio/images'])
+    data.run_mc(['mb', 'minio/logs'])
+    data.run_mc(['anonymous', 'set', 'download', 'minio/images'])
+    data.run_mc(['anonymous', 'set', 'download', 'minio/logs'])
+    data.run_mc(['admin', 'user', 'add', 'minio/', s3user, s3key])
+    data.run_mc(['admin', 'policy', 'attach', 'minio/', 'readwrite', '--user', s3user])
 
     # tasks
     data.tasks = f'cockpituous-tasks-{test_instance}'
@@ -254,8 +261,8 @@ def clean_s3(pod: PodData) -> None:
 
     This is used to clean up after tests that leave S3 objects behind.
     """
-    pod.run_mc('mc rm --recursive --force minio/logs')
-    pod.run_mc('mc rm --recursive --force minio/images')
+    pod.run_mc(['rm', '--recursive', '--force', 'minio/logs'])
+    pod.run_mc(['rm', '--recursive', '--force', 'minio/images'])
 
 
 #
