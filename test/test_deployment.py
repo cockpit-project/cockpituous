@@ -39,6 +39,7 @@ class Config:
     tasks: Path
     s3_keys: Path
     s3_server: Path
+    mc: Path
 
 
 @pytest.fixture(scope='session')
@@ -81,6 +82,12 @@ def config(tmp_path_factory) -> Config:
     config.s3_keys.mkdir()
     (config.s3_keys / 'localhost.localdomain').write_text('cockpituous foobarfoo')
 
+    # mc (MinIO Client) persistent config directory
+    config.mc = configdir / 'mc'
+    mc_certs_dir = config.mc / 'certs' / 'CAs'
+    mc_certs_dir.mkdir(parents=True)
+    shutil.copy(config.secrets / 'ca.pem', mc_certs_dir / 'ca.crt')
+
     # tasks secrets: none right now, but do create an empty directory to keep production structure
     config.tasks = config.secrets / 'tasks'
     config.tasks.mkdir()
@@ -114,11 +121,26 @@ class PodData:
     # container names
     rabbitmq: str
     s3: str
-    mc: str
     tasks: str
     webhook: str | None  # only in "shell" marker
     # forwarded ports
     host_port_s3: int
+    # from Config
+    secrets_path: Path
+    mc_dir: Path
+
+    def run_mc(self, command: str) -> None:
+        """Run shell command(s) in minio mc container"""
+        subprocess.run(
+            ['podman', 'run', '--rm', '-i', f'--pod={self.pod}',
+             '--entrypoint', 'sh',
+             '-v', f'{self.mc_dir}:/root/.mc:z',
+             'quay.io/minio/mc',
+             '-ec', command],
+            check=True,
+            timeout=30,  # avoid hanging tests
+            input=None
+        )
 
 
 @pytest.fixture(scope='session')
@@ -132,6 +154,8 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
     test_instance = str(os.getpid())
     data = PodData()
     data.pod = f'cockpituous-{test_instance}'
+    data.secrets_path = config.secrets
+    data.mc_dir = config.mc
 
     # RabbitMQ, also defines/starts pod
     data.rabbitmq = f'cockpituous-rabbitmq-{test_instance}'
@@ -157,19 +181,9 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
     # looks like "0.0.0.0:12345"
     data.host_port_s3 = int(proc.stdout.strip().split(':')[-1])
 
-    # minio S3 console
-    data.mc = f'cockpituous-mc-{test_instance}'
-    subprocess.run(['podman', 'run', '-d', '--interactive', '--name', data.mc, f'--pod={data.pod}', *launch_args,
-                    '--entrypoint', '/bin/sh',
-                    '-v', f'{config.secrets}/ca.pem:/etc/pki/ca-trust/source/anchors/ca.pem:ro',
-                    'quay.io/minio/mc'],
-                   check=True)
-
     # wait until S3 started, create bucket
     (s3user, s3key) = (config.s3_keys / 'localhost.localdomain').read_text().strip().split()
-    exec_c(data.mc, f'''
-set -e
-cat /etc/pki/ca-trust/source/anchors/ca.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+    data.run_mc(f'''
 until mc alias set minio '{S3_URL_POD}' minioadmin minioadmin; do sleep 1; done
 mc mb minio/images
 mc mb minio/logs
@@ -177,7 +191,7 @@ mc anonymous set download minio/images
 mc anonymous set download minio/logs
 mc admin user add minio/ {s3user} {s3key}
 mc admin policy attach minio/ readwrite --user {s3user}
-''', timeout=30)
+''')
 
     # tasks
     data.tasks = f'cockpituous-tasks-{test_instance}'
@@ -240,8 +254,8 @@ def clean_s3(pod: PodData) -> None:
 
     This is used to clean up after tests that leave S3 objects behind.
     """
-    exec_c(pod.mc, 'mc rm --recursive --force minio/logs')
-    exec_c(pod.mc, 'mc rm --recursive --force minio/images')
+    pod.run_mc('mc rm --recursive --force minio/logs')
+    pod.run_mc('mc rm --recursive --force minio/images')
 
 
 #
