@@ -1,7 +1,9 @@
 #!/bin/sh
 
 # deploy this script with:
-# ansible -i inventory -m include_role -a name=s3-systemd
+# ansible-playbook -i inventory psi/image-cache.yml
+# For quicker iteration:
+# ansible -i inventory -m include_role -a name=s3-systemd -e disable_tls=1 rhos-01-1
 set -eufx
 
 SECRETS=/var/lib/cockpit-secrets
