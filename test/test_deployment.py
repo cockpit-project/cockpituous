@@ -133,8 +133,8 @@ class PodData:
         """Run mc command in minio mc container"""
         subprocess.run(
             ['podman', 'run', '--rm', '-i', f'--pod={self.pod}',
-             '-v', f'{self.mc_dir}:/root/.mc:z',
-             'quay.io/minio/mc',
+             '-v', f'{self.mc_dir}:/mc/.mc:U,z',
+             'quay.io/hummingbird/minio-client',
              *argv],
             check=True,
             timeout=30,  # avoid hanging tests
@@ -169,11 +169,11 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
     # minio S3 store
     data.s3 = f'cockpituous-s3-{test_instance}'
     subprocess.run(['podman', 'run', '-d', '--name', data.s3, f'--pod={data.pod}', *launch_args,
-                    '-v', f'{config.s3_server}/s3-server.key:/root/.minio/certs/private.key:ro',
-                    '-v', f'{config.s3_server}/s3-server.pem:/root/.minio/certs/public.crt:ro',
+                    '-v', f'{config.s3_server}/s3-server.key:/.minio/certs/private.key:ro',
+                    '-v', f'{config.s3_server}/s3-server.pem:/.minio/certs/public.crt:ro',
                     '-e', 'MINIO_ROOT_USER=minioadmin',
                     '-e', 'MINIO_ROOT_PASSWORD=minioadmin',
-                    'quay.io/minio/minio', 'server', '/data', '--console-address', ':9001'],
+                    'quay.io/hummingbird/minio', 'server', '/data', '--console-address', ':9001'],
                    check=True)
 
     proc = subprocess.run(['podman', 'port', data.s3, '9000'], capture_output=True, text=True, check=True)
