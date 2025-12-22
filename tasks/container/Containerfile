@@ -17,6 +17,8 @@ RUN dnf -y update && \
         fpaste \
         genisoimage \
         git-core \
+        # TEMP: Needed for https://bugzilla.redhat.com/show_bug.cgi?id=2412451
+        gobject-introspection \
         google-noto-cjk-fonts-common \
         intltool \
         jq \
