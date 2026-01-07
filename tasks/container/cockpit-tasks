@@ -11,7 +11,7 @@ BOTS_DIR="$WORKDIR"/bots
 
 echo "Starting testing"
 
-function update_bots() {
+update_bots() {
     if [ -d "$BOTS_DIR" ]; then
         git -C "$BOTS_DIR" pull --rebase
     else
@@ -23,7 +23,7 @@ function update_bots() {
 shutdown=
 trap "echo 'received SIGTERM, stopping main loop'; shutdown=1" TERM
 
-for i in $(seq 1 30); do
+for _i in $(seq 1 30); do
     [ -z "$shutdown" ] || break
     update_bots
     cd "$BOTS_DIR"
