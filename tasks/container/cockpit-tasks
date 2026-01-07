@@ -19,11 +19,15 @@ update_bots() {
     fi
 }
 
-# Consume from queue 30 times, then restart; listen to SIGTERM for orderly shutdown
+# Listen to SIGTERM for orderly shutdown
 shutdown=
 trap "echo 'received SIGTERM, stopping main loop'; shutdown=1" TERM
 
-for _i in $(seq 1 30); do
+# Run for ~ 12 hours, so that we regularly pick up new tasks image updates
+start_time=$(date +%s)
+end_time=$((start_time + 43200))  # 12 hours = 43200 seconds
+
+while [ "$(date +%s)" -lt "$end_time" ]; do
     [ -z "$shutdown" ] || break
     update_bots
     cd "$BOTS_DIR"
