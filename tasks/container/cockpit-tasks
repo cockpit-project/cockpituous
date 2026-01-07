@@ -32,6 +32,8 @@ for i in $(seq 1 30); do
     timeout 12h ./run-queue ${AMQP_SERVER:+--amqp} ${AMQP_SERVER:-} || sleep 10
 done
 
-# Prune old images on our local cache
-update_bots
-./image-prune
+# Prune old images on our local cache (not needed for statistics queue)
+if [ -z "${RUN_STATISTICS_QUEUE:-}" ]; then
+    update_bots
+    ./image-prune
+fi
