@@ -4,8 +4,6 @@ LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 RUN dnf -y update && \
     dnf -y install --disablerepo=fedora-cisco-openh264 --setopt=install_weak_deps=False \
         'dnf-command(builddep)' \
-        # TEMP: Need asciidoctor to be able to run unit tests for asciidoc PR, once merged cockpit.spec takes care of this
-        asciidoctor \
         adobe-source-code-pro-fonts \
         byobu \
         chromedriver \
@@ -50,9 +48,7 @@ RUN dnf -y update && \
         python3-pillow \
         python3-pip \
         python3-pytest \
-        python3-pytest-asyncio \
         python3-pytest-cov \
-        python3-pytest-timeout \
         python3-pyyaml \
         python3-types-pyyaml \
         python3-vulture \
