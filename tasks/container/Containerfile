@@ -63,7 +63,6 @@ RUN dnf -y update && \
         strace \
         tar \
         valgrind \
-        vim-enhanced \
         virt-install \
         vhost-device-vsock \
         && \
