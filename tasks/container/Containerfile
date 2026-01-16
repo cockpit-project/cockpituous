@@ -29,6 +29,7 @@ RUN dnf -y update && \
         nc \
         net-tools \
         nodejs-devel \
+        nodejs-full-i18n \
         npm \
         passwd \
         pigz \
