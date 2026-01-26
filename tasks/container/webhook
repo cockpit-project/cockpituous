@@ -79,7 +79,7 @@ def scan_tasks():
     """scan project PRs and issues to (re)build the tasks queue"""
 
     from lib import testmap
-    from task.distributed_queue import DEFAULT_AMQP_SERVER
+    from lib.distributed_queue import DEFAULT_AMQP_SERVER
     global AMQP_SERVER
     AMQP_SERVER = os.getenv('AMQP_SERVER', DEFAULT_AMQP_SERVER)
 

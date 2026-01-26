@@ -17,7 +17,7 @@ import os
 import signal
 import tempfile
 
-from task.test_mock_server import MockHandler, MockServer
+from lib.test_mock_server import MockHandler, MockServer
 
 class Handler(MockHandler):
     def do_GET(self):
