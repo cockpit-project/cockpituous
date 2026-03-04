@@ -41,6 +41,7 @@ RUN dnf -y update && \
         python3-aioresponses \
         python3-build \
         python3-flake8 \
+        python3-httpx+http2 python3-respx \
         python3-mypy \
         python3-mwclient \
         python3-openidc-client \
