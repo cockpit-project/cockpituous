@@ -73,10 +73,10 @@ RUN dnf -y update && \
     rm /tmp/cockpit.spec && \
     dnf clean all
 
-# 146 and 147 have a grave BiDi regression, see
-# https://github.com/cockpit-project/cockpit/pull/22720#issuecomment-3701568895
-# 148 is going to be released end of February 2026
-RUN if [ $(rpm -q --qf '%{VERSION}' firefox | cut -d. -f1) -lt 148 ]; then \
+# FF 146 to 148 has a regression where the page sometimes reloads when we call b.go() from tests
+# see https://bugzilla.mozilla.org/show_bug.cgi?id=2018546
+# 149 is going to be released end of March 2026
+RUN if [ $(rpm -q --qf '%{VERSION}' firefox | cut -d. -f1) -lt 149 ]; then \
         case $(uname -m) in \
             aarch64) OS=linux64-aarch64 ;; \
             *) OS=linux64 ;; \
