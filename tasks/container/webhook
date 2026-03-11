@@ -76,7 +76,7 @@ def distributed_queue(amqp_server):
 
 
 def scan_tasks():
-    """scan project PRs and issues to (re)build the tasks queue"""
+    """scan project PRs to (re)build the tasks queue"""
 
     from lib import testmap
     from lib.distributed_queue import DEFAULT_AMQP_SERVER
@@ -94,9 +94,6 @@ def scan_tasks():
 
     for project in testmap.projects():
         subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'tests-scan'), '--amqp',
-                               AMQP_SERVER, '--repo', project],
-                              cwd=BOTS_CHECKOUT)
-        subprocess.check_call([os.path.join(BOTS_CHECKOUT, 'issue-scan'), '--amqp',
                                AMQP_SERVER, '--repo', project],
                               cwd=BOTS_CHECKOUT)
 
