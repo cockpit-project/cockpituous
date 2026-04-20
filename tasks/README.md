@@ -241,7 +241,7 @@ sequenceDiagram
    queue.
 
    Authentication to AMQP happens through client-side SSL certificates; we have a
-   [distributed_queue.py](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py)
+   [distributed_queue.py](https://github.com/cockpit-project/bots/blob/main/lib/distributed_queue.py)
    convenience wrapper for this.
 
  * Some cockpit/tasks bot picks up the event payload from the "webhook" queue,
