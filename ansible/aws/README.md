@@ -68,7 +68,7 @@ Set project webhooks to point to http://ec2-3-228-126-27.compute-1.amazonaws.com
 and the shared password found in our CI secrets (`webhook/.config/github-webhook-token`).
 
 If you deploy this somewhere else, you need to change `DEFAULT_AMQP_SERVER` in
-[bots](https://github.com/cockpit-project/bots/blob/main/task/distributed_queue.py)
+[bots](https://github.com/cockpit-project/bots/blob/main/lib/distributed_queue.py)
 and change all GitHub project webhooks accordingly.
 
 Cockpit demo setup
