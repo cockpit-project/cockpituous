@@ -163,7 +163,7 @@ def pod(config: Config, pytestconfig) -> Iterator[PodData]:
                     '--publish', '9000',
                     '-v', f'{config.rabbitmq}:/etc/rabbitmq:ro',
                     '-v', f'{config.webhook}:/run/secrets/webhook:ro',
-                    'docker.io/rabbitmq'],
+                    'docker.io/rabbitmq:4.2.6'],
                    check=True)
 
     # minio S3 store
