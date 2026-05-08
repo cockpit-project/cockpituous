@@ -22,7 +22,7 @@ ExecStart=/usr/bin/podman run \
     --tmpfs /var/lib/rabbitmq \
     -v /etc/rabbitmq:/etc/rabbitmq:ro,z \
     -v /var/lib/cockpit-secrets/webhook:/run/secrets/webhook:ro,z \
-    docker.io/rabbitmq:4.2.6
+    docker.io/rabbitmq
 
 ExecStart=/usr/bin/podman run \
     --cgroups=no-conmon \
