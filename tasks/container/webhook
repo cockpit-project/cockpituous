@@ -70,7 +70,7 @@ def distributed_queue(amqp_server):
         credentials=pika.credentials.ExternalCredentials()))
     channel = connection.channel()
 
-    channel.queue_declare(queue='webhook', auto_delete=False)
+    channel.queue_declare(queue='webhook', durable=True, auto_delete=False)
     yield channel
     connection.close()
 
