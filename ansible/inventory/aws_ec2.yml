@@ -10,6 +10,6 @@ hostnames:
   - dns-name
   - private-ip-address
 filters:
-  tag:ServiceOwner: FrontDoorSST
+  tag:service-owner: cockpit
 compose:
   ansible_become: true
