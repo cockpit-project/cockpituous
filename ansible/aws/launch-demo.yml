@@ -17,11 +17,10 @@
         assign_public_ip: yes
         group: public-all
         instance_tags:
-          Name: cockpit-demo
-          ServiceOwner: FrontDoorSST
-          ServiceComponent: Demo
-          ServicePhase: Temporary
-          AppCode: ARR-001
+          app-code: ARR-001
+          cost-center: 700
+          service-owner: cockpit
+          service-phase: lab
       register: ec2
 
     - name: Add new instance to host group

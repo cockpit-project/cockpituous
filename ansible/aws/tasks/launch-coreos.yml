@@ -35,12 +35,10 @@
     vpc_subnet_id: "{{ vpc_subnet_id | default(omit) }}"
     volumes: "{{ volumes | default(omit) }}"
     tags:
-      Name: "{{ tag_name }}"
-      ServiceOwner: FrontDoorSST
-      ServiceName: FrontDoorCI
-      ServiceComponent: "{{ tag_service_component }}"
-      ServicePhase: Prod
-      AppCode: ARR-001
+      app-code: ARR-001
+      cost-center: 700
+      service-owner: cockpit
+      service-phase: prod
   register: ec2
 
 - name: Add new instance to host group
