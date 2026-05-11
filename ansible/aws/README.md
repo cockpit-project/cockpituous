@@ -9,13 +9,15 @@ Initial URLs
 
 Credentials configuration
 -------------------------
-For interacting with AWS with these Ansible playbooks or with the [AWS CLI](https://docs.aws.amazon.com/cli/index.html), put your access key into ~/.aws/credentials, either with calling `aws configure`, or creating the file manually:
+For interacting with AWS with these Ansible playbooks or with the [AWS CLI](https://docs.aws.amazon.com/cli/index.html), put your access key into `~/.config/aws/credentials`, either with calling `aws configure`, or creating the file manually:
 
 ```ini
 [default]
 aws_access_key_id = AKIA...
 aws_secret_access_key = yoursecret
 ```
+
+Note: On some systems, the AWS CLI and Ansible may use the old `~/.aws/credentials` location. Both locations are supported.
 
 SSH key
 -------
