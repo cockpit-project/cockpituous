@@ -1,23 +1,57 @@
 Resources for setting up CI in AWS
 ==================================
 
-Initial URLs
-------------
+AWS user management console
+---------------------------
 
- * Sign in [with your kerberos ticket](https://auth.redhat.com/auth/realms/EmployeeIDP/protocol/saml/clients/itaws); this needs to be set up first for new users, ask Dominik Perpeet or Miroslav Vadkerti about it
- * The [User management console](https://console.aws.amazon.com/iam/home?#/users) shows the available users and their Access Keys. The Cockpit team CI uses the [arr-cockpit](https://console.aws.amazon.com/iam/home?#/users/arr-cockpit) user. Contact Miroslav Vadkerti about creating a new access key for you.
+ * Sign in [with your kerberos ticket](https://auth.redhat.com/auth/realms/EmployeeIDP/protocol/saml/clients/itaws); this needs to be set up first for new users, ask Miroslav Vadkerti about it
+ * The [User management console](https://console.aws.amazon.com/iam/home?#/users) shows the available users and their Access Keys. The Cockpit team CI uses the [arr-cockpit](https://console.aws.amazon.com/iam/home?#/users/arr-cockpit) user for CI runtime, and the [arr-cockpit-bootstrap](https://us-east-1.console.aws.amazon.com/iam/home#/users/details/arr-cockpit-bootstrap?section=permissions) user for deploying the S3 buckets/credentials.
+
+Contact Miroslav Vadkerti about maintaining these users, privileges, and access keys.
 
 Credentials configuration
 -------------------------
-For interacting with AWS with these Ansible playbooks or with the [AWS CLI](https://docs.aws.amazon.com/cli/index.html), put your access key into `~/.config/aws/credentials`, either with calling `aws configure`, or creating the file manually:
+For interacting with AWS with these Ansible playbooks or with the [AWS CLI](https://docs.aws.amazon.com/cli/index.html), configure multiple profiles in `~/.config/aws/credentials`:
 
 ```ini
+# arr-cockpit
 [default]
-aws_access_key_id = AKIA...
-aws_secret_access_key = yoursecret
+aws_access_key_id = AKIA...arr-cockpit...
+aws_secret_access_key = ...arr-cockpit-secret...
+
+# arr-cockpit-bootstrap
+[bootstrap]
+aws_access_key_id = AKIA...arr-cockpit-bootstrap...
+aws_secret_access_key = ...arr-cockpit-bootstrap-secret...
 ```
 
+The `[default]` profile (arr-cockpit user) is for runtime operations: EC2 instances, S3 uploads.
+The `[bootstrap]` profile (arr-cockpit-bootstrap user) is for infrastructure setup: creating/configuring S3 buckets.
+
+These keys are stored in the Cockpit team's Bitwarden (cockpit-infra-accounts).
+
 Note: On some systems, the AWS CLI and Ansible may use the old `~/.aws/credentials` location. Both locations are supported.
+
+S3 buckets
+----------
+
+We use two S3 buckets in the `us-east-1` region:
+
+ * **cockpit-ci-images** - Test images (qcow2 files)
+   - Console: https://us-east-1.console.aws.amazon.com/s3/buckets/cockpit-ci-images
+   - URL: `https://cockpit-ci-images.s3.us-east-1.amazonaws.com/`
+   - Uses per-file ACLs: non-RHEL images are `public-read`, RHEL images are `private`
+   - No lifecycle policy (obsolete images pruned explicitly by tooling)
+
+ * **cockpit-ci-logs** - CI test logs, artifacts, and Prometheus metrics
+   - Console: https://us-east-1.console.aws.amazon.com/s3/buckets/cockpit-ci-logs
+   - URL: `https://cockpit-ci-logs.s3.us-east-1.amazonaws.com/`
+   - Public read via bucket policy (no per-file ACLs needed)
+   - 90-day lifecycle policy for automatic cleanup
+
+Create or update both buckets with:
+
+    ansible-playbook aws/setup-s3-buckets.yml
 
 SSH key
 -------

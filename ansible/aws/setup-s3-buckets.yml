@@ -1,0 +1,80 @@
+---
+- name: Setup S3 buckets for Cockpit CI
+  hosts: localhost
+  gather_facts: false
+  vars_files: aws_defaults.yml
+
+  # Use arr-cockpit-bootstrap credentials for bucket creation/configuration
+  # Override with: ansible-playbook -e aws_profile=default
+  vars:
+    aws_profile: bootstrap
+
+  tasks:
+    # https://us-east-1.console.aws.amazon.com/s3/buckets/cockpit-ci-images?region=us-east-1
+    - name: Create and configure images bucket
+      amazon.aws.s3_bucket:
+        name: "{{ aws_s3_images_bucket }}"
+        state: present
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+        # Enable per-file ACLs: non-RHEL images get public-read, RHEL images get private
+        object_ownership: ObjectWriter
+        public_access:
+          # Allow per-file public ACLs, but prevent bucket-wide public policies
+          block_public_acls: false
+          ignore_public_acls: false
+          block_public_policy: true
+          restrict_public_buckets: true
+        tags:
+          app-code: ARR-001
+          cost-center: 700
+          service-owner: cockpit
+          service-phase: prod
+
+    #https://us-east-1.console.aws.amazon.com/s3/buckets/cockpit-ci-logs?region=us-east-1
+    - name: Create and configure logs bucket
+      amazon.aws.s3_bucket:
+        name: "{{ aws_s3_logs_bucket }}"
+        state: present
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+        # Use bucket policy for public-read GET, authenticated PUT/DELETE
+        object_ownership: BucketOwnerEnforced
+        public_access:
+          # Allow bucket policy for public read access
+          block_public_acls: true
+          ignore_public_acls: true
+          block_public_policy: false
+          restrict_public_buckets: false
+        policy:
+          # Policy language version (magic constant)
+          # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_version.html
+          Version: '2012-10-17'
+          Statement:
+            # Allow public read access to all objects
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: 'arn:aws:s3:::{{ aws_s3_logs_bucket }}/*'
+        tags:
+          app-code: ARR-001
+          cost-center: 700
+          service-owner: cockpit
+          service-phase: prod
+
+    - name: Set lifecycle policy on logs bucket (90-day expiration)
+      community.aws.s3_lifecycle:
+        name: "{{ aws_s3_logs_bucket }}"
+        state: present
+        region: "{{ aws_region }}"
+        profile: "{{ aws_profile }}"
+        rule_id: expire-after-90-days
+        status: enabled
+        expiration_days: 90
+
+    - name: Display bucket URLs
+      debug:
+        msg:
+          - "Images bucket: https://{{ aws_s3_images_bucket }}.s3.{{ aws_region }}.amazonaws.com/"
+          - "Logs bucket: https://{{ aws_s3_logs_bucket }}.s3.{{ aws_region }}.amazonaws.com/"
