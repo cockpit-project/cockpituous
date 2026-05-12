@@ -1,0 +1,19 @@
+# Update SSH authorized keys on all cloud instances
+---
+- name: Update users on AWS instances
+  hosts: tag_service_owner_cockpit
+  gather_facts: false
+  vars_files: ../aws/aws_defaults.yml
+  roles:
+    - role: users
+      vars:
+        user: "{{ aws_coreos_defaultuser }}"
+
+- name: Update users on OpenStack instances
+  hosts: openstack_tasks
+  gather_facts: false
+  vars_files: ../psi/psi_defaults.yml
+  roles:
+    - role: users
+      vars:
+        user: "{{ psi_user }}"
