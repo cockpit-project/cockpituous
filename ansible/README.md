@@ -7,3 +7,4 @@ Setup/maintenance Ansible playbooks for Front Door CI
  * [localvm](./localvm/): Documentation and playbooks for lauching and configuring CI in a local VM (for development)
  * [roles](./roles/): Ansible roles for common setup steps
  * [maintenance](./maintenance/): Ansible playbooks for maintenance tasks on all CI machines
+ * [bitwarden-ssh-agent](./bitwarden-ssh-agent.md): Using Bitwarden as an SSH agent to avoid Yubikey pain
