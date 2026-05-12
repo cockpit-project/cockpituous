@@ -100,7 +100,7 @@ data:
       metrics_path: /prometheus
       scheme: https
       static_configs:
-      - targets: ['cockpit-logs.us-east-1.linodeobjects.com']
+      - targets: ['cockpit-ci-logs.s3.us-east-1.amazonaws.com']
 
 ---
 kind: ConfigMap
