@@ -7,6 +7,8 @@ regularly read these metrics and store them in a database, and [Grafana](https:/
 
 ## Deployment to Kubernetes
 
+Our production instances run on on CentOS CI OpenShift. See [CentOS CI docs](../centos-ci.md) for how to access the cluster.
+
  - For the first-ever installation, create a persistent volume claim to store
    the Prometheus database (as that is somewhat precious):
 

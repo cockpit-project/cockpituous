@@ -32,7 +32,8 @@ These tasks containers controlled by systemd units `cockpit-tasks@*`.
 
 # Deploying on OpenShift
 
-OpenShift primarily runs the GitHub webhook responder and AMQP server.
+The GitHub webhook responder and AMQP server run on CentOS CI OpenShift. See
+[CentOS CI docs](../centos-ci.md) for how to access the cluster.
 
 As `/dev/kvm` support on OpenShift is hard to come by, current bots
 `job-runner` and the deployment resources currently only support a tasks
