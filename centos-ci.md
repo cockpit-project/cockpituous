@@ -22,6 +22,13 @@ Fedora team, see the "How to contact us" → "Infrastructure" section on that pa
 File an [infra ticket](https://forge.fedoraproject.org/infra/tickets/) for
 requesting changes to the group or cluster config.
 
+## Install client tools
+
+Deploying resources on the command line or with our Ansible playbooks requires
+the `oc` command line client. It's not packaged in Fedora, get the latest
+"openshift-origin-client-tools" Linux release from
+<https://github.com/openshift/origin/releases>.
+
 ## Logging in
 
 Choose "centos_account", and log in with your Fedora account (user/password/2FA
