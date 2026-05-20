@@ -17,14 +17,21 @@
         state: present
         region: "{{ aws_region }}"
         profile: "{{ aws_profile }}"
-        # Enable per-file ACLs: non-RHEL images get public-read, RHEL images get private
-        object_ownership: ObjectWriter
+        # Use bucket policy for public read access (except RHEL images)
+        object_ownership: BucketOwnerEnforced
         public_access:
-          # Allow per-file public ACLs, but prevent bucket-wide public policies
-          block_public_acls: false
-          ignore_public_acls: false
-          block_public_policy: true
-          restrict_public_buckets: true
+          block_public_acls: true
+          ignore_public_acls: true
+          block_public_policy: false
+          restrict_public_buckets: false
+        policy:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: PublicReadNonRhel
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              NotResource: 'arn:aws:s3:::{{ aws_s3_images_bucket }}/rhel*'
         tags:
           app-code: ARR-001
           cost-center: 700
