@@ -10,12 +10,11 @@
     aws_profile: bootstrap
 
   tasks:
-    # https://us-east-1.console.aws.amazon.com/s3/buckets/cockpit-ci-images?region=us-east-1
-    - name: Create and configure images bucket
+    - name: Create and configure images bucket {{ item.name }}
       amazon.aws.s3_bucket:
-        name: "{{ aws_s3_images_bucket }}"
+        name: "{{ item.name }}"
         state: present
-        region: "{{ aws_region }}"
+        region: "{{ item.region }}"
         profile: "{{ aws_profile }}"
         # Use bucket policy for public read access (except RHEL images)
         object_ownership: BucketOwnerEnforced
@@ -31,12 +30,13 @@
               Effect: Allow
               Principal: '*'
               Action: 's3:GetObject'
-              NotResource: 'arn:aws:s3:::{{ aws_s3_images_bucket }}/rhel*'
+              NotResource: 'arn:aws:s3:::{{ item.name }}/rhel*'
         tags:
           app-code: ARR-001
           cost-center: 700
           service-owner: cockpit
           service-phase: prod
+      loop: "{{ aws_s3_images_buckets }}"
 
     #https://us-east-1.console.aws.amazon.com/s3/buckets/cockpit-ci-logs?region=us-east-1
     - name: Create and configure logs bucket
@@ -83,5 +83,6 @@
     - name: Display bucket URLs
       debug:
         msg:
-          - "Images bucket: https://{{ aws_s3_images_bucket }}.s3.{{ aws_region }}.amazonaws.com/"
+          - "Images buckets:"
+          - "{% for b in aws_s3_images_buckets %}  https://{{ b.name }}.s3.{{ b.region }}.amazonaws.com/\n{% endfor %}"
           - "Logs bucket: https://{{ aws_s3_logs_bucket }}.s3.{{ aws_region }}.amazonaws.com/"
