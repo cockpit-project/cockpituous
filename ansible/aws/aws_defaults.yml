@@ -11,7 +11,11 @@ aws_coreos_filter: "Fedora CoreOS stable *"
 aws_coreos_defaultuser: "core"
 
 # S3 buckets for CI
-aws_s3_images_bucket: cockpit-ci-images
+aws_s3_images_buckets:
+  - name: cockpit-ci-images
+    region: us-east-1
+  - name: cockpit-ci-images-fra.eu-central-1
+    region: eu-central-1
 aws_s3_logs_bucket: cockpit-ci-logs
 
 # CI secrets repository
