@@ -1,4 +1,4 @@
-FROM fedora:43
+FROM fedora:44
 LABEL maintainer='cockpit-devel@lists.fedorahosted.org'
 
 RUN dnf -y update && \
