@@ -31,6 +31,7 @@ The `[bootstrap]` profile (arr-cockpit-bootstrap user) is for infrastructure set
 These keys are stored in the Cockpit team's Bitwarden (cockpit-infra-accounts).
 
 Note: On some systems, the AWS CLI and Ansible may use the old `~/.aws/credentials` location. Both locations are supported.
+Note: To verify that the credentials are setup correctly call `aws sts get-caller-identity`.
 
 S3 buckets
 ----------
