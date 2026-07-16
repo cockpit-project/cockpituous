@@ -673,7 +673,7 @@ def test_real_pr(config: Config, request, pod: PodData, bots_sha: str, real_runn
     print(f'----- PR unit-tests log -----\n{log}\n-----------------')
     assert re.search(r'Running on:\s+cockpituous', log)
     assert 'Job ran successfully' in log
-    assert '<html>' in get_s3(config, pod, f'logs/{log_name}.html')
+    assert '<html' in get_s3(config, pod, f'logs/{log_name}.html')
 
     # validate test attachment if we ran cockpituous' own tests
     if pr_repo.endswith('/cockpituous'):
