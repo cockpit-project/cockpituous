@@ -381,6 +381,9 @@ def generate_config(config: Config, forge_opts: str, s3_opts: str, run_args: str
 
         [container.secrets]
         # these are *host* paths, this is podman-remote
+        image-download=[
+            # no RHEL images are tested here
+        ]
         image-upload=[
             '--volume={config.s3_keys}:/run/secrets/s3-keys:ro',
             '--env=COCKPIT_S3_KEY_DIR=/run/secrets/s3-keys',
