@@ -23,6 +23,9 @@ jobs:
             runner: ubuntu-24.04
           - label: arm64
             runner: ubuntu-22.04-arm
+    permissions:
+      contents: read
+      packages: write
 
     runs-on: ${{ matrix.build.runner }}
     timeout-minutes: 10
@@ -51,6 +54,9 @@ jobs:
 
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Login in to container registry
