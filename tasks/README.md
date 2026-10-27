@@ -156,7 +156,7 @@ for more information.
 ## Set up bot as collaborator
 
  * On your project's "Settings → Manage Access" page, invite the [cockpituous user](https://github.com/cockpituous) as a collaborator. This should result in a pending invite.
- * Join our Matrix channel [#cockpit:fedoraproject.org](https://matrix.to/#/#cockpit:fedoraproject.org) and ask Martin Pitt (`pitti`), Allison Karlitskaya (`lis`), or Matej Marusak (`mmarusak`) to log into GitHub as `cockpituous` user and accept the invite on the GitHub org or project's `/invitations` page.
+ * Join our Matrix channel [#cockpit:fedoraproject.org](https://matrix.to/#/#cockpit:fedoraproject.org) and ask Allison Karlitskaya (`lis`), or Jelle van der Waa (`jelly`) to log into GitHub as `cockpituous` user and accept the invite on the GitHub org or project's `/invitations` page.
 
 ## Set up automatic test triggering
 
