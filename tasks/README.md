@@ -59,6 +59,12 @@ Some helpful commands:
     oc describe pods
     oc log -f cockpit-tasks-xxxx
 
+Force fully restarting the webhook
+
+    oc delete pod webhook-xxxx
+
+The currenty webhook pod should be deleted and re-created.
+
 # Deploying locally for development, integration tests
 
 For hacking on the webhook, task container, bots infrastructure, or validating
