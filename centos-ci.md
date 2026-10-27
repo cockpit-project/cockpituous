@@ -13,7 +13,7 @@ see the per-directory README.md files.
 
 ## Members
 
-Access to the project is provided through the [`cockpit` Fedora group](https://accounts.fedoraproject.org/group/ocp-cico-cockpit/).
+Access to the project is provided through the [`cockpit` Fedora group](https://accounts.fedoraproject.org/group/ocp-cico-cockpit/) and new members can be added via a [Fedora infa issue](https://forge.fedoraproject.org/infra/tickets/issues), see for example [this issue](https://forge.fedoraproject.org/infra/tickets/issues/13340).
 
 ## Administrators/contact
 
