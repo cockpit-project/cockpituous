@@ -51,6 +51,13 @@ the `/var/lib/cockpit-secrets/*` directories as described above:
     oc create -f tasks/cockpit-tasks-webhook.yaml
     oc create -f tasks/cockpit-tasks-centosci.yaml
 
+## Updating/Changing a part of OpenShift
+
+If you want to only deploy a minor change, for example only changing the used
+rabbitmq image:
+
+    oc apply -f tasks/cockpit-tasks-webhook.yaml
+
 ## Troubleshooting
 
 Some helpful commands:
