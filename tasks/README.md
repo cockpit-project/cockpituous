@@ -48,8 +48,8 @@ Now create all the remaining kubernetes objects. The secrets are created from
 the `/var/lib/cockpit-secrets/*` directories as described above:
 
     make tasks-secrets | oc create -f -
-    oc create -f tasks/cockpit-tasks-webhook.json
-    oc create -f tasks/cockpit-tasks-centosci.json
+    oc create -f tasks/cockpit-tasks-webhook.yaml
+    oc create -f tasks/cockpit-tasks-centosci.yaml
 
 ## Troubleshooting
 
