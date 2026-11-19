@@ -10,7 +10,6 @@ check:
 	if command -v ruff >/dev/null; then ruff check test; else echo "SKIP: ruff not installed"; fi
 
 TAG := $(shell date --iso-8601)
-TASK_SECRETS := /var/lib/cockpit-secrets/tasks
 DOCKER ?= $(shell which podman docker 2>/dev/null | head -n1)
 
 containers: tasks-container
@@ -20,5 +19,5 @@ tasks-container:
 	$(DOCKER) build -t ghcr.io/cockpit-project/tasks:$(TAG) tasks/container
 	$(DOCKER) tag ghcr.io/cockpit-project/tasks:$(TAG) ghcr.io/cockpit-project/tasks:latest
 
-tasks-secrets:
-	@cd tasks && ./build-secrets $(TASK_SECRETS)
+centosci-secrets:
+	tasks/build-secrets | oc apply -f -
