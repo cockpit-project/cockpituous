@@ -109,16 +109,33 @@ def publish_to_queue(routing_key, event, request):
 
 
 class CockpituousHandler(github_handler.GithubHandler):
+    def get_valid_repo_name(self, request: 'dict[str, object]') -> str:
+        repository = request.get('repository', {})
+        if 'clone_url' not in repository:
+            raise github_handler.WebhookError(400, 'Request misses repository clone_url')
+        repo = str(repository['full_name'])
+        # testmap is cached by importlib after first import, so adding a new project
+        # requires a webhook restart to be recognized here
+        from lib import testmap
+        if repo not in set(testmap.projects()):
+            raise github_handler.WebhookError(400, f'Unknown repository: {repo!r}')
+        return repo
+
     def handle_event(self, event, request):
         logging.info('Handling %s event', event)
-        if event == 'pull_request':
-            return self.handle_pull_request_event(event, request)
-        elif event == 'status':
-            return self.handle_status_event(event, request)
-        return (501, 'unsupported event ' + event)
+        match event:
+            case 'ping' | 'installation':
+                # we don't care about these
+                pass
+            case 'pull_request':
+                self.handle_pull_request_event(event, request)
+            case 'status':
+                self.handle_status_event(event, request)
+            case _:
+                raise github_handler.WebhookError(400, f'Unknown event: {event!r}')
 
     def handle_pull_request_event(self, event, request):
-        repo = request['pull_request']['base']['repo']['full_name']
+        repo = self.get_valid_repo_name(request)
         title = request['pull_request']['title']
         number = int(request['number'])
         action = request['action']
@@ -131,26 +148,24 @@ class CockpituousHandler(github_handler.GithubHandler):
             ensure_bots_checkout()
         elif action not in ['opened', 'synchronize', 'edited']:
             logging.info("action %s unknown, skipping pull request event", action)
-            return None
+            return
 
         publish_to_queue('webhook', event, request)
-        return None
 
     def handle_status_event(self, event, request):
-        repo = request['repository']['full_name']
+        repo = self.get_valid_repo_name(request)
         sha = request['sha']
         state = request['state']
         description = request.get('description', '')
         if state != 'pending':
-            return None
+            return
         # only allow manually triggered tests
         logging.info('repo: %s; sha: %s; state: %s; description: %s', repo, sha, state, description)
         if not description.rstrip().endswith('(direct trigger)'):
             logging.info("Status description doesn't end with '(direct trigger)', skipping testing")
-            return None
+            return
 
         publish_to_queue('webhook', event, request)
-        return None
 
     def do_GET(self):
         if self.path == '/inspect-queue':

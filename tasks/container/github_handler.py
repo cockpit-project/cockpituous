@@ -6,7 +6,14 @@ import http.server
 
 __all__ = (
     "GithubHandler",
+    "WebhookError",
 )
+
+
+class WebhookError(Exception):
+    def __init__(self, code: int, message: str) -> None:
+        self.code = code
+        self.message = message
 
 
 class GithubHandler(http.server.BaseHTTPRequestHandler):
@@ -56,33 +63,17 @@ class GithubHandler(http.server.BaseHTTPRequestHandler):
             return
 
         event = self.headers.get('X-GitHub-Event')
-
-        request = request.decode('UTF-8')
-        logging.debug('event: %s, path: %s', event, self.path)
-
-        request = json.loads(request)
-        logging.debug('repository: %s', request['repository']['full_name'])
+        logging.debug('event: %r, path: %r', event, self.path)
 
         try:
-            request['repository']['clone_url']
-        except KeyError:
-            self.fail('Request misses repository clone_url')
-            return
-
-        if event == 'ping':
+            self.handle_event(event, json.loads(request.decode('UTF-8')))
             self.success()
-            return
-        err = self.handle_event(event, request)
-        if err:
-            self.fail(err[1], code=err[0])
-        else:
-            self.success()
+        except WebhookError as e:
+            self.fail(e.message, code=e.code)
 
     def handle_event(self, event, request):
-        '''Handle GitHub event type "event"
+        """Handle GitHub event type "event".
 
-        "ping" is already handled internally.
-
-        Returns: None for success, or a (code, message) tuple on errors.
-        '''
+        Raise WebhookError on failure.
+        """
         raise NotImplementedError('must be implemented in subclasses')
