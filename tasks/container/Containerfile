@@ -73,7 +73,9 @@ RUN dnf -y update && \
     curl -o /tmp/cockpit.spec -s https://raw.githubusercontent.com/cockpit-project/cockpit/main/tools/cockpit.spec && \
     dnf -y builddep --setopt=install_weak_deps=False /tmp/cockpit.spec && \
     rm /tmp/cockpit.spec && \
-    dnf clean all
+    dnf clean all && \
+    npm install -g \
+        @biomejs/biome
 
 # FF 146 to 148 has a regression where the page sometimes reloads when we call b.go() from tests
 # see https://bugzilla.mozilla.org/show_bug.cgi?id=2018546
